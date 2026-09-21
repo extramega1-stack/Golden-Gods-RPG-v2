@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.8 — Fase 6.1 (2026-09-21)
+**Versión del documento:** 1.9 — Fase 6.2 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,19 +15,28 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 6.1 terminada — hotfix por feedback de playtest: botón de
-atacar retirado del HUD (la acción `atacar` por T/doble clic sigue igual).
+**Estado:** Fase 6.2 terminada — hotfix por pedido de Juan Diego: modelo
+de clic estilo Flyff (un solo handler `_clic_izquierdo`; primer clic
+selecciona, segundo clic sobre el mismo enemigo seleccionado ataca;
+se elimina la rama `double_click` del motor).
+Fase 6.1: botón de atacar retirado del HUD (la acción `atacar` por T o
+segundo clic sigue igual).
 Fase 6: NPCs e interacción básica:
-- **Selección:** clic simple selecciona mob/NPC (anillo dorado 3D bajo sus
+- **Selección:** clic selecciona mob/NPC (anillo dorado 3D bajo sus
   pies, `IndicadorSeleccion`); clic en suelo vacío o ESC deselecciona. La
-  selección muerta se limpia sola.
+  selección muerta se limpia sola. **Fase 6.2 (modelo Flyff):** el primer
+  clic en una entidad la selecciona (sin atacar ni mover); el SEGUNDO clic
+  sobre la misma selección ataca solo si es un enemigo combatible vivo
+  (dos clics rápidos o lentos valen igual); clic en otra entidad distinta
+  cambia la selección sin atacar; segundo clic en el mismo NPC no hace
+  nada (ni ataca ni mueve, la selección se mantiene).
 - **Flash rojo al recibir daño:** estado `flash_tiempo` en `Entity`
   (testeable, decae en `_process`) + gancho visual `DamageFlash` (tiñe el
   "Cuerpo" sin mutar materiales compartidos).
 - **Botón de atacar: RETIRADO del HUD (fase 6.1, pedido de Juan Diego por
   feedback de playtest — le molestaba en pantalla).** El script
   `scripts/ui/boton_atacar.gd` y su nodo en las demos se eliminaron; la
-  acción `atacar` del Input Map (T por defecto + doble clic) sigue
+  acción `atacar` del Input Map (T por defecto o segundo clic) sigue
   funcionando igual vía `Player.solicitar_ataque` (foco > mob más cercano
   en rango ≤ 8 m). El rebind de tecla por clic derecho murió con el botón:
   vuelve con la barra de acciones arrastrable (feature planificada, §9.3).
@@ -41,7 +50,7 @@ Fase 6: NPCs e interacción básica:
 - **REGLA DURA: los NPCs NO se pueden atacar** (`Entity.combatible = false`
   en `NPC`; `true` en jugador/enemigos). `take_damage` los ignora por completo
   (sin vida, sin señales, sin flash); el Player rechaza fijarlos como objetivo
-  (doble clic, botón, tecla) y `SkillSystem` rechaza skills dañinas sobre ellos
+  (segundo clic, tecla) y `SkillSystem` rechaza skills dañinas sobre ellos
   (motivo `"no_combatible"`). Los NPCs SÍ se pueden seleccionar.
   Datos: `data/npcs.json` (Mariscala Ilya Voss, Herrero Bram).
 - Nuevas acciones Input Map: `atacar` (T), `cancelar_seleccion` (ESC).
@@ -128,8 +137,10 @@ La reimplementación sigue en la Fase 7 (§11).
 
 | Entrada | Acción |
 |---|---|
-| Clic izquierdo | Mover / seleccionar enemigo (anillo + ficha en HUD) / hablar con NPC |
-| Doble clic izquierdo | Atacar |
+| Clic izquierdo (suelo / nada) | Mover al punto (suelo) / deseleccionar |
+| Clic izquierdo (entidad) | Primer clic: seleccionar (mob o NPC; sin atacar ni mover) · clic en otra entidad: cambia la selección |
+| Segundo clic en el MISMO enemigo seleccionado | Atacar (modelo Flyff, fase 6.2; rápido o lento vale igual) |
+| Segundo clic en el mismo NPC seleccionado | Nada (la selección se mantiene) |
 | Botón derecho (mantener) | Cámara: giro infinito (captura inmediata al presionar) |
 | Botón central (mantener) | Cámara: drag alternativo con amortiguamiento |
 | Rueda | Zoom (máximo 650, decisión de Juan Diego) |
@@ -212,7 +223,8 @@ migraciones) · pila global de paneles (ESC) · skin UI central (L2+MU) · helpe
 popups/animaciones · audio (volúmenes Master/Música/SFX) · registro de sistemas.
 
 ### Dominio 2 — Jugador, cámara, HUD
-Héroe (clic mover/seleccionar/hablar, doble clic atacar, WASD relativo a cámara,
+Héroe (clic: mover/seleccionar/hablar; segundo clic en el mismo enemigo
+ataca, WASD relativo a cámara,
 pegado al terreno) · cámara L2/MU (drag botón derecho con captura = giro infinito,
 Q/E con amortiguamiento, zoom máx 650, oclusión por bisección, overlay INSERT) ·
 HUD (retrato, HP/MP/XP suavizadas + fantasma de daño L2, hotbar 1–8, pociones Z/X,
@@ -420,6 +432,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 5 | **Inventario, equipo y skills** ✅: `data/items.json` (10 items) y `data/skills.json` (5 skills); `Inventario` (apilar, capacidad), `Equipo` (slots arma/armadura, mods por fuente sin tocar stats base), `SkillSystem` (maná/cooldown/rango, teclas 1–5); loot → inventario; HUD con barra de skills + paneles I/C (solo lectura); save/load v2 tolerante | Loop jugable: recoger → equipar → lanzar skills → guardar (F9) / cargar (F10) |
 | 5.1 | **Pulido de selección y combate** ✅: indicador de selección 3D (clic simple selecciona mob/NPC; suelo vacío o ESC deselecciona) · flash rojo al recibir daño (estado en `Entity` + `DamageFlash`) · botón de atacar arrastrable con tecla reasignable (acción `atacar`, defecto T; persiste en `user://`) · skills dañinas con acercamiento automático (lanzamiento pendiente, cancelable) · **REGLA DURA: NPCs no atacables** (`combatible = false`; `data/npcs.json`) | Loop jugable: seleccionar → atacar con botón/tecla → skills que se acercan solas → NPCs que se seleccionan pero no se pueden dañar |
 | 6 | **NPCs e interacción básica** ✅: NPCs data-driven completos (`NpcDB` + `nombre`/`rol`/`dialogo` en `data/npcs.json`) · E abre la VentanaDialogo con el NPC seleccionado (nombre, rol, líneas; E/clic/Continuar avanza, Cerrar/ESC cierra; UI solo lee) · save v3 tolerante con NPCs (id + posición) | Loop jugable: seleccionar NPC → hablar con E → guardar (F9) / cargar (F10) con NPCs restaurados |
+| 6.2 | **Hotfix modelo de clic Flyff** ✅: un solo handler `_clic_izquierdo` (se elimina la rama `double_click` del motor) — primer clic selecciona mob/NPC (sin atacar ni mover), segundo clic sobre el mismo enemigo combatible ataca (rápido o lento valen igual), clic en otro mob cambia la selección sin atacar, segundo clic en NPC no hace nada, suelo/nada mueve y deselecciona · decisión pura `_resolver_clic_entidad` (enum `AccionClic`) testeable sin cámara + `_aplicar_clic` + `_orden_mover_punto` · `tests/test_clic.gd` (36 asserts) | Loop jugable: clic → seleccionar → segundo clic → atacar (como Flyff) |
 | 7+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -461,4 +474,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.8 — Fase 6.1 (botón de atacar retirado del HUD; barra de acciones arrastrable estilo Flyff como feature planificada).*
+*Fin del documento maestro v1.9 — Fase 6.2 (modelo de clic estilo Flyff: primer clic selecciona, segundo clic en el mismo enemigo ataca; sin rama `double_click`).*

@@ -8,9 +8,11 @@ extends Entity
 ## - WASD (relativo a la cámara) → move_dir; tiene prioridad y cancela
 ##   la orden de clic y el objetivo de ataque (control manual total).
 ## - Clic izquierdo → destino en el mundo (raycast a la capa de suelo).
-## - Doble clic izquierdo → intenta fijar un enemigo como objetivo de
-##   ataque (raycast); si lo logra, lo persigue hasta el rango y pega
-##   con `Formulas.damage`. Sin animaciones todavía: solo el número.
+## - Clic izquierdo en enemigo: el primer clic lo selecciona; el SEGUNDO
+##   clic sobre el MISMO enemigo seleccionado lo fija como objetivo de
+##   ataque (modelo Flyff, fase 6.2; dos clics rápidos o lentos valen igual).
+##   Lo persigue hasta el rango y pega con `Formulas.damage`.
+##   Sin animaciones todavía: solo el número.
 ## Sin referencias a UI ni a ningún otro sistema.
 
 signal intencion_atacar(objetivo: Entity)
@@ -36,17 +38,29 @@ const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
 ## vivo más cercano dentro de este radio (luego lo persigue hasta el rango).
 const RADIO_AUTOATAQUE: float = 8.0
 
+## Fase 6.2 (modelo Flyff, pedido de Juan Diego): el clic izquierdo es UN
+## solo gesto y la intención depende de lo clicado y del estado:
+## - Primer clic en una entidad no seleccionada → SELECCIONAR (sin atacar).
+## - Segundo clic en la MISMA selección y es enemigo combatible vivo →
+##   ATACAR (dos clics rápidos o lentos valen igual).
+## - Segundo clic en la misma selección no atacable (NPC) → NADA.
+## - Clic en otra entidad distinta → SELECCIONAR (ni ataca ni mueve).
+## - Clic en suelo / nada → orden de mover (+ deselecciona).
+enum AccionClic { SELECCIONAR, ATACAR, NADA }
+
 ## Ruta al CameraRig en la escena (se asigna en el .tscn; sin esto el WASD
 ## usa yaw 0 y el clic no tiene cámara para proyectar).
 @export var ruta_rig: NodePath
 
 ## La intención del frame actual (la UI futura y los tests pueden leerla).
 var intent: Intent
-## Objetivo de ataque (doble clic / botón de atacar). null = sin objetivo.
+## Objetivo de ataque (segundo clic en la selección / tecla "atacar").
+## null = sin objetivo.
 var objetivo_ataque: Entity = null
-## Fase 5.1 — entidad seleccionada (clic simple en mob o NPC; también se
-## selecciona con doble clic). Los NPCs SÍ se pueden seleccionar, pero
-## NUNCA son objetivo de ataque. Clic en suelo vacío o ESC deselecciona.
+## Fase 5.1 — entidad seleccionada (clic en mob o NPC). Fase 6.2: el
+## segundo clic sobre el mismo mob seleccionado ataca (modelo Flyff).
+## Los NPCs SÍ se pueden seleccionar, pero NUNCA son objetivo de ataque.
+## Clic en suelo vacío o ESC deselecciona.
 var seleccion: Entity = null
 ## Oro del héroe.
 var oro: int = 0
@@ -111,10 +125,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not mb.pressed:
 			return
 		if mb.button_index == MOUSE_BUTTON_LEFT:
-			if mb.double_click:
-				_intentar_fijar_objetivo(mb.position)
-			else:
-				_orden_mover_a(mb.position)
+			# Fase 6.2: un solo handler de clic izquierdo (modelo Flyff).
+			# El flag double_click del motor ya no decide nada: dos clics
+			# rápidos siguen funcionando por construcción (el primero
+			# selecciona, el segundo ataca).
+			_clic_izquierdo(mb.position)
 
 
 ## Habilidades 1-5: lanza el skill i-ésimo del hotbar con objetivo inteligente.
@@ -254,8 +269,8 @@ func _objetivo_skill(skill_id: String) -> Entity:
 
 
 ## ¿Este collider puede ser objetivo de ataque? Solo Enemy vivo y
-## combatible. Testeable sin cámara (el raycast real vive en
-## _intentar_fijar_objetivo).
+## combatible. Testeable sin cámara (lo usan `_resolver_clic_entidad`
+## y `solicitar_ataque`).
 func _es_objetivo_atacable(col: Object) -> Enemy:
 	if col is Enemy:
 		var en: Enemy = col as Enemy
@@ -264,14 +279,12 @@ func _es_objetivo_atacable(col: Object) -> Enemy:
 	return null
 
 
-## Doble clic: el doble clic también selecciona; solo los enemigos
-## combatibles se vuelven objetivo de ataque (REGLA DURA: NPCs nunca).
-## Si pega en el suelo, se comporta como una orden de mover (legado).
-func _intentar_fijar_objetivo(pantalla: Vector2) -> void:
-	intent.quiere_atacar = true
+## Fase 6.2 — raycast clic→mundo (capa de suelo + entidades). Sin cámara
+## (tests headless) no hay rayo: devuelve {}.
+func _rayo_clic(pantalla: Vector2) -> Dictionary:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam == null:
-		return
+		return {}
 	var origen: Vector3 = cam.project_ray_origin(pantalla)
 	var dir: Vector3 = cam.project_ray_normal(pantalla)
 	var consulta: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
@@ -279,55 +292,69 @@ func _intentar_fijar_objetivo(pantalla: Vector2) -> void:
 	)
 	var excluir: Array[RID] = [get_rid()]
 	consulta.exclude = excluir
-	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(consulta)
+	return get_world_3d().direct_space_state.intersect_ray(consulta)
+
+
+## Fase 6.2 — UN solo handler de clic izquierdo (modelo Flyff): el rayo
+## decide la rama. Entidad viva → `_resolver_clic_entidad` decide y
+## `_aplicar_clic` ejecuta. Suelo → orden de mover. Nada → deseleccionar
+## sin moverse (una orden de mover cancela el objetivo de ataque).
+func _clic_izquierdo(pantalla: Vector2) -> void:
+	var hit: Dictionary = _rayo_clic(pantalla)
 	if hit.is_empty():
 		objetivo_ataque = null
-		_tiene_destino = false
-		deseleccionar()
-		intencion_atacar.emit(null)
-		return
-	var col: Object = hit.get("collider")
-	if col is Entity and (col as Entity).esta_vivo():
-		seleccionar(col as Entity)
-	var en: Enemy = _es_objetivo_atacable(col)
-	if en != null:
-		objetivo_ataque = en
-		intent.objetivo = en
-		_tiene_destino = true
-		_destino = en.global_position
-		intencion_atacar.emit(en)
-		return
-	objetivo_ataque = null
-	_orden_mover_a(pantalla)
-	intencion_atacar.emit(null)
-
-
-## Clic izquierdo: proyecta el cursor al mundo y guarda el destino.
-## Una orden de mover cancela el objetivo de ataque (control manual).
-## Fase 5.1: si el rayo pega en una entidad viva la selecciona; si pega
-## en suelo vacío (o no pega en nada), deselecciona.
-func _orden_mover_a(pantalla: Vector2) -> void:
-	objetivo_ataque = null
-	var cam: Camera3D = get_viewport().get_camera_3d()
-	if cam == null:
-		return
-	var origen: Vector3 = cam.project_ray_origin(pantalla)
-	var dir: Vector3 = cam.project_ray_normal(pantalla)
-	var consulta: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(
-		origen, origen + dir * ALCANCE_RAYO
-	)
-	var excluir: Array[RID] = [get_rid()]
-	consulta.exclude = excluir
-	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(consulta)
-	if hit.is_empty():
 		deseleccionar()
 		return
 	var col: Object = hit.get("collider")
 	if col is Entity and (col as Entity).esta_vivo():
-		seleccionar(col as Entity)
-	else:
-		deseleccionar()
-	var punto: Vector3 = hit["position"]
+		_aplicar_clic(col as Entity, _resolver_clic_entidad(col as Entity))
+		return
+	_orden_mover_punto(hit["position"])
+
+
+## Fase 6.2 — decisión "entidad clicada → acción", PURA y testeable sin
+## cámara (el raycast vive en `_clic_izquierdo`). NO aplica nada: devuelve
+## AccionClic.SELECCIONAR / .ATACAR / .NADA.
+func _resolver_clic_entidad(e: Entity) -> int:
+	if e == null or not e.esta_vivo():
+		return AccionClic.NADA
+	if e == seleccion:
+		# Segundo clic en la misma selección: ataca solo si es un enemigo
+		# combatible vivo (REGLA DURA: el NPC seleccionado no hace nada).
+		if _es_objetivo_atacable(e) != null:
+			return AccionClic.ATACAR
+		return AccionClic.NADA
+	# Otra entidad distinta: solo seleccionar (ni atacar ni mover).
+	return AccionClic.SELECCIONAR
+
+
+## Fase 6.2 — ejecuta la decisión de `_resolver_clic_entidad` sobre la
+## entidad clicada. Pública para tests (los tests headless no tienen
+## viewport para raycast).
+func _aplicar_clic(e: Entity, accion: int) -> void:
+	match accion:
+		AccionClic.SELECCIONAR:
+			seleccionar(e)
+		AccionClic.ATACAR:
+			# Intención de ataque completa: objetivo, intent, orden de
+			# acercarse y señal. La persecución y el golpe siguen en
+			# _physics_process (igual que el doble clic anterior).
+			objetivo_ataque = e
+			intent.objetivo = e
+			intent.quiere_atacar = true
+			_tiene_destino = true
+			_destino = e.global_position
+			intencion_atacar.emit(e)
+		_:
+			pass
+
+
+## Fase 6.2 — orden de mover a un punto ya resuelto del suelo: cancela el
+## objetivo de ataque, deselecciona y fija el destino. Testeable sin cámara
+## (`_clic_izquierdo` la usa para la rama de suelo).
+func _orden_mover_punto(punto: Vector3) -> void:
+	objetivo_ataque = null
+	deseleccionar()
 	_destino = punto
 	_tiene_destino = true
 

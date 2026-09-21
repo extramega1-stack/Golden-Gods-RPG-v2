@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1 y 6
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6 y 6.2
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -33,7 +33,13 @@ y ESC cierra consumidas antes que el Player), save v3 con NPCs (id +
 posición; las partidas v2 sin bloque "npcs" cargan igual) y regresión de la
 REGLA DURA (el NPC sigue no atacable: `take_damage` sin efecto,
 `solicitar_ataque` lo ignora, pero sí se selecciona).
-Todo sin abrir el juego.
+La fase 6.2 añade `test_clic.gd` (36 asserts): modelo Flyff de clic
+izquierdo — primer clic selecciona (mob/NPC) sin atacar, segundo clic
+sobre el mismo enemigo ataca (`objetivo_ataque`, `intent`, señal
+`intencion_atacar`), clic en otro mob cambia la selección sin atacar,
+segundo clic en NPC no hace nada (selección intacta), clic en suelo
+deselecciona y ordena mover, y `_resolver_clic_entidad` es pura (decide
+sin mutar). Todo sin abrir el juego.
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -51,6 +57,7 @@ Todo sin abrir el juego.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_skills.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_seleccion.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_npcs.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_clic.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
