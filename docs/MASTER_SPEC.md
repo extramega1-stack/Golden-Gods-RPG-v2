@@ -15,8 +15,9 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Fase 0 (esta):** repo + este documento + esqueleto mínimo que abre sin errores.
-Nada jugable todavía. La reimplementación empieza en la Fase 1 (§11).
+**Estado:** Fase 1 terminada — datos puros (`StatBlock` + fórmulas puras + 33 tests
+headless en verde). Nada jugable todavía. La reimplementación sigue en la
+Fase 2 (§11).
 
 ---
 
@@ -156,18 +157,22 @@ Nada jugable todavía. La reimplementación empieza en la Fase 1 (§11).
 
 ---
 
-## 6. Inventario de sistemas por fase de reimplementación
+## 6. Catálogo de sistemas del legado (por dominio)
 
-El legado tenía **166 scripts**. Se reimplementan agrupados por dominio, en fases.
-Cada fase termina con verificación headless + **playtest de Juan Diego** antes de
-pasar a la siguiente (método vigente: una parte a la vez, pulirla, luego la otra).
+El legado tenía **166 scripts**. Catálogo agrupado por dominio para
+reimplementar; **no es orden de ejecución**. El orden oficial es el de §11
+(directriz de Juan Diego, 2026-09-21: fórmulas → entidad → jugador/cámara →
+enemigo+loot+save → HUD → sistemas por señales).
+Cada entrega termina con verificación headless + tests en verde +
+**playtest de Juan Diego** antes de pasar a la siguiente (método vigente:
+una parte a la vez, pulirla, luego la otra).
 
-### Fase 1 — Núcleo técnico
+### Dominio 1 — Núcleo técnico
 Input Map completo (§5) · guardado versionado (`user://savegame.json` con
 migraciones) · pila global de paneles (ESC) · skin UI central (L2+MU) · helpers de
 popups/animaciones · audio (volúmenes Master/Música/SFX) · registro de sistemas.
 
-### Fase 2 — Jugador, cámara, HUD
+### Dominio 2 — Jugador, cámara, HUD
 Héroe (clic mover/seleccionar/hablar, doble clic atacar, WASD relativo a cámara,
 pegado al terreno) · cámara L2/MU (drag botón derecho con captura = giro infinito,
 Q/E con amortiguamiento, zoom máx 650, oclusión por bisección, overlay INSERT) ·
@@ -175,7 +180,7 @@ HUD (retrato, HP/MP/XP suavizadas + fantasma de daño L2, hotbar 1–8, pociones
 recursos, feed animado, velos modales) · minimapa WC3 (200 px, fade en reposo,
 pings Alt+clic, recorte al rectángulo) · creación de personaje · pantalla de título.
 
-### Fase 3 — Mundo
+### Dominio 3 — Mundo
 Terreno por chunks con LOD (36.864 u) · agua · 1191 spawns de criaturas
 (`data/creatures.json`) con arquetipos y tinte por nivel · doodads (MultiMesh) ·
 fábricas procedurales originales (criaturas, assets) · vida ambiental (día/noche,
@@ -183,7 +188,7 @@ partículas por zona/bioma, fauna, pájaros, critters, antorchas, aldeanos con
 rutinas, POIs, cordillera) · 10 regiones con bandas de nivel · atlas F11 ·
 brújula · viaje rápido · clima · audio ambiental por zona.
 
-### Fase 4 — Combate y clases (reimplementación fiel, sin rediseño)
+### Dominio 4 — Combate y clases (reimplementación fiel, sin rediseño)
 4 clases (tabla única) · stats str/agi/dex/int · maná + 8 habilidades con hotbar ·
 proyectiles · pools de FX (impactos, ráfagas, cero allocs) · game feel (hit-stop,
 telegrafía de jefes, barras de jefe estilo GoW, combo, DPS) · 7 jefes griegos +
@@ -191,7 +196,7 @@ telegrafía de jefes, barras de jefe estilo GoW, combo, DPS) · 7 jefes griegos 
 dificultad · modo hardcore · Verdugo de Titanes (6 fragmentos + poderes en hotbar)
 · Voluntad Libre.
 
-### Fase 5 — Equipo y mejora (paper doll primero)
+### Dominio 5 — Equipo y mejora (paper doll primero)
 16 slots (arma, arma izq., escudo, casco, armadura, guantes, botas, capa, alas,
 amuleto, anillos ×2, aretes ×2, collar, mascota) con restricciones por clase
 (guerrero=escudo+doble, dagero=solo doble, arquero/mago=solo escudo) · loot estilo
@@ -206,7 +211,7 @@ baja 1, +11..+15 quiebra a +0, el arma nunca se destruye) · **máquina del caos
 **reliquias de dioses caídos** (4 sets ×3, bonus 2/4) · sets de equipo (O) ·
 perfiles de equipo (Shift+H) · filtro de botín (F5) · lista de deseos.
 
-### Fase 6 — Progresión
+### Dominio 6 — Progresión
 Sistema Jobs (5 jobs por clase) + misiones de cambio + Renacimiento · prestigio/NG+
 (Ctrl+P) con Ascensión y Eco del Portador · finales secretos NG+ · **talentos**
 (Alt+E: 3 ramas × 5 nodos × 3 rangos por clase, 1 pto/nivel desde nv 10) ·
@@ -218,7 +223,7 @@ soulshots (Shift+K) · aceites (Shift+N) · bendición diaria · oráculo · des
 estilo WoW · entrenamiento (oro→XP) · reasignación de atributos (F10) · mejoras
 permanentes (Shift+D) · títulos (I) · auras cosméticas · juguetes (Shift+Y).
 
-### Fase 7 — Contenido narrativo y mundo vivo
+### Dominio 7 — Contenido narrativo y mundo vivo
 Campaña (38 misiones, F3) + capítulo II + epílogo · **misiones 2.0** (tracker WoW,
 !/?, 5 tipos, cadena "El Bastión del Alba") · diarias (U) · semanales (Shift+W) ·
 caza de tesoros (Ctrl+T) · tablón (Shift+B) · expediciones (Shift+G) ·
@@ -236,7 +241,7 @@ ruleta diaria · login diario · motd · cinemáticas salteables · tutorial de 
 modo foto (F12) + safari · sellos rúnicos (**aparcados** por Juan Diego) ·
 **ira del Verdugo** (**aparcada**: toca combate).
 
-### Fase 8 — Economía y conveniencia
+### Dominio 8 — Economía y conveniencia
 Tiendas y NPCs (diálogos, curandero, fusión, herrería) · banco (F) · mercado negro
 (Shift+N→ **reubicar**: Shift+N hoy es aceites; mercado negro pasa a **Alt+N**) ·
 caja misteriosa (Shift+X) · lápida con regreso · temporadas · comandos (F2) ·
@@ -266,6 +271,9 @@ de partida.
 9. **Verificación:** `~/workspace/tools/godot/godot --check-only` sobre todos los
    scripts tras cada tanda, antes de empaquetar. 0 fallos reales.
 10. **Evidencia por entrega:** commit + tag + release + árbol limpio + SHA-256.
+11. **La UI solo lee el StatBlock, nunca lo escribe.** Los sistemas se hablan
+    por señales con API chica; nada cuelga del código de otro sistema
+    (directriz de Juan Diego, 2026-09-21).
 
 ---
 
@@ -356,24 +364,42 @@ calientes; `visible=false` en vez de crear/destruir nodos.
 
 ---
 
-## 11. Plan de fases propuesto
+## 11. Plan de fases (orden oficial de Juan Diego, 2026-09-21)
 
-| Fase | Contenido | Entregable jugable |
+Principio: **todo cuelga de los datos, nada cuelga del código de otro sistema.**
+Si stats, fórmulas y entidades están bien diseñados, los sistemas de arriba son
+"contenido con botones". Cada fase termina con algo jugable/testeable antes de
+pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas arriba.
+
+| Fase | Contenido | Entregable |
 |---|---|---|
 | 0 | Repo + este documento + esqueleto | La escena abre sin errores |
-| 1 | Núcleo técnico | Menú/título, guardar/cargar, UI base |
-| 2 | Jugador + cámara + HUD | Caminar por un plano con cámara L2/MU |
-| 3 | Mundo | Mundo abierto con criaturas y vida |
-| 4 | Combate y clases | Pelear con las 4 clases |
-| 5 | Equipo y mejora | Lootear, equipar, ver el paper doll, encantar |
-| 6 | Progresión | Jobs, talentos, profesiones, mascotas |
-| 7 | Narrativa y mundo vivo | Campaña, misiones, arena, eventos, refugio |
-| 8 | Economía y conveniencia | Tiendas, banco, pesca, minijuegos |
+| 1 | **Datos puros**: `StatBlock` + fórmulas puras + tests headless | Tests en verde (~2 s) |
+| 2 | **Entidad base**: `Entity` con StatBlock, vida, `take_damage()`, `die()`, `gain_xp()`; jugador, creep, jefe y NPC son Entity | Un solo camino para el daño |
+| 3 | **Jugador + cámara**: el input genera *intenciones*, no ejecuta acciones; game feel antes de que haya contenido que lo distraiga | Caminar con cámara L2/MU que se siente bien |
+| 4 | **Enemigo mínimo + loot + save/load temprano**: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar/cargar |
+| 5 | **HUD**: la UI solo *lee* el StatBlock, nunca lo escribe | HUD funcional sobre datos reales |
+| 6+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
+
+Reglas de la rebuild:
+
+- Un sistema a la vez. Nunca dos sistemas grandes el mismo día.
+- Cada paso termina con algo jugable de ~5 minutos que Juan Diego puede probar.
+- **La UI solo lee el StatBlock, nunca lo escribe.** Los sistemas se hablan por
+  señales con API chica (§7.11).
+- Data-driven desde el día 1: añadir un skill, item o enemigo = tocar datos,
+  no código. Las fórmulas y tablas viven en datos con nombre, no como
+  constantes mágicas regadas.
+- Escala inicial: 1 clase, 5 skills, 10 items, 3 enemigos. El contenido es
+  barato cuando la base es sólida; carísimo cuando no.
+- NO primero: pulido de UI, contenido masivo, talentos grandes, nada
+  "tipo MMORPG".
 
 Cada fase: especificación cerrada → implementación → `--check-only` (0 fallos) →
-ZIP con versión → **playtest de Juan Diego** → siguiente fase. Un solo ZIP final
-por fase, sin pings intermedios salvo bloqueo real.
+tests headless en verde → ZIP con versión → **playtest de Juan Diego** →
+siguiente fase. Un solo ZIP final por fase, sin pings intermedios salvo
+bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.0 — Fase 0.*
+*Fin del documento maestro v1.1 — Fase 1 (datos puros).*
