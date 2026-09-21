@@ -12,6 +12,11 @@ extends Entity
 ##   clic sobre el MISMO enemigo seleccionado lo fija como objetivo de
 ##   ataque (modelo Flyff, fase 6.2; dos clics rápidos o lentos valen igual).
 ##   Lo persigue hasta el rango y pega con `Formulas.damage`.
+## - Clic izquierdo en NPC: el primer clic lo selecciona; el SEGUNDO clic
+##   sobre el MISMO NPC seleccionado lo hace hablar: si está lejos, el
+##   jugador camina hasta él y al llegar interactúa solo (fase 9.1; sin
+##   violencia: los NPCs nunca reciben daño). Si ya está cerca, el segundo
+##   clic abre el diálogo directo (igual que E).
 ##   Sin animaciones todavía: solo el número.
 ## Sin referencias a UI ni a ningún otro sistema.
 
@@ -37,16 +42,22 @@ const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
 ## Fase 5.1: el botón de atacar, sin selección útil, engancha al combatible
 ## vivo más cercano dentro de este radio (luego lo persigue hasta el rango).
 const RADIO_AUTOATAQUE: float = 8.0
+## Fase 9.1: radio de interacción con NPCs. El segundo clic en un NPC
+## seleccionado que esté más lejos camina hasta él y al llegar habla solo;
+## si ya está dentro de este radio, el segundo clic abre el diálogo directo.
+const RADIO_INTERACCION: float = 3.0
 
 ## Fase 6.2 (modelo Flyff, pedido de Juan Diego): el clic izquierdo es UN
 ## solo gesto y la intención depende de lo clicado y del estado:
 ## - Primer clic en una entidad no seleccionada → SELECCIONAR (sin atacar).
 ## - Segundo clic en la MISMA selección y es enemigo combatible vivo →
 ##   ATACAR (dos clics rápidos o lentos valen igual).
-## - Segundo clic en la misma selección no atacable (NPC) → NADA.
+## - Segundo clic en la misma selección y es NPC vivo → INTERACTUAR (fase
+##   9.1): cerca habla directo, lejos camina hasta él y habla al llegar.
+## - Segundo clic en la misma selección no atacable y no NPC → NADA.
 ## - Clic en otra entidad distinta → SELECCIONAR (ni ataca ni mueve).
 ## - Clic en suelo / nada → orden de mover (+ deselecciona).
-enum AccionClic { SELECCIONAR, ATACAR, NADA }
+enum AccionClic { SELECCIONAR, ATACAR, NADA, INTERACTUAR }
 
 ## Ruta al CameraRig en la escena (se asigna en el .tscn; sin esto el WASD
 ## usa yaw 0 y el clic no tiene cámara para proyectar).
@@ -78,6 +89,12 @@ var _cd_ataque: float = 0.0
 ## objetivo muere o deja de ser el foco (muerte/deselección/WASD).
 var _pend_skill: String = ""
 var _pend_objetivo: Entity = null
+## Fase 9.1 — interacción pendiente: segundo clic en un NPC seleccionado
+## que estaba lejos. El jugador camina hasta él y al llegar habla solo
+## (reusa el patrón de "acercarse y actuar al llegar" del lanzamiento
+## pendiente). Se cancela si el NPC muere, se deselecciona o el jugador
+## toma el control manual (WASD) u ordena otro movimiento.
+var _pend_npc: NPC = null
 
 
 func _ready() -> void:
@@ -170,6 +187,11 @@ func tiene_lanzamiento_pendiente() -> bool:
 	return _pend_skill != "" and _pend_objetivo != null
 
 
+## ¿Hay una interacción pendiente de resolverse? (tests + UI futura).
+func tiene_interaccion_pendiente() -> bool:
+	return _pend_npc != null
+
+
 ## Fase 6 — interacción contextual: con un NPC vivo seleccionado emite
 ## `hablar_con` (la demo abre la VentanaDialogo). Sin selección útil
 ## (nada, un enemigo, o un NPC muerto) no hace nada y no falla: los
@@ -195,10 +217,13 @@ func seleccionar(e: Entity) -> void:
 
 
 ## Fase 5.1 — quita la selección (clic en suelo vacío, ESC). Idempotente.
+## Fase 9.1: también cancela la interacción pendiente (caminar a un NPC).
 func deseleccionar() -> void:
 	if seleccion == null:
+		_pend_npc = null
 		return
 	seleccion = null
+	_pend_npc = null
 	seleccion_cambiada.emit(null)
 
 
@@ -320,9 +345,14 @@ func _resolver_clic_entidad(e: Entity) -> int:
 		return AccionClic.NADA
 	if e == seleccion:
 		# Segundo clic en la misma selección: ataca solo si es un enemigo
-		# combatible vivo (REGLA DURA: el NPC seleccionado no hace nada).
+		# combatible vivo (REGLA DURA: los NPCs nunca son objetivo de
+		# ataque). Fase 9.1: el segundo clic en un NPC vivo seleccionado
+		# INTERACTÚA (cerca habla directo; lejos camina hasta él).
 		if _es_objetivo_atacable(e) != null:
 			return AccionClic.ATACAR
+		var n: NPC = e as NPC
+		if n != null and n.esta_vivo():
+			return AccionClic.INTERACTUAR
 		return AccionClic.NADA
 	# Otra entidad distinta: solo seleccionar (ni atacar ni mover).
 	return AccionClic.SELECCIONAR
@@ -345,6 +375,10 @@ func _aplicar_clic(e: Entity, accion: int) -> void:
 			_tiene_destino = true
 			_destino = e.global_position
 			intencion_atacar.emit(e)
+		AccionClic.INTERACTUAR:
+			# Fase 9.1: segundo clic en el NPC seleccionado. Sin violencia:
+			# no fija objetivo de ataque ni emite intencion_atacar.
+			_acercarse_a_npc(e as NPC)
 		_:
 			pass
 
@@ -370,6 +404,7 @@ func _physics_process(delta: float) -> void:
 		deseleccionar()
 	_construir_intent()
 	_actualizar_lanzamiento_pendiente()
+	_actualizar_interaccion_pendiente()
 	_consumir_intent(delta)
 	_actualizar_ataque(delta)
 
@@ -385,6 +420,7 @@ func _construir_intent() -> void:
 		# (el jugador toma el control manual total).
 		_tiene_destino = false
 		objetivo_ataque = null
+		_pend_npc = null
 	intent.tiene_destino = _tiene_destino
 	intent.destino = _destino
 
@@ -413,6 +449,42 @@ func _actualizar_lanzamiento_pendiente() -> void:
 	else:
 		_destino = obj.global_position
 		_tiene_destino = true
+
+
+## Fase 9.1 — resuelve la interacción pendiente: si el NPC murió o dejó
+## de ser la selección (deselección, WASD, ESC, clic en suelo), se cancela;
+## si ya está dentro del radio de interacción, habla; si no, actualiza el
+## destino para seguir acercándose (mismo patrón que el lanzamiento
+## pendiente). Los NPCs nunca reciben daño: esto solo mueve y habla.
+func _actualizar_interaccion_pendiente() -> void:
+	if _pend_npc == null:
+		return
+	var n: NPC = _pend_npc
+	if not n.esta_vivo() or n != seleccion:
+		_pend_npc = null
+		return
+	if _dist_a(n) <= RADIO_INTERACCION:
+		_pend_npc = null
+		_tiene_destino = false
+		interactuar()
+	else:
+		_destino = n.global_position
+		_tiene_destino = true
+
+
+## Fase 9.1 — segundo clic en un NPC ya seleccionado: si está dentro del
+## radio de interacción habla directo (igual que E); si está lejos queda
+## una interacción pendiente y el jugador camina hasta él. Pública para
+## tests (los tests headless no tienen viewport para raycast).
+func _acercarse_a_npc(n: NPC) -> void:
+	if n == null or not n.esta_vivo():
+		return
+	if _dist_a(n) <= RADIO_INTERACCION:
+		interactuar()
+		return
+	_pend_npc = n
+	_tiene_destino = true
+	_destino = n.global_position
 
 
 ## Si hay objetivo de ataque: lo persigue hasta el rango; en rango se queda

@@ -14,6 +14,14 @@ var nombre_mostrado: String = "NPC"
 var npc_id: String = ""
 var rol: String = ""
 var lineas_dialogo: Array[String] = []
+## Fase 9.1 — "!" dorado sobre la cabeza: hay una misión disponible para
+## aceptar con este NPC (pedido de Juan Diego). La demo lo refresca con la
+## señal `cambiada` del QuestLog: al aceptar el "!" desaparece (ya no está
+## disponible); si hay otra misión disponible para ese NPC, sigue visible.
+## Solo "disponible": ni entregables ni activas muestran el marcador.
+const ALTURA_MARCADOR: float = 2.35
+const COLOR_MARCADOR: Color = Color(1.0, 0.78, 0.15)  ## Dorado.
+var _marcador: Label3D = null
 
 
 func _init(p_stats: StatBlock = null) -> void:
@@ -32,6 +40,31 @@ func configurar(datos: Dictionary) -> void:
 	for l in lineas:
 		lineas_dialogo.append(str(l))
 	_tintar(datos.get("color", [0.35, 0.55, 0.95]))
+
+
+## Muestra u oculta el "!" dorado de misión disponible. El Label3D se
+## crea perezoso (oculto al inicio —lección 11—) y flota sobre la cabeza
+## con billboard para que siempre mire a cámara. Idempotente.
+func fijar_marcador_mision(mostrar: bool) -> void:
+	if _marcador == null:
+		_marcador = Label3D.new()
+		_marcador.name = "MarcadorMision"
+		_marcador.text = "!"
+		_marcador.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_marcador.font_size = 96
+		_marcador.modulate = COLOR_MARCADOR
+		_marcador.outline_size = 12
+		_marcador.outline_modulate = Color(0.0, 0.0, 0.0, 1.0)
+		_marcador.no_depth_test = true
+		_marcador.position = Vector3(0.0, ALTURA_MARCADOR, 0.0)
+		_marcador.visible = false
+		add_child(_marcador)
+	_marcador.visible = mostrar
+
+
+## ¿El "!" de misión disponible está visible ahora? (tests + UI futura).
+func marcador_visible() -> bool:
+	return _marcador != null and _marcador.visible
 
 
 ## Color del cuerpo (material propio por instancia, igual que Enemy).

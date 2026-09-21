@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1 y 9
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9 y 9.1
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -88,6 +88,20 @@ falta el campo o es ≤ 0; varios pendientes a la vez; el reaparecido se
 auto-vigila; `vigilar` 2 veces no duplica; sin factory no revienta; la
 señal `reaparecido` se emite) y que el save no persiste timers (el JSON
 no guarda "respawn"/"pendiente"; vivos/muertos cargan como siempre).
+La fase 9.1 añade `test_fase91.gd` (45 asserts): "!" dorado sobre NPCs con
+misión disponible (`NPC.fijar_marcador_mision`: Label3D con billboard,
+dorado, sobre la cabeza, oculto al inicio e idempotente; la demo refresca
+los marcadores con `QuestLog.cambiada` —al aceptar, el "!" desaparece;
+solo "disponible" lo muestra), segundo clic en NPC (resolver →
+INTERACTUAR; cerca habla directo; lejos deja interacción pendiente con
+destino al NPC que lo sigue si se mueve; al llegar al radio de
+interacción abre el diálogo solo; deseleccionar cancela; nunca ataca ni
+emite `intencion_atacar`) y respawn en la escena demo REAL (15 mobs, 5
+por arquetipo, todos fuera del aggro inicial; matar un goblin en
+`fase9_demo.tscn` y avanzar 16 s lo reaparece cerca de su origen; la
+lista del guardado vuelve a 15). Además `test_clic.gd` (38 asserts)
+cubre el nuevo comportamiento del segundo clic en NPC (INTERACTUAR en
+vez de NADA).
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`

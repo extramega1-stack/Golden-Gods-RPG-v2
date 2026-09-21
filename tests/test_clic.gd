@@ -6,7 +6,9 @@ extends SceneTree
 ##
 ## `Player._resolver_clic_entidad` es PURA (decide sin raycast) y
 ## `Player._aplicar_clic` ejecuta la decisión; `Player._orden_mover_punto`
-## cubre la rama de suelo. Los tests headless no tienen viewport/cámara,
+## cubre la rama de suelo. Fase 9.1: el segundo clic en un NPC ya
+## seleccionado INTERACTÚA (cerca habla directo, lejos camina hasta él y
+## habla al llegar). Los tests headless no tienen viewport/cámara,
 ## así que el rayo real (`_clic_izquierdo`) solo se prueba en su rama "nada"
 ## (sin cámara no hay rayo → deselecciona).
 ##
@@ -27,6 +29,7 @@ var _basura: Array = []
 
 var _atacados: int = 0
 var _atacado_ultimo: Entity = null
+var _hablados: int = 0
 
 
 func _init() -> void:
@@ -45,7 +48,7 @@ func _process(_delta: float) -> bool:
 	_t_primer_clic_selecciona()
 	_t_segundo_clic_ataca()
 	_t_clic_otro_mob_cambia_seleccion()
-	_t_segundo_clic_npc_no_hace_nada()
+	_t_segundo_clic_npc_interactua()
 	_t_resolver_pura_no_muta()
 	_t_clic_suelo_mueve_y_deselecciona()
 	_t_clic_nada_deselecciona()
@@ -73,6 +76,10 @@ func _check(cond: bool, nombre: String, detalle: String = "") -> void:
 func _al_intencion(e: Entity) -> void:
 	_atacados += 1
 	_atacado_ultimo = e
+
+
+func _al_hablar(_n: NPC) -> void:
+	_hablados += 1
 
 
 func _enemigo(pos: Vector3) -> Enemy:
@@ -163,20 +170,25 @@ func _t_clic_otro_mob_cambia_seleccion() -> void:
 
 ## Segundo clic en el NPC seleccionado: no hace nada (ni atacar ni mover);
 ## la selección se mantiene (REGLA DURA intacta en el modelo nuevo).
-func _t_segundo_clic_npc_no_hace_nada() -> void:
+func _t_segundo_clic_npc_interactua() -> void:
 	var p: Player = _player(Vector3(300, 0, 300))
 	var n: NPC = _npc(Vector3(302, 0, 300))
 	p.intencion_atacar.connect(_al_intencion)
+	p.hablar_con.connect(_al_hablar)
+	_hablados = 0
 	_atacados = 0
 	# Primer clic en NPC: SÍ se selecciona (los NPCs son seleccionables).
 	var a1: int = p._resolver_clic_entidad(n)
 	_check(a1 == PL.AccionClic.SELECCIONAR, "primer clic en NPC → SELECCIONAR", "")
 	p._aplicar_clic(n, a1)
 	_check(p.seleccion == n, "el NPC se selecciona con el primer clic", "")
-	# Segundo clic en el mismo NPC: NADA.
+	# Segundo clic en el mismo NPC: INTERACTUAR (fase 9.1). Aquí está
+	# cerca (dist 2 < RADIO_INTERACCION 3) → habla directo, sin moverse.
 	var a2: int = p._resolver_clic_entidad(n)
-	_check(a2 == PL.AccionClic.NADA, "segundo clic en NPC → NADA", "accion=%d" % a2)
+	_check(a2 == PL.AccionClic.INTERACTUAR, "segundo clic en NPC → INTERACTUAR", "accion=%d" % a2)
 	p._aplicar_clic(n, a2)
+	_check(_hablados == 1, "segundo clic en NPC cercano abre el diálogo", "hablados=%d" % _hablados)
+	_check(not p.tiene_interaccion_pendiente(), "NPC cercano: sin interacción pendiente", "")
 	_check(p.seleccion == n, "la selección del NPC se mantiene", "")
 	_check(p.objetivo_ataque == null, "segundo clic en NPC NO ataca", "")
 	_check(p.intent.quiere_atacar == false, "segundo clic en NPC NO marca quiere_atacar", "")

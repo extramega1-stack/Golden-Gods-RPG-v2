@@ -104,33 +104,65 @@ margin = 0.3
 current = true
 fov = 65.0
 
-[node name="Goblin" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(6, 0, -6)
+[node name="Goblin1" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(20, 0, -10)
 arquetipo_id = "goblin"
 
-[node name="Lobo" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(-8, 0, 4)
-arquetipo_id = "lobo"
-
-[node name="Ogro" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(0, 0, -14)
-arquetipo_id = "ogro"
-
 [node name="Goblin2" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(10, 0, -2)
+position = Vector3(24, 0, -6)
 arquetipo_id = "goblin"
 
 [node name="Goblin3" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(-10, 0, -4)
+position = Vector3(22, 0, -14)
 arquetipo_id = "goblin"
 
 [node name="Goblin4" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(6, 0, 8)
+position = Vector3(18, 0, -14)
 arquetipo_id = "goblin"
 
 [node name="Goblin5" parent="." instance=ExtResource("5_enemigo")]
-position = Vector3(-6, 0, 10)
+position = Vector3(26, 0, -10)
 arquetipo_id = "goblin"
+
+[node name="Lobo1" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-22, 0, 12)
+arquetipo_id = "lobo"
+
+[node name="Lobo2" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-26, 0, 8)
+arquetipo_id = "lobo"
+
+[node name="Lobo3" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-24, 0, 16)
+arquetipo_id = "lobo"
+
+[node name="Lobo4" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-28, 0, 12)
+arquetipo_id = "lobo"
+
+[node name="Lobo5" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-20, 0, 16)
+arquetipo_id = "lobo"
+
+[node name="Ogro1" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(8, 0, 24)
+arquetipo_id = "ogro"
+
+[node name="Ogro2" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(12, 0, 22)
+arquetipo_id = "ogro"
+
+[node name="Ogro3" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(4, 0, 26)
+arquetipo_id = "ogro"
+
+[node name="Ogro4" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(0, 0, 28)
+arquetipo_id = "ogro"
+
+[node name="Ogro5" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-4, 0, 24)
+arquetipo_id = "ogro"
 
 [node name="IndicadorSeleccion" type="Node3D" parent="."]
 script = ExtResource("10_indicador")

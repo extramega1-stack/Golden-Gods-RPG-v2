@@ -9,6 +9,11 @@ extends Node3D
 ##   variación aleatoria. El jugador puede matar 5 goblins para la misión
 ##   aunque los mate a todos: respawnean.
 ## Es scaffolding de demo, no un sistema del juego.
+##
+## Fase 9.1: "!" dorado sobre los NPCs con misión disponible para aceptar
+## (pedido de Juan Diego); 5 mobs por arquetipo (15 en total) colocados
+## fuera del aggro inicial del jugador; el segundo clic en un NPC
+## seleccionado lejano camina hasta él y al llegar abre el diálogo.
 
 const ENEMIES_JSON: String = "res://data/enemies.json"
 const ENEMIGO_ESCENA: String = "res://scenes/enemy/enemigo.tscn"
@@ -38,11 +43,13 @@ var _lista_enemigos: Array = []
 var _spawner: SpawnerMobs = null
 ## Fase 9: último enemigo muerto (para reemplazarlo al reaparecer).
 var _ultimo_muerto: Enemy = null
+## Fase 9.1: NPCs en escena (para refrescar los "!" de misión disponible).
+var _lista_npcs: Array = []
 
 
 func _ready() -> void:
 	_cargar_datos()
-	for n in get_tree().get_nodes_in_group("enemigos"):
+	for n in _mis_enemigos():
 		var e: Enemy = n as Enemy
 		if e == null:
 			continue
@@ -55,6 +62,9 @@ func _ready() -> void:
 		e.murio.connect(_al_morir_enemigo.bind(e))
 		_lista_enemigos.append(e)
 	var lista_npcs: Array = _crear_npcs()
+	# Fase 9.1: la demo refresca los "!" dorados de misión disponible cada
+	# vez que cambia el QuestLog (aceptar/entregar), y una vez al arrancar.
+	_lista_npcs = lista_npcs
 	# Fase 9: el spawner vigila a los enemigos y los reaparece al morir.
 	_spawner = SpawnerMobs.new()
 	_spawner.name = "SpawnerMobs"
@@ -70,6 +80,8 @@ func _ready() -> void:
 	# Fase 8: hablar abre el diálogo Y registra el diálogo en las misiones
 	# (objetivos "hablar") y refresca el botón de misión.
 	_misiones = QuestLog.new()
+	_misiones.cambiada.connect(_refrescar_marcadores_mision)
+	_refrescar_marcadores_mision()
 	_jugador.hablar_con.connect(_al_hablar_con)
 	_dialogo.mision_solicitada.connect(_al_mision_dialogo)
 	_panel_misiones.conectar(_jugador, _misiones)
@@ -116,6 +128,48 @@ func _unhandled_input(event: InputEvent) -> void:
 			_hud.refrescar()
 			print("[Fase9] partida cargada")
 			get_viewport().set_input_as_handled()
+
+
+## Fase 9.1 — "!" dorado sobre los NPCs con misión disponible para
+## aceptar (pedido de Juan Diego). Se refresca con la señal `cambiada` del
+## QuestLog: al aceptar la misión el "!" desaparece (ya no está disponible);
+## si hay otra misión disponible para ese NPC, sigue visible. SOLO
+## "disponible": ni entregables ni activas muestran el marcador.
+func _refrescar_marcadores_mision() -> void:
+	for n in _lista_npcs:
+		var npc: NPC = n as NPC
+		if npc == null:
+			continue
+		npc.fijar_marcador_mision(_npc_tiene_mision_disponible(npc.npc_id))
+
+
+## ¿Alguna misión de este NPC sigue "disponible" para aceptar?
+func _npc_tiene_mision_disponible(npc_id: String) -> bool:
+	if _misiones == null:
+		return false
+	for qid in QuestDB.ids():
+		var q: Dictionary = QuestDB.obtener(qid)
+		if str(q.get("npc_origen", "")) != npc_id:
+			continue
+		if _misiones.estado(qid) == "disponible":
+			return true
+	return false
+
+
+## Enemigos que cuelgan de esta demo. El grupo "enemigos" es global del
+## árbol: si hubiera otra escena con enemigos en el mismo árbol (tests
+## con dos demos instanciadas), no son los nuestros. El spawner también
+## emparenta los reaparecidos aquí, así que el alcance sigue siendo este.
+func _mis_enemigos() -> Array:
+	var res: Array = []
+	var pila: Array = [self]
+	while not pila.is_empty():
+		var actual: Node = pila.pop_back()
+		for h in actual.get_children():
+			if h is Enemy:
+				res.append(h)
+			pila.append(h)
+	return res
 
 
 ## Fase 9: factory que el SpawnerMobs usa para reinstanciar enemigos.

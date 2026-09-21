@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 2.3 — Fase 9 (2026-09-21)
+**Versión del documento:** 2.4 — Fase 9.1 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -53,6 +53,46 @@ desechable; el diseño no.
   misión aunque los mate a todos (respawnean). F9 guarda / F10 carga.
 - `tests/test_detalle_mision.gd` (42 asserts) + `tests/test_respawn.gd`
   (34 asserts); regresión total 708 en verde.
+
+**Fase 9.1 terminada — "!" de misión, segundo clic en NPC lejano y demo con 15 mobs:**
+- **"!" dorado sobre NPCs con misión disponible** (pedido literal de Juan Diego):
+  `NPC.fijar_marcador_mision(mostrar)` crea perezoso un `Label3D` ("!",
+  billboard activado, dorado, flotando sobre la cabeza, oculto al inicio —
+  lección 11); `NPC.marcador_visible()` para tests. La demo se suscribe a
+  la señal `cambiada` del QuestLog y refresca los marcadores: al aceptar la
+  misión el "!" desaparece (ya no está disponible); si hay otra misión
+  disponible para ese NPC, sigue visible. **Solo** "misión disponible para
+  aceptar": ni entregables ni activas muestran el marcador.
+- **Segundo clic en NPC lejano = ir e interactuar** (como el ataque a mobs,
+  sin violencia): el resolver `_resolver_clic_entidad` devuelve la nueva
+  acción `AccionClic.INTERACTUAR` (el enum era SELECCIONAR/ATACAR/NADA);
+  `_aplicar_clic` la ejecuta vía `_acercarse_a_npc`: si el NPC está dentro
+  de `Player.RADIO_INTERACCION` (**3.0**, constante con nombre) habla
+  directo (igual que E); si está lejos queda una interacción pendiente y
+  el jugador camina hasta él —reusa el patrón "acercarse y actuar al
+  llegar" del lanzamiento pendiente de skills— y al llegar emite
+  `hablar_con` solo. Se cancela si el NPC muere, se deselecciona, el
+  jugador toma el control manual (WASD) u ordena otro movimiento. Los NPCs
+  nunca reciben daño: no se toca el combate (sin objetivo de ataque, sin
+  `intencion_atacar`).
+- **Spawner verificado en la demo real:** el reporte de "spawner nunca
+  instanciado" era un falso positivo del grep (buscó el path del archivo;
+  `fase9_demo.gd` instancia `SpawnerMobs` por su `class_name`, configura
+  arquetipos, inyecta la factory `_crear_enemigo` y vigila cada enemigo).
+  El repro headless (matar un goblin en `fase9_demo.tscn`, avanzar 16 s >
+  `respawn_seg` 15 s) reaparece el mob: guardado como test de regresión en
+  `tests/test_fase91.gd`. Además la demo ahora junta **sus propios**
+  enemigos (`_mis_enemigos()`, descendientes del nodo demo) en vez del
+  grupo global "enemigos" — con dos demos en el mismo árbol ya no se
+  mezclan.
+- **Demo con 15 mobs más lejos:** 5 goblins + 5 lobos + 5 ogros en
+  `fase9_demo.tscn`, todos a ≥ 22 m del punto de aparición del jugador
+  (fuera del aggro inicial: máx `radio_aggro` = 14 del lobo; la variación
+  de respawn ±2 m no los mete en aggro). Los 15 quedan vigilados por el
+  spawner (respawn incluido).
+- `tests/test_fase91.gd` (45 asserts) + `test_clic.gd` actualizado a 38
+  (el segundo clic en NPC ahora es INTERACTUAR); regresión total **755**
+  en verde.
 
 **Fase 8.1 terminada — Hotfix layout responsivo del diálogo** (bug de
 - **`data/quests.json`** + `QuestDB` (mismo patrón que NpcDB/TiendaDB): 3
@@ -258,7 +298,7 @@ La reimplementación sigue en la Fase 9+ (§11).
 | Clic izquierdo (suelo / nada) | Mover al punto (suelo) / deseleccionar |
 | Clic izquierdo (entidad) | Primer clic: seleccionar (mob o NPC; sin atacar ni mover) · clic en otra entidad: cambia la selección |
 | Segundo clic en el MISMO enemigo seleccionado | Atacar (modelo Flyff, fase 6.2; rápido o lento vale igual) |
-| Segundo clic en el mismo NPC seleccionado | Nada (la selección se mantiene) |
+| Segundo clic en el mismo NPC seleccionado | Habla: si está cerca abre el diálogo directo; si está lejos el jugador camina hasta él y al llegar interactúa solo (fase 9.1; sin violencia) |
 | Botón derecho (mantener) | Cámara: giro infinito (captura inmediata al presionar) |
 | Botón central (mantener) | Cámara: drag alternativo con amortiguamiento |
 | Rueda | Zoom (máximo 650, decisión de Juan Diego) |
@@ -555,6 +595,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 8 | **Misiones** ✅: `data/quests.json` + `QuestDB` (data-driven, mismo patrón que NpcDB/TiendaDB; 3 misiones del canon Liberty: Goblins fuera / Colmillos para la forja / Un mensaje urgente) · `QuestLog` (RefCounted, lógica pura SIN UI: estados disponible→activa→lista→entregada, señal `cambiada`; aceptar con códigos, registrar_muerte, sincronizar_recoleccion idempotente, registrar_dialogo, oferta_para_npc, entregar —consume lo recolectado y da oro/XP/items por las APIs del Player—, progreso_texto, to_dict/from_dict versionados) · botón de misión en la `VentanaDialogo` (`mostrar_mision`; la señal `mision_solicitada` no cierra el diálogo; sin oferta no hay botón —fase 6/7 intactas) · `PanelMisiones` (capa 27; arranca oculto; J alterna con la acción `abrir_misiones`, ESC cierra; en curso con progreso "x/y" y "¡Lista para entregar!", completadas aparte; toast integrado 2.5 s) · **save v5** tolerante (bloque `"misiones"` restaurado en sitio; las v4 cargan con QuestLog vacío) | Loop jugable: hablar con Ilya → aceptar → matar 5 goblins → entregar (+150 oro, +120 XP) · llevar colmillos a Bram → espada de hierro · mensaje de Sira a Ilya · panel J con progreso en vivo · guardar (F9) / cargar (F10) con misiones restauradas |
 | 8.1 | **Hotfix layout responsivo del diálogo** ✅: `VentanaDialogo` anclado abajo-centro con `grow_vertical = GROW_DIRECTION_BEGIN` (el panel crece hacia arriba) + borde inferior en `-(ZONA_INFERIOR_RESERVADA + 16) = -116` px (por encima de la barra de skills); `UiLayers.ZONA_INFERIOR_RESERVADA = 100` compartida con `barra_skills.gd`; se eliminó el hack `panel.position -= Vector2(260, 220)` · `tests/test_ui_layout.gd` (36 asserts: panel dentro del viewport, sin solapar la barra, capas 81 > 12, HUD dentro del viewport, en 3440×1440 y 1920×1080) | Bug de Juan Diego en 21:9: el panel se cortaba por abajo y la barra tapaba el texto — ahora el diálogo completo se ve en 16:9 y 21:9 |
 | 9 | **Detalle de misión + respawn de mobs** ✅: campo `lore` (canon Liberty) en `data/quests.json` + `QuestDB.lore()`; en `PanelMisiones` (J) cada misión en curso es un botón que abre la sub-ventana `VentanaDetalleMision` (capa 28: nombre, lore con autowrap, objetivos "x/y", recompensas oro/XP/items; arranca oculta, cierra con ESC/clic fuera/"Cerrar"; UI solo lee) · `respawn_seg` por arquetipo en `data/enemies.json` (goblin 15 s, lobo 20 s, ogro 30 s; default 20 s) + `SpawnerMobs` (`vigilar`/`avanzar(dt)` testeable/`reaparecido`; factory inyectada; respawn runtime —el timer no se guarda; NPCs no respawnean) | Loop jugable: pulsar una misión en J → leer su lore y progreso → matar 5 goblins (respawnean si los matas a todos) → entregar · guardar (F9) / cargar (F10) sin timers persistidos |
+| 9.1 | **"!" de misión + segundo clic en NPC + demo con 15 mobs** ✅: `Label3D` dorado con billboard sobre NPCs con misión **disponible** (se refresca con `QuestLog.cambiada`; al aceptar desaparece) · segundo clic en NPC seleccionado lejano → `AccionClic.INTERACTUAR`: camina hasta él (`Player.RADIO_INTERACCION` = 3.0, patrón "acercarse y actuar al llegar") y al llegar abre el diálogo solo; cerca habla directo; cancelable (muerte/deselección/WASD); sin violencia · spawner verificado en la demo real (el reporte de "no instanciado" era falso positivo del grep) + la demo junta sus propios enemigos (`_mis_enemigos()`) · 15 mobs (5 por arquetipo) a ≥ 22 m del spawn, fuera del aggro inicial | Loop jugable: ver "!" sobre Ilya/Bram/Sira → aceptar (el "!" se apaga) · segundo clic en NPC lejano → el héroe camina y habla solo · matar mobs que respawnean |
 | 9+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -596,4 +637,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.3 — Fase 9 (detalle de misión con lores del canon Liberty + respawn data-driven de mobs; 708 tests en verde).*
+*Fin del documento maestro v2.4 — Fase 9.1 ("!" dorado de misión disponible, segundo clic en NPC lejano = caminar y hablar al llegar, demo con 15 mobs fuera del aggro inicial, spawner verificado en la demo real; 755 tests en verde).*
