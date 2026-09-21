@@ -15,6 +15,9 @@ extends CanvasLayer
 ## el ESC en _input antes de que el Player lo vea como deselección).
 
 signal dialogo_cerrado
+## Fase 7: el jugador pulsó "Comerciar" con un NPC vendedor (la demo abre
+## el PanelTienda; el diálogo se cierra solo).
+signal comerciar_solicitado(npc: NPC)
 
 var _npc: NPC = null
 var _lineas: Array[String] = []
@@ -24,6 +27,9 @@ var _titulo: Label = null
 var _rol: Label = null
 var _texto: Label = null
 var _boton: Button = null
+## Fase 7: solo visible si el NPC actual tiene tienda
+## (TiendaDB.tienda_de_npc != ""); sin tienda no hay botón ni flujo.
+var _boton_comerciar: Button = null
 
 
 func _ready() -> void:
@@ -96,6 +102,15 @@ func _construir() -> void:
 	_boton.pressed.connect(avanzar)
 	fila.add_child(_boton)
 
+	# Fase 7: "Comerciar" solo si el NPC vende (se muestra en mostrar()).
+	_boton_comerciar = Button.new()
+	_boton_comerciar.text = "Comerciar"
+	_boton_comerciar.focus_mode = Control.FOCUS_NONE
+	_boton_comerciar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton_comerciar.pressed.connect(_al_comerciar)
+	fila.add_child(_boton_comerciar)
+	_boton_comerciar.visible = false
+
 
 ## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
 func mostrar(npc: NPC) -> void:
@@ -106,6 +121,8 @@ func mostrar(npc: NPC) -> void:
 	_indice = 0
 	if _lineas.is_empty():
 		_lineas.append("…")
+	# Fase 7: botón "Comerciar" solo para NPCs vendedores.
+	_boton_comerciar.visible = TiendaDB.tienda_de_npc(npc.npc_id) != ""
 	_pintar()
 	visible = true
 
@@ -160,6 +177,22 @@ func titulo_texto() -> String:
 ## Texto que muestra el rol; solo lectura (tests).
 func rol_texto() -> String:
 	return _rol.text
+
+
+## Fase 7: true si el botón "Comerciar" está visible (el NPC actual vende).
+## Sin tienda no hay botón: el comportamiento de la fase 6 queda intacto.
+func tiene_comerciar() -> bool:
+	return _boton_comerciar != null and _boton_comerciar.visible
+
+
+## Fase 7: pulsar "Comerciar" emite la señal y cierra el diálogo (la demo
+## abre el PanelTienda con ese NPC).
+func _al_comerciar() -> void:
+	if not esta_abierta() or _npc == null:
+		return
+	var n: NPC = _npc
+	comerciar_solicitado.emit(n)
+	cerrar()
 
 
 func _pintar() -> void:

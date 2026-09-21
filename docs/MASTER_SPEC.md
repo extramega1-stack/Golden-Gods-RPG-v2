@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.9 — Fase 6.2 (2026-09-21)
+**Versión del documento:** 2.0 — Fase 7 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,10 +15,32 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 6.2 terminada — hotfix por pedido de Juan Diego: modelo
-de clic estilo Flyff (un solo handler `_clic_izquierdo`; primer clic
-selecciona, segundo clic sobre el mismo enemigo seleccionado ataca;
-se elimina la rama `double_click` del motor).
+**Estado:** Fase 7 terminada — Tienda / economía básica:
+- **Tienda data-driven** (`data/tiendas.json` + `TiendaDB`, mismo patrón
+  que NpcDB/ItemDB): 2 tiendas — Forja de Bram (armas/armaduras) y Botica
+  de Sira (pociones/materiales; **nueva NPC** Alquimista Sira en
+  `data/npcs.json`, diálogo coherente con el canon Liberty). Los NPCs
+  vendedores declaran `"tienda_id"` (null/ausente = no vende).
+- **Lógica pura** `Tienda` (RefCounted, SIN UI): `comprar()`
+  ("ok"/"sin_oro"/"sin_stock"/"sin_espacio" —el oro se revierte si el
+  inventario no recibe—/"tienda_desconocida"/"item_desconocido") y
+  `vender()` ("ok"/"sin_stock"/"item_desconocido"/**"equipado"** —
+  rechaza vender lo equipado en algún slot del Equipo—); señal `cambiada`.
+  Stock **finito**: comprar lo agota. Precios data-driven: `precio_compra`
+  explícito por tienda/item; `precio_venta` explícito, y si falta el
+  default es `precio_compra / 2` entero.
+- **UI solo lee** (`PanelTienda`, capa 82; arranca oculto —lección 11—):
+  stock del vendedor (Comprar), mochila (Vender; los equipados muestran
+  "equipado" sin botón), oro actual (refrescado con `oro_cambiado`); ESC
+  cierra consumido antes que el Player. La `VentanaDialogo` muestra
+  "Comerciar" solo con NPC vendedor (señal `comerciar_solicitado`; cierra
+  el diálogo; sin tienda el comportamiento de fase 6 queda intacto).
+  `Player.gastar_oro()` (única vía para restar oro; false sin tocar nada).
+- **Guardado v4**: bloque `"tiendas"` (stock restante); tolerante (las
+  partidas v3 sin tiendas cargan con stock completo).
+- Escena demo `scenes/demo/fase7_demo.tscn` (principal del proyecto): el
+  jugador arranca con 200 de oro; F9 guarda / F10 carga con la tienda.
+Fase 6.2: modelo de clic estilo Flyff (pedido de Juan Diego).
 Fase 6.1: botón de atacar retirado del HUD (la acción `atacar` por T o
 segundo clic sigue igual).
 Fase 6: NPCs e interacción básica:
@@ -68,7 +90,7 @@ Fase 6: NPCs e interacción básica:
   tolerante (las partidas v2 sin NPCs cargan igual). **REGLA DURA intacta:**
   los NPCs siguen no atacables (solo hablar y seleccionar).
 - Escena demo `scenes/demo/fase6_demo.tscn` (principal del proyecto).
-La reimplementación sigue en la Fase 7 (§11).
+La reimplementación sigue en la Fase 8 (§11).
 
 ---
 
@@ -433,7 +455,8 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 5.1 | **Pulido de selección y combate** ✅: indicador de selección 3D (clic simple selecciona mob/NPC; suelo vacío o ESC deselecciona) · flash rojo al recibir daño (estado en `Entity` + `DamageFlash`) · botón de atacar arrastrable con tecla reasignable (acción `atacar`, defecto T; persiste en `user://`) · skills dañinas con acercamiento automático (lanzamiento pendiente, cancelable) · **REGLA DURA: NPCs no atacables** (`combatible = false`; `data/npcs.json`) | Loop jugable: seleccionar → atacar con botón/tecla → skills que se acercan solas → NPCs que se seleccionan pero no se pueden dañar |
 | 6 | **NPCs e interacción básica** ✅: NPCs data-driven completos (`NpcDB` + `nombre`/`rol`/`dialogo` en `data/npcs.json`) · E abre la VentanaDialogo con el NPC seleccionado (nombre, rol, líneas; E/clic/Continuar avanza, Cerrar/ESC cierra; UI solo lee) · save v3 tolerante con NPCs (id + posición) | Loop jugable: seleccionar NPC → hablar con E → guardar (F9) / cargar (F10) con NPCs restaurados |
 | 6.2 | **Hotfix modelo de clic Flyff** ✅: un solo handler `_clic_izquierdo` (se elimina la rama `double_click` del motor) — primer clic selecciona mob/NPC (sin atacar ni mover), segundo clic sobre el mismo enemigo combatible ataca (rápido o lento valen igual), clic en otro mob cambia la selección sin atacar, segundo clic en NPC no hace nada, suelo/nada mueve y deselecciona · decisión pura `_resolver_clic_entidad` (enum `AccionClic`) testeable sin cámara + `_aplicar_clic` + `_orden_mover_punto` · `tests/test_clic.gd` (36 asserts) | Loop jugable: clic → seleccionar → segundo clic → atacar (como Flyff) |
-| 7+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
+| 7 | **Tienda / economía básica** ✅: `data/tiendas.json` + `TiendaDB` (data-driven, mismo patrón que NpcDB/ItemDB; NPCs vendedores con `"tienda_id"` en `data/npcs.json`; nuevo NPC Alquimista Sira, diálogo coherente con el canon Liberty) · `Tienda` (RefCounted, lógica pura SIN UI: `comprar`/`vender` con códigos de resultado, stock finito que se agota, `gastar_oro` como única vía para restar oro; vender rechaza lo equipado con "equipado"; precios data-driven —`precio_compra` explícito, `precio_venta` explícito o default `precio_compra/2`—) · `PanelTienda` (capa 82; arranca oculto, UI solo lee, stock/mochila/oro, ESC cierra) · "Comerciar" en la `VentanaDialogo` solo con NPC vendedor (señal `comerciar_solicitado`) · **save v4** tolerante (bloque `"tiendas"`; las v3 cargan con stock completo) | Loop jugable: hablar con Bram/Sira → comerciar → comprar/vender con oro → agotar stock → guardar (F9) / cargar (F10) con stock restaurado |
+| 8+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
 
@@ -474,4 +497,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.9 — Fase 6.2 (modelo de clic estilo Flyff: primer clic selecciona, segundo clic en el mismo enemigo ataca; sin rama `double_click`).*
+*Fin del documento maestro v2.0 — Fase 7 (Tienda / economía básica: tiendas data-driven, lógica pura sin UI, precios explícitos o compra/2, stock finito persistido en save v4; UI solo lee).*

@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6 y 6.2
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2 y 7
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -40,6 +40,19 @@ sobre el mismo enemigo ataca (`objetivo_ataque`, `intent`, señal
 segundo clic en NPC no hace nada (selección intacta), clic en suelo
 deselecciona y ordena mover, y `_resolver_clic_entidad` es pura (decide
 sin mutar). Todo sin abrir el juego.
+La fase 7 añade `test_tienda.gd` (81 asserts): `TiendaDB` carga las 2
+tiendas desde `data/tiendas.json` (nombres, stock, precios;
+`tienda_de_npc` por npc), `Tienda.comprar` ("ok"/"sin_oro"/"sin_stock"/
+"sin_espacio" con el oro revertido; el stock finito se agota),
+`Tienda.vender` ("ok" con `precio_venta` de datos —stack de consumibles
+descuenta bien—, "equipado" si está en algún slot del Equipo,
+"sin_stock"), round-trip `to_dict`/`from_dict` (stock persistido;
+tolerante a tiendas/items desconocidos), save v4 con tienda (stock
+restaurado al cargar; las partidas v3 sin bloque "tiendas" cargan con
+stock completo), `PanelTienda` (arranca oculto; `mostrar()` con NPC sin
+tienda no revienta ni abre; ESC cierra) y `VentanaDialogo` (flujo
+"Comerciar": la señal `comerciar_solicitado` solo con NPC vendedor; sin
+tienda no hay botón —fase 6 intacta).
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -58,9 +71,13 @@ sin mutar). Todo sin abrir el juego.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_seleccion.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_npcs.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_clic.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_tienda.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
+
+# Smoke test de la escena demo de la fase 7 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase7_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.

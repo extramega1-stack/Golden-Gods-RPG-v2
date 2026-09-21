@@ -513,3 +513,16 @@ func ejecutar_ataque() -> void:
 func ganar_oro(cantidad: int) -> void:
 	oro = maxi(0, oro + cantidad)
 	oro_cambiado.emit(oro)
+
+
+## Descuenta oro (lo usa la tienda, fase 7). Retorna false SIN TOCAR NADA
+## si no alcanza (o si la cantidad es negativa); true descuenta y emite
+## `oro_cambiado`. Es la única vía para restar oro; `ganar_oro` no cambia.
+func gastar_oro(cantidad: int) -> bool:
+	if cantidad < 0:
+		return false
+	if oro < cantidad:
+		return false
+	oro -= cantidad
+	oro_cambiado.emit(oro)
+	return true

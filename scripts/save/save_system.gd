@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 3
+const SAVE_VERSION: int = 4
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -18,6 +18,9 @@ var enemigos: Array = []
 ## Fase 6: NPCs en escena (id + posición; los NPCs no mueren, así que no se
 ## guarda vida: el estado básico es su posición).
 var npcs: Array = []
+## Fase 7: tienda viva (stock restante). Sin asignar, el bloque "tiendas"
+## se guarda vacío y la carga avisa sin reventar.
+var tienda: Tienda = null
 
 
 func hay_partida() -> bool:
@@ -39,6 +42,7 @@ func guardar() -> bool:
 		},
 		"enemigos": _enemigos_a_datos(),
 		"npcs": _npcs_a_datos(),
+		"tiendas": tienda.to_dict() if tienda != null else {"version": Tienda.SAVE_VERSION, "tiendas": {}},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -67,6 +71,7 @@ func cargar() -> bool:
 	_cargar_jugador(datos.get("jugador", {}))
 	_cargar_enemigos(datos.get("enemigos", []))
 	_cargar_npcs(datos.get("npcs", []))
+	_cargar_tiendas(datos.get("tiendas", {}))
 	return true
 
 
@@ -152,6 +157,16 @@ func _cargar_enemigos(lista: Array) -> void:
 			en.mostrar_cuerpo()
 		else:
 			en.ocultar_cuerpo()
+
+
+## Fase 7 — Tiendas: se guarda el stock restante por tienda/item.
+## Tolerante: las partidas v3 (sin bloque "tiendas") cargan con el stock
+## completo desde los datos (cargar_estado restablece primero).
+func _cargar_tiendas(bloque: Dictionary) -> void:
+	if tienda == null:
+		push_warning("[SaveSystem] sin tienda asignada; el stock queda sin cargar")
+		return
+	tienda.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que
