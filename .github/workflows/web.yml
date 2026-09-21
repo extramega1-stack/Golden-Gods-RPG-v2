@@ -1,0 +1,84 @@
+name: Publicar versión web
+
+# Compila la demo con Godot 4.7.2 (renderer Compatibility + hilos
+# desactivados) y la publica en el repo público
+# extramega1-stack/Golden-Gods-RPG-v2-web (rama gh-pages, GitHub Pages).
+#
+# Se lanza solo desde la pestaña Actions ("Run workflow") y con cada push
+# a main. El despliegue necesita el secret WEB_DEPLOY_TOKEN (un PAT con
+# acceso de escritura a Golden-Gods-RPG-v2-web); sin él, la exportación
+# se verifica igual y el despliegue se omite con un aviso.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: web-export
+  cancel-in-progress: true
+
+jobs:
+  export-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Código del juego
+        uses: actions/checkout@v4
+
+      - name: Descargar Godot 4.7.2 + plantillas
+        run: |
+          set -euo pipefail
+          curl -fSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q godot.zip && rm godot.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+          TPL_DIR=~/.local/share/godot/export_templates/4.7.2.stable
+          mkdir -p "$TPL_DIR"
+          curl -fSL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          unzip -q templates.tpz -d "$TPL_DIR" && rm templates.tpz
+          # El tpz a veces trae subcarpeta: buscar las plantillas donde estén
+          FOUND=$(find "$TPL_DIR" -name "web_nothreads_release.zip" 2>/dev/null | head -1 || true)
+          if [ -z "$FOUND" ]; then
+            echo "SIN web_nothreads_release.zip EN EL TPZ. Contenido:"
+            find "$TPL_DIR" -maxdepth 2 | head -30
+            exit 1
+          fi
+          SRC_DIR=$(dirname "$FOUND")
+          if [ "$SRC_DIR" != "$TPL_DIR" ]; then cp "$SRC_DIR"/web_*.zip "$TPL_DIR"/; fi
+          test -f "$TPL_DIR/web_nothreads_release.zip"
+          ./Godot_v4.7.2-stable_linux.x86_64 --version
+
+      - name: Importar proyecto
+        run: ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
+
+      - name: Exportar web
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path . --export-release "Web" build/web/index.html
+          du -sh build/web
+          ls build/web
+
+      - name: Aviso si falta el secret de despliegue
+        if: secrets.WEB_DEPLOY_TOKEN == ''
+        run: |
+          echo "::warning::Falta el secret WEB_DEPLOY_TOKEN en el repo: la exportación quedó verificada pero NO se desplegó. Agrégalo en Settings > Secrets and variables > Actions y re-ejecuta el workflow."
+
+      - name: Desplegar a GitHub Pages
+        if: secrets.WEB_DEPLOY_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd build/web
+          touch .nojekyll
+          git init -b gh-pages
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -qm "build web $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git remote add web "https://x-access-token:${WEB_DEPLOY_TOKEN}@github.com/extramega1-stack/Golden-Gods-RPG-v2-web.git"
+          git push -f web gh-pages
+          # Activar Pages si aún no lo está (idempotente)
+          gh api repos/extramega1-stack/Golden-Gods-RPG-v2-web/pages --jq .html_url 2>/dev/null \
+            || gh api -X POST repos/extramega1-stack/Golden-Gods-RPG-v2-web/pages \
+                 -f 'source[branch]=gh-pages' -f 'source[path]=/' --jq .html_url
