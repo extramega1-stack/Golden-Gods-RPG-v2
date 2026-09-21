@@ -1,8 +1,11 @@
-# Tests headless — Fases 1 y 2
+# Tests headless — Fases 1, 2 y 3
 
-`test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`) y
+`test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
-maná y round-trip de guardado. Todo sin abrir el juego.
+maná y round-trip de guardado. `test_player.gd` verifica la fase 3
+(`Intent` como datos + la matemática pura de `Movimiento`: dirección
+relativa a cámara, llegada suave, suavizado y orientación). Todo sin
+abrir el juego.
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -12,6 +15,10 @@ maná y round-trip de guardado. Todo sin abrir el juego.
 # Los tests (~2 segundos cada uno). Exit code 0 = todo verde:
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_stats.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_entity.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_player.gd
+
+# Smoke test de la escena demo de la fase 3 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase3_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.

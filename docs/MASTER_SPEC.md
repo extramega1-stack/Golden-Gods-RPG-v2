@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.0 — Fase 0 (2026-09-21)
+**Versión del documento:** 1.3 — Fase 3 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,9 +15,10 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 1 terminada — datos puros (`StatBlock` + fórmulas puras + 33 tests
-headless en verde). Nada jugable todavía. La reimplementación sigue en la
-Fase 2 (§11).
+**Estado:** Fase 3 terminada — jugador + cámara por intenciones (`Intent`,
+`Player`, `CameraRig`, `Movimiento` con tests headless en verde) y escena demo
+`scenes/demo/fase3_demo.tscn` jugable 5 minutos (WASD + clic + doble clic +
+cámara con botón derecho). La reimplementación sigue en la Fase 4 (§11).
 
 ---
 
@@ -25,15 +26,9 @@ Fase 2 (§11).
 
 | Rol | URL / ruta |
 |---|---|
-| Proyecto nuevo (este) | `https://github.com/extramega1-stack/Golden-Gods-RPG-v2` (remoto pendiente de creación — ver nota) |
+| Proyecto nuevo (este) | `https://github.com/extramega1-stack/Golden-Gods-RPG-v2` (privado, publicado 2026-09-21) |
 | Clon local | `~/workspace/godot-rpg-remake` |
 | Proyecto legado (congelado en v10.26.0, **no tocar**) | `https://github.com/extramega1-stack/Golden-Gods-RPG` · local `~/workspace/godot-rpg` |
-
-> **Nota 2026-09-21:** la creación del repo remoto está bloqueada por GitHub
-> (el nombre quedó en estado fantasma: la API dice "Name already exists" pero el
-> repo no existe ni es visible). Opciones: crearlo manual desde la web de GitHub,
-> esperar a que se libere el nombre, o aprobar un nombre alterno. El trabajo local
-> de la Fase 0 está completo y listo para `git push` en cuanto exista el remoto.
 
 ---
 
@@ -402,4 +397,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.2 — Fase 2 (entidad base única: `Entity`).*
+*Fin del documento maestro v1.3 — Fase 3 (jugador + cámara por intenciones).*
