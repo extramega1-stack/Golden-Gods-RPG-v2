@@ -1,0 +1,11 @@
+# Godot 4
+.godot/
+
+# Exports (cuando existan presets)
+exports/
+
+# Respaldo del editor / sistema
+*~
+*.orig
+.DS_Store
+Thumbs.db

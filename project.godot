@@ -1,0 +1,22 @@
+; Engine configuration file.
+; Golden Gods RPG — Remake (proyecto limpio, fase 0).
+; Settings heredados del proyecto legado (congelado en v10.26.0).
+
+config_version=5
+
+[application]
+
+config/name="Golden Gods RPG — Remake"
+config/description="RPG local para un jugador: rewrite limpio de Golden Gods RPG (Godot 4.7.2)."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.web="gl_compatibility"
