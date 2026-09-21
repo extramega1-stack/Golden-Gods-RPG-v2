@@ -1,15 +1,17 @@
-# Tests headless — Fase 1
+# Tests headless — Fases 1 y 2
 
-`test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`) sin abrir
-el juego.
+`test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`) y
+`test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
+maná y round-trip de guardado. Todo sin abrir el juego.
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
 # (regenera el caché de clases; sin esto los tests no resuelven los tipos):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --import
 
-# Los tests (~2 segundos). Exit code 0 = todo verde:
+# Los tests (~2 segundos cada uno). Exit code 0 = todo verde:
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_stats.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_entity.gd
 ```
 
 - Exit code **0** = todo verde.

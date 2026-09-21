@@ -402,4 +402,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.1 — Fase 1 (datos puros).*
+*Fin del documento maestro v1.2 — Fase 2 (entidad base única: `Entity`).*
