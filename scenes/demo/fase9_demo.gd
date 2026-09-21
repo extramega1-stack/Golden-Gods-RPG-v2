@@ -43,8 +43,14 @@ var _lista_enemigos: Array = []
 var _spawner: SpawnerMobs = null
 ## Fase 9: último enemigo muerto (para reemplazarlo al reaparecer).
 var _ultimo_muerto: Enemy = null
-## Fase 9.1: NPCs en escena (para refrescar los "!" de misión disponible).
+## Fase 9.1: NPCs en escena (para refrescar los marcadores de misión).
 var _lista_npcs: Array = []
+## Fase 9.2: estados conocidos de misión (para detectar el paso
+## activa→lista y mostrar el banner de completada una sola vez).
+var _estados_mision: Dictionary = {}
+## Fase 9.2: mientras se carga una partida se suprimen los banners (el
+## progreso restaurado no es "recién completado").
+var _suprimir_banners: bool = false
 
 
 func _ready() -> void:
@@ -80,8 +86,10 @@ func _ready() -> void:
 	# Fase 8: hablar abre el diálogo Y registra el diálogo en las misiones
 	# (objetivos "hablar") y refresca el botón de misión.
 	_misiones = QuestLog.new()
-	_misiones.cambiada.connect(_refrescar_marcadores_mision)
-	_refrescar_marcadores_mision()
+	for qid in QuestDB.ids():
+		_estados_mision[qid] = _misiones.estado(qid)
+	_misiones.cambiada.connect(_al_cambio_misiones)
+	_al_cambio_misiones()
 	_jugador.hablar_con.connect(_al_hablar_con)
 	_dialogo.mision_solicitada.connect(_al_mision_dialogo)
 	_panel_misiones.conectar(_jugador, _misiones)
@@ -113,7 +121,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			print("[Fase9] partida guardada")
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("cargar_partida"):
-		if _guardado.cargar():
+		# Fase 9.2: el progreso restaurado no es "recién completado": se
+		# suprimen los banners durante la carga (los estados se
+		# re-sincronizan igual para no duplicarlos después).
+		_suprimir_banners = true
+		var cargo: bool = _guardado.cargar()
+		_suprimir_banners = false
+		if cargo:
 			# La cámara persigue con damping; al cargar se coloca de golpe
 			# para no "deslizar" desde la posición vieja.
 			_rig.global_position = _jugador.global_position
@@ -130,30 +144,72 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-## Fase 9.1 — "!" dorado sobre los NPCs con misión disponible para
-## aceptar (pedido de Juan Diego). Se refresca con la señal `cambiada` del
-## QuestLog: al aceptar la misión el "!" desaparece (ya no está disponible);
-## si hay otra misión disponible para ese NPC, sigue visible. SOLO
-## "disponible": ni entregables ni activas muestran el marcador.
+## Fase 9.1/9.2 — la señal `cambiada` del QuestLog: detecta las
+## misiones que pasaron a "lista" (objetivos completos) y muestra el
+## banner dorado de completada; luego refresca los marcadores de los NPCs.
+func _al_cambio_misiones() -> void:
+	if _misiones == null:
+		return
+	for qid in QuestDB.ids():
+		var est: String = _misiones.estado(qid)
+		var antes: String = str(_estados_mision.get(qid, ""))
+		if antes == "activa" and est == "lista" and not _suprimir_banners:
+			_mostrar_banner_completada(qid)
+		_estados_mision[qid] = est
+	_refrescar_marcadores_mision()
+
+
+## Fase 9.2 — banner prominente: "¡Misión completada: <nombre>!
+## Vuelve con <NPC>" (el NPC de origen, donde se entrega).
+func _mostrar_banner_completada(qid: String) -> void:
+	var datos: Dictionary = QuestDB.obtener(qid)
+	var npc_id: String = str(datos.get("npc_origen", ""))
+	var npc_nombre: String = npc_id
+	if NpcDB.existe(npc_id):
+		npc_nombre = str(NpcDB.obtener(npc_id).get("nombre", npc_id))
+	_panel_misiones.toast_completada(str(datos.get("nombre", qid)), npc_nombre)
+
+
+## Fase 9.1/9.2 — marcadores de misión sobre los NPCs: "!" dorado si hay
+## misión disponible para aceptar (pedido de Juan Diego), "?" dorado si
+## hay entrega pendiente. La "?" manda sobre el "!" (fase 9.2). Al
+## aceptar/entregar, `QuestLog.cambiada` refresca: el marcador se apaga o
+## cambia según lo que quede.
 func _refrescar_marcadores_mision() -> void:
 	for n in _lista_npcs:
 		var npc: NPC = n as NPC
 		if npc == null:
 			continue
-		npc.fijar_marcador_mision(_npc_tiene_mision_disponible(npc.npc_id))
+		npc.fijar_marcador(_tipo_marcador_para(npc.npc_id))
 
 
-## ¿Alguna misión de este NPC sigue "disponible" para aceptar?
-func _npc_tiene_mision_disponible(npc_id: String) -> bool:
+## ¿Qué marcador toca para este NPC? Se miran los estados del QuestLog:
+## hay entrega pendiente ("lista") y/o misión disponible.
+func _tipo_marcador_para(npc_id: String) -> int:
 	if _misiones == null:
-		return false
+		return NPC.TipoMarcador.NINGUNO
+	var entrega: bool = false
+	var disponible: bool = false
 	for qid in QuestDB.ids():
 		var q: Dictionary = QuestDB.obtener(qid)
 		if str(q.get("npc_origen", "")) != npc_id:
 			continue
-		if _misiones.estado(qid) == "disponible":
-			return true
-	return false
+		var est: String = _misiones.estado(qid)
+		if est == "lista":
+			entrega = true
+		elif est == "disponible":
+			disponible = true
+	return _prioridad_marcador(entrega, disponible)
+
+
+## Fase 9.2 — regla de prioridad, pura y testeable: la "?" de entrega
+## pendiente manda sobre el "!" de misión disponible.
+static func _prioridad_marcador(entrega: bool, disponible: bool) -> int:
+	if entrega:
+		return NPC.TipoMarcador.ENTREGAR
+	if disponible:
+		return NPC.TipoMarcador.DISPONIBLE
+	return NPC.TipoMarcador.NINGUNO
 
 
 ## Enemigos que cuelgan de esta demo. El grupo "enemigos" es global del

@@ -192,17 +192,22 @@ func tiene_interaccion_pendiente() -> bool:
 	return _pend_npc != null
 
 
-## Fase 6 — interacción contextual: con un NPC vivo seleccionado emite
-## `hablar_con` (la demo abre la VentanaDialogo). Sin selección útil
-## (nada, un enemigo, o un NPC muerto) no hace nada y no falla: los
-## enemigos no abren diálogo. Pública para tests y la UI.
+## Fase 6 — interacción contextual (tecla E): con un NPC vivo
+## seleccionado se quiere hablar. Fase 9.2: E respeta el radio de
+## interacción. Si el NPC está LEJOS, NO abre el diálogo de inmediato:
+## activa la MISMA interacción pendiente que el segundo clic lejano
+## (`_acercarse_a_npc`): el jugador camina hasta él y al llegar habla
+## solo. Si está dentro del radio, abre el diálogo directo como antes.
+## Nunca fija objetivo de ataque ni emite `intencion_atacar`.
+## Sin selección útil (nada, un enemigo, o un NPC muerto) no hace nada y
+## no falla: los enemigos no abren diálogo. Pública para tests y la UI.
 func interactuar() -> void:
 	if not esta_vivo():
 		return
 	var npc: NPC = seleccion as NPC
 	if npc == null or not npc.esta_vivo():
 		return
-	hablar_con.emit(npc)
+	_acercarse_a_npc(npc)
 
 
 ## Fase 5.1 — selecciona una entidad (mob o NPC). Idempotente: seleccionar
@@ -472,15 +477,18 @@ func _actualizar_interaccion_pendiente() -> void:
 		_tiene_destino = true
 
 
-## Fase 9.1 — segundo clic en un NPC ya seleccionado: si está dentro del
-## radio de interacción habla directo (igual que E); si está lejos queda
-## una interacción pendiente y el jugador camina hasta él. Pública para
-## tests (los tests headless no tienen viewport para raycast).
+## Fase 9.1 — segundo clic en un NPC ya seleccionado (y la tecla E
+## desde la fase 9.2): si está dentro del radio de interacción habla
+## directo (emite `hablar_con`); si está lejos queda una interacción
+## pendiente y el jugador camina hasta él. Pública para tests (los tests
+## headless no tienen viewport para raycast).
 func _acercarse_a_npc(n: NPC) -> void:
 	if n == null or not n.esta_vivo():
 		return
 	if _dist_a(n) <= RADIO_INTERACCION:
-		interactuar()
+		# Fase 9.2: se emite directo (interactuar() ya delega aquí; llamar
+		# de vuelta a interactuar() sería recursión mutua).
+		hablar_con.emit(n)
 		return
 	_pend_npc = n
 	_tiene_destino = true

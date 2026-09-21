@@ -19,9 +19,16 @@ var lineas_dialogo: Array[String] = []
 ## señal `cambiada` del QuestLog: al aceptar el "!" desaparece (ya no está
 ## disponible); si hay otra misión disponible para ese NPC, sigue visible.
 ## Solo "disponible": ni entregables ni activas muestran el marcador.
+## Fase 9.2 — el marcador se generaliza: el tipo ∈ {NINGUNO, DISPONIBLE "!",
+## ENTREGAR "?"}. La "?" dorada (entrega pendiente) tiene prioridad sobre
+## el "!" (misión disponible) cuando un NPC tiene ambas a la vez.
+enum TipoMarcador { NINGUNO, DISPONIBLE, ENTREGAR }
+
 const ALTURA_MARCADOR: float = 2.35
 const COLOR_MARCADOR: Color = Color(1.0, 0.78, 0.15)  ## Dorado.
 var _marcador: Label3D = null
+## Fase 9.2: tipo actual del marcador (NINGUNO si nunca se fijó).
+var _tipo_marcador: int = TipoMarcador.NINGUNO
 
 
 func _init(p_stats: StatBlock = null) -> void:
@@ -42,14 +49,14 @@ func configurar(datos: Dictionary) -> void:
 	_tintar(datos.get("color", [0.35, 0.55, 0.95]))
 
 
-## Muestra u oculta el "!" dorado de misión disponible. El Label3D se
-## crea perezoso (oculto al inicio —lección 11—) y flota sobre la cabeza
-## con billboard para que siempre mire a cámara. Idempotente.
-func fijar_marcador_mision(mostrar: bool) -> void:
+## Fase 9.2 — fija el marcador por tipo ("!" disponible, "?" entrega,
+## NINGUNO lo oculta). El Label3D se crea perezoso (oculto al inicio
+## —lección 11—) y flota sobre la cabeza con billboard para que siempre
+## mire a cámara. Idempotente: cambiar de tipo reusa el mismo Label3D.
+func fijar_marcador(tipo: int) -> void:
 	if _marcador == null:
 		_marcador = Label3D.new()
 		_marcador.name = "MarcadorMision"
-		_marcador.text = "!"
 		_marcador.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		_marcador.font_size = 96
 		_marcador.modulate = COLOR_MARCADOR
@@ -59,12 +66,37 @@ func fijar_marcador_mision(mostrar: bool) -> void:
 		_marcador.position = Vector3(0.0, ALTURA_MARCADOR, 0.0)
 		_marcador.visible = false
 		add_child(_marcador)
-	_marcador.visible = mostrar
+	match tipo:
+		TipoMarcador.ENTREGAR:
+			_marcador.text = "?"
+		TipoMarcador.DISPONIBLE:
+			_marcador.text = "!"
+		_:
+			tipo = TipoMarcador.NINGUNO
+	_marcador.visible = tipo != TipoMarcador.NINGUNO
+	_tipo_marcador = tipo
 
 
-## ¿El "!" de misión disponible está visible ahora? (tests + UI futura).
+## Compatibilidad con la fase 9.1: true muestra el "!" de misión
+## disponible, false lo oculta.
+func fijar_marcador_mision(mostrar: bool) -> void:
+	fijar_marcador(TipoMarcador.DISPONIBLE if mostrar else TipoMarcador.NINGUNO)
+
+
+## Compatibilidad: true muestra la "?" de entrega pendiente, false la
+## oculta.
+func fijar_marcador_entrega(mostrar: bool) -> void:
+	fijar_marcador(TipoMarcador.ENTREGAR if mostrar else TipoMarcador.NINGUNO)
+
+
+## ¿El marcador de misión está visible ahora? (tests + UI futura).
 func marcador_visible() -> bool:
 	return _marcador != null and _marcador.visible
+
+
+## Tipo actual del marcador (NINGUNO/DISPONIBLE/ENTREGAR). (tests + UI).
+func marcador_tipo() -> int:
+	return _tipo_marcador
 
 
 ## Color del cuerpo (material propio por instancia, igual que Enemy).

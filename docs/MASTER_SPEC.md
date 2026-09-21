@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 2.4 — Fase 9.1 (2026-09-21)
+**Versión del documento:** 2.5 — Fase 9.2 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -92,6 +92,46 @@ desechable; el diseño no.
   spawner (respawn incluido).
 - `tests/test_fase91.gd` (45 asserts) + `test_clic.gd` actualizado a 38
   (el segundo clic en NPC ahora es INTERACTUAR); regresión total **755**
+  en verde.
+
+**Fase 9.2 terminada — E respeta el radio, banner de completada y "?" dorado:**
+- **E respeta `RADIO_INTERACCION` (3.0):** `Player.interactuar()` ya no
+  abre el diálogo de inmediato si el NPC seleccionado está lejos: activa
+  la MISMA interacción pendiente que el segundo clic lejano (reusa
+  `_acercarse_a_npc`, sin duplicar lógica) — el jugador camina hasta el
+  NPC y al llegar habla solo. Dentro del radio abre el diálogo directo
+  como antes. Nunca fija objetivo de ataque ni emite `intencion_atacar`
+  (sin violencia). Para no crear recursión mutua (`interactuar()` →
+  `_acercarse_a_npc()` → `interactuar()`…), el caso cercano emite
+  `hablar_con` directo dentro de `_acercarse_a_npc`.
+- **Banner prominente de misión completada:** cuando los objetivos de una
+  misión se completan (transición activa→lista), la demo la detecta en la
+  señal `QuestLog.cambiada` y muestra un banner dorado centrado:
+  "¡Misión completada!" (30 px) + "<nombre>\nVuelve con <NPC de origen>"
+  (20 px), borde dorado brillante, 4 s fijo + 0.8 s de fundido —
+  claramente más grande/dorado/duradero que el toast normal de 2.5 s.
+  API: `PanelMisiones.toast_completada(nombre, npc_nombre)` +
+  `ultimo_banner` y `banner_visible()` (tests + UI futura). El banner
+  vive en panel propio (no pelea con el toast normal) y arranca oculto
+  (lección 11). Al cargar partida se suprimen los banners (el progreso
+  restaurado no es "recién completado"; los estados se re-sincronizan
+  igual para no duplicarlos después).
+- **"?" dorado de entrega pendiente:** el marcador del NPC se generaliza
+  a `fijar_marcador(tipo)` con `NPC.TipoMarcador {NINGUNO, DISPONIBLE,
+  ENTREGAR}` ("!" = misión disponible, "?" = entrega pendiente; el mismo
+  Label3D billboard dorado de la 9.1, reusado al cambiar de tipo sin
+  duplicarlo). Los wrappers bool `fijar_marcador_mision` /
+  `fijar_marcador_entrega` se conservan (los tests de la 9.1 siguen
+  verdes) y se añade `marcador_tipo()`. **Prioridad: la "?" manda sobre
+  el "!"** cuando un NPC tiene ambas (`_prioridad_marcador`, pura y
+  testeable). Todo se refresca vía `QuestLog.cambiada` (al entregar, el
+  estado pasa a "entregada" y la "?" desaparece).
+- `tests/test_fase92.gd` (43 asserts): E lejos no abre diálogo pero deja
+  pendiente y al llegar habla (sin atacar ni emitir intención); E cerca
+  abre directo; banner visible al completar objetivos con nombre y NPC;
+  "?" solo con entrega pendiente y se oculta al entregar; prioridad
+  "?" > "!"; API del marcador generalizado. `test_npcs.gd` actualizado
+  (`_t_interactuar` usa NPC dentro del radio). Regresión total **798**
   en verde.
 
 **Fase 8.1 terminada — Hotfix layout responsivo del diálogo** (bug de
@@ -596,6 +636,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 8.1 | **Hotfix layout responsivo del diálogo** ✅: `VentanaDialogo` anclado abajo-centro con `grow_vertical = GROW_DIRECTION_BEGIN` (el panel crece hacia arriba) + borde inferior en `-(ZONA_INFERIOR_RESERVADA + 16) = -116` px (por encima de la barra de skills); `UiLayers.ZONA_INFERIOR_RESERVADA = 100` compartida con `barra_skills.gd`; se eliminó el hack `panel.position -= Vector2(260, 220)` · `tests/test_ui_layout.gd` (36 asserts: panel dentro del viewport, sin solapar la barra, capas 81 > 12, HUD dentro del viewport, en 3440×1440 y 1920×1080) | Bug de Juan Diego en 21:9: el panel se cortaba por abajo y la barra tapaba el texto — ahora el diálogo completo se ve en 16:9 y 21:9 |
 | 9 | **Detalle de misión + respawn de mobs** ✅: campo `lore` (canon Liberty) en `data/quests.json` + `QuestDB.lore()`; en `PanelMisiones` (J) cada misión en curso es un botón que abre la sub-ventana `VentanaDetalleMision` (capa 28: nombre, lore con autowrap, objetivos "x/y", recompensas oro/XP/items; arranca oculta, cierra con ESC/clic fuera/"Cerrar"; UI solo lee) · `respawn_seg` por arquetipo en `data/enemies.json` (goblin 15 s, lobo 20 s, ogro 30 s; default 20 s) + `SpawnerMobs` (`vigilar`/`avanzar(dt)` testeable/`reaparecido`; factory inyectada; respawn runtime —el timer no se guarda; NPCs no respawnean) | Loop jugable: pulsar una misión en J → leer su lore y progreso → matar 5 goblins (respawnean si los matas a todos) → entregar · guardar (F9) / cargar (F10) sin timers persistidos |
 | 9.1 | **"!" de misión + segundo clic en NPC + demo con 15 mobs** ✅: `Label3D` dorado con billboard sobre NPCs con misión **disponible** (se refresca con `QuestLog.cambiada`; al aceptar desaparece) · segundo clic en NPC seleccionado lejano → `AccionClic.INTERACTUAR`: camina hasta él (`Player.RADIO_INTERACCION` = 3.0, patrón "acercarse y actuar al llegar") y al llegar abre el diálogo solo; cerca habla directo; cancelable (muerte/deselección/WASD); sin violencia · spawner verificado en la demo real (el reporte de "no instanciado" era falso positivo del grep) + la demo junta sus propios enemigos (`_mis_enemigos()`) · 15 mobs (5 por arquetipo) a ≥ 22 m del spawn, fuera del aggro inicial | Loop jugable: ver "!" sobre Ilya/Bram/Sira → aceptar (el "!" se apaga) · segundo clic en NPC lejano → el héroe camina y habla solo · matar mobs que respawnean |
+| 9.2 | **E con radio + banner de completada + "?" de entrega** ✅: `Player.interactuar()` (E) respeta `RADIO_INTERACCION` 3.0 — NPC lejos = misma interacción pendiente que el segundo clic lejano (caminar y hablar al llegar), nunca ataca ni emite `intencion_atacar` · banner dorado prominente al completar objetivos ("¡Misión completada: <nombre>! Vuelve con <NPC>"; 4 s + 0.8 s fundido; `PanelMisiones.toast_completada`) · marcador del NPC generalizado a `fijar_marcador(tipo)` con `TipoMarcador {NINGUNO, DISPONIBLE "!", ENTREGAR "?"}`; la "?" manda sobre el "!" y desaparece al entregar; todo vía `QuestLog.cambiada` | Loop jugable: E en NPC lejano → el héroe camina y habla al llegar · completar 5 goblins → banner dorado + "?" sobre Ilya → entregar (la "?" se apaga) |
 | 9+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -637,4 +678,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.4 — Fase 9.1 ("!" dorado de misión disponible, segundo clic en NPC lejano = caminar y hablar al llegar, demo con 15 mobs fuera del aggro inicial, spawner verificado en la demo real; 755 tests en verde).*
+*Fin del documento maestro v2.5 — Fase 9.2 (E respeta el radio de interacción, banner dorado de misión completada, "?" dorado de entrega pendiente con prioridad sobre el "!", marcador del NPC generalizado a `fijar_marcador(tipo)`; 798 tests en verde).*

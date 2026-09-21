@@ -171,7 +171,9 @@ func _t_configurar() -> void:
 func _t_interactuar() -> void:
 	_hablados.clear()
 	var p: Player = _player(Vector3.ZERO)
-	var n: NPC = _npc("ilya", Vector3(5, 0, 5))
+	# Fase 9.2: E respeta el radio de interacción — el NPC está cerca
+	# (dist ~2.8 < RADIO_INTERACCION 3): el diálogo se abre directo.
+	var n: NPC = _npc("ilya", Vector3(2, 0, 2))
 	p.hablar_con.connect(_al_hablar)
 	p.seleccionar(n)
 	p.interactuar()

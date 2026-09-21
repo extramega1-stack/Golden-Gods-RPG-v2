@@ -20,8 +20,19 @@ var _lista_activas: VBoxContainer = null
 var _lista_entregadas: VBoxContainer = null
 
 var _toast_layer: CanvasLayer = null
+var _toast_panel: PanelContainer = null
 var _toast_label: Label = null
 var _toast_tween: Tween = null
+## Fase 9.2 — banner prominente de misión completada (más grande, dorado
+## y duradero que el toast normal). Panel propio para no pelear con el
+## toast; arranca oculto (lección 11).
+var _banner_panel: PanelContainer = null
+var _banner_titulo: Label = null
+var _banner_label: Label = null
+var _banner_tween: Tween = null
+## Nombre de la última misión cuyo banner de completada se mostró
+## (tests + UI futura). "" = ningún banner mostrado todavía.
+var ultimo_banner: String = ""
 
 ## Fase 9: sub-ventana de detalle de misión (capa UiLayers.DETALLE_MISION).
 ## Es hija de este panel: su _input corre antes que el del panel, así que
@@ -118,30 +129,84 @@ func _construir_toast() -> void:
 	_toast_layer.visible = false
 	add_child(_toast_layer)
 
+	# Toast normal: abajo-centro, discreto (números idénticos a la fase 8).
+	_toast_panel = _caja_toast(Vector2(400, 0), Vector2(200, 140),
+		Color(0.05, 0.05, 0.08, 0.92), Color(0.75, 0.62, 0.3), 1)
+	_toast_label = _etiqueta_toast(_toast_panel, 17, Color(1.0, 0.88, 0.55))
+	# Fase 9.2: banner de misión completada — centrado en pantalla, más
+	# grande, con borde dorado brillante. Arranca oculto (lección 11).
+	_banner_panel = PanelContainer.new()
+	_banner_panel.name = "BannerCompletada"
+	_banner_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_banner_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_banner_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_banner_panel.custom_minimum_size = Vector2(560, 0)
+	_banner_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var estilo_b: StyleBoxFlat = StyleBoxFlat.new()
+	estilo_b.bg_color = Color(0.08, 0.06, 0.03, 0.95)
+	estilo_b.border_color = Color(1.0, 0.8, 0.2)
+	estilo_b.set_border_width_all(3)
+	estilo_b.set_corner_radius_all(8)
+	estilo_b.content_margin_left = 28
+	estilo_b.content_margin_right = 28
+	estilo_b.content_margin_top = 18
+	estilo_b.content_margin_bottom = 18
+	_banner_panel.add_theme_stylebox_override("panel", estilo_b)
+	_banner_panel.visible = false
+	_toast_layer.add_child(_banner_panel)
+	var caja_b: VBoxContainer = VBoxContainer.new()
+	caja_b.add_theme_constant_override("separation", 8)
+	caja_b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner_panel.add_child(caja_b)
+	_banner_titulo = Label.new()
+	_banner_titulo.text = "¡Misión completada!"
+	_banner_titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner_titulo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25))
+	_banner_titulo.add_theme_font_size_override("font_size", 30)
+	caja_b.add_child(_banner_titulo)
+	_banner_label = Label.new()
+	_banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_banner_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner_label.add_theme_color_override("font_color", Color(1.0, 0.92, 0.6))
+	_banner_label.add_theme_font_size_override("font_size", 20)
+	caja_b.add_child(_banner_label)
+
+
+## Caja base de un toast (panel + sin etiqueta todavía): la usa el toast
+## normal; el banner prominente tiene su propia construcción.
+func _caja_toast(min_size: Vector2, desplazar: Vector2, fondo: Color,
+		borde: Color, grosor_borde: int) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	panel.position -= Vector2(200, 140)
-	panel.custom_minimum_size = Vector2(400, 0)
+	panel.position -= desplazar
+	panel.custom_minimum_size = min_size
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var estilo: StyleBoxFlat = StyleBoxFlat.new()
-	estilo.bg_color = Color(0.05, 0.05, 0.08, 0.92)
-	estilo.border_color = Color(0.75, 0.62, 0.3)
-	estilo.set_border_width_all(1)
+	estilo.bg_color = fondo
+	estilo.border_color = borde
+	estilo.set_border_width_all(grosor_borde)
 	estilo.set_corner_radius_all(4)
 	estilo.content_margin_left = 16
 	estilo.content_margin_right = 16
 	estilo.content_margin_top = 10
 	estilo.content_margin_bottom = 10
 	panel.add_theme_stylebox_override("panel", estilo)
+	panel.visible = false
 	_toast_layer.add_child(panel)
+	return panel
 
-	_toast_label = Label.new()
-	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_label.add_theme_color_override("font_color", Color(1.0, 0.88, 0.55))
-	_toast_label.add_theme_font_size_override("font_size", 17)
-	panel.add_child(_toast_label)
+
+func _etiqueta_toast(panel: PanelContainer, tam_fuente: int, color: Color) -> Label:
+	var l: Label = Label.new()
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_font_size_override("font_size", tam_fuente)
+	panel.add_child(l)
+	return l
 
 
 func _etiqueta_seccion(texto: String) -> Label:
@@ -188,19 +253,57 @@ func esta_abierta() -> bool:
 func toast(texto: String) -> void:
 	if _toast_label == null or _toast_layer == null:
 		return
+	_mostrar_toast(texto, 2.0, 0.5)
+
+
+## Fase 9.2 — banner PROMINENTE de misión completada: claramente más
+## grande, más dorado y más duradero que el toast normal (4 s fijo +
+## 0.8 s de fundido). Texto: nombre de la misión + con quién volver.
+func toast_completada(nombre: String, npc_nombre: String) -> void:
+	if _banner_label == null or _banner_panel == null or _toast_layer == null:
+		return
+	ultimo_banner = nombre
+	_banner_label.text = "%s\nVuelve con %s" % [nombre, npc_nombre]
+	_banner_panel.modulate = Color(1, 1, 1, 1)
+	_banner_panel.visible = true
+	_toast_layer.visible = true
+	if _banner_tween != null and _banner_tween.is_valid():
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	_banner_tween.tween_interval(4.0)
+	_banner_tween.tween_property(_banner_panel, "modulate:a", 0.0, 0.8)
+	_banner_tween.tween_callback(_ocultar_banner)
+
+
+## ¿El banner de misión completada está visible ahora? (tests + UI).
+func banner_visible() -> bool:
+	return _banner_panel != null and _banner_panel.visible
+
+
+func _mostrar_toast(texto: String, fijo: float, fundido: float) -> void:
 	_toast_label.text = texto
 	_toast_label.modulate = Color(1, 1, 1, 1)
+	_toast_panel.visible = true
 	_toast_layer.visible = true
 	if _toast_tween != null and _toast_tween.is_valid():
 		_toast_tween.kill()
 	_toast_tween = create_tween()
-	_toast_tween.tween_interval(2.0)
-	_toast_tween.tween_property(_toast_label, "modulate:a", 0.0, 0.5)
+	_toast_tween.tween_interval(fijo)
+	_toast_tween.tween_property(_toast_label, "modulate:a", 0.0, fundido)
 	_toast_tween.tween_callback(_ocultar_toast)
 
 
 func _ocultar_toast() -> void:
-	if _toast_layer != null:
+	if _toast_panel != null:
+		_toast_panel.visible = false
+	if _toast_layer != null and not banner_visible():
+		_toast_layer.visible = false
+
+
+func _ocultar_banner() -> void:
+	if _banner_panel != null:
+		_banner_panel.visible = false
+	if _toast_layer != null and _toast_panel != null and not _toast_panel.visible:
 		_toast_layer.visible = false
 
 
