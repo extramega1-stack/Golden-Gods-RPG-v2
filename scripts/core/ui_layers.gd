@@ -11,7 +11,8 @@ extends RefCounted
 
 const HUD: int = 10
 const BARRA_SKILLS: int = 12
-const BOTON_ATACAR: int = 13
+## (13 reservado: fue BOTON_ATACAR, retirado en fase 6.1 por pedido de
+## Juan Diego; el rebind de tecla vuelve con la barra de acciones.)
 const PANEL_INVENTARIO: int = 25
 const PANEL_EQUIPO: int = 26
 const VENTANA_DIALOGO: int = 81

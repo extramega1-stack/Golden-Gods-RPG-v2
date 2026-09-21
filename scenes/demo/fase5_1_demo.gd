@@ -4,7 +4,6 @@ extends Node3D
 ## - NPCs de ejemplo desde data/npcs.json (no combatibles: se seleccionan,
 ##   no se pueden atacar).
 ## - IndicadorSelección: anillo dorado bajo la entidad seleccionada.
-## - BotonAtacar: botón arrastrable (clic der. = reasignar tecla "atacar").
 ## - DamageFlash: flash rojo en Player y enemigos al recibir daño.
 ## - Skills dañinas fuera de rango: el jugador se acerca y las lanza.
 ## - ESC deselecciona; T ataca al foco (o al mob más cercano en rango).
@@ -19,7 +18,6 @@ const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
 @onready var _hud: HUD = $HUD
 @onready var _barra: BarraSkills = $BarraSkills
 @onready var _indicador: IndicadorSeleccion = $IndicadorSeleccion
-@onready var _boton: BotonAtacar = $BotonAtacar
 @onready var _panel_inv: PanelInventario = $PanelInventario
 @onready var _panel_eq: PanelEquipo = $PanelEquipo
 
@@ -46,8 +44,6 @@ func _ready() -> void:
 	_hud.conectar(_jugador)
 	_barra.conectar(_jugador)
 	_indicador.conectar(_jugador)
-	# La UI emite la intención; el Player la consume (nunca al revés).
-	_boton.ataque_solicitado.connect(_jugador.solicitar_ataque)
 	_panel_inv.conectar(_jugador)
 	_panel_eq.conectar(_jugador)
 	_guardado = SaveSystem.new()

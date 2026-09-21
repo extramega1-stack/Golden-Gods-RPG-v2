@@ -18,7 +18,6 @@ const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
 @onready var _hud: HUD = $HUD
 @onready var _barra: BarraSkills = $BarraSkills
 @onready var _indicador: IndicadorSeleccion = $IndicadorSeleccion
-@onready var _boton: BotonAtacar = $BotonAtacar
 @onready var _dialogo: VentanaDialogo = $VentanaDialogo
 @onready var _panel_inv: PanelInventario = $PanelInventario
 @onready var _panel_eq: PanelEquipo = $PanelEquipo
@@ -46,8 +45,6 @@ func _ready() -> void:
 	_hud.conectar(_jugador)
 	_barra.conectar(_jugador)
 	_indicador.conectar(_jugador)
-	# La UI emite la intención; el Player la consume (nunca al revés).
-	_boton.ataque_solicitado.connect(_jugador.solicitar_ataque)
 	# Fase 6: el Player emite hablar_con; la ventana de diálogo la abre.
 	_jugador.hablar_con.connect(_dialogo.mostrar)
 	_panel_inv.conectar(_jugador)

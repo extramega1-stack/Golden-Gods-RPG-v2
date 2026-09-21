@@ -10,7 +10,6 @@
 [ext_resource type="Script" path="res://scripts/ui/panel_equipo.gd" id="8_panel_eq"]
 [ext_resource type="Script" path="res://scripts/core/damage_flash.gd" id="9_flash"]
 [ext_resource type="Script" path="res://scripts/ui/indicador_seleccion.gd" id="10_indicador"]
-[ext_resource type="Script" path="res://scripts/ui/boton_atacar.gd" id="11_boton"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_suelo"]
 size = Vector2(80, 80)
@@ -122,9 +121,6 @@ script = ExtResource("4_hud")
 
 [node name="BarraSkills" type="CanvasLayer" parent="."]
 script = ExtResource("6_barra")
-
-[node name="BotonAtacar" type="CanvasLayer" parent="."]
-script = ExtResource("11_boton")
 
 [node name="PanelInventario" type="CanvasLayer" parent="."]
 script = ExtResource("7_panel_inv")

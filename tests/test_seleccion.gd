@@ -1,6 +1,8 @@
 extends SceneTree
-## Tests headless de la Fase 5.1 (selección, flash de daño, botón de atacar
-## con rebind, acercamiento de skills y REGLA DURA: los NPCs no se atacan).
+## Tests headless de la Fase 5.1 (selección, flash de daño, acercamiento de
+## skills y REGLA DURA: los NPCs no se atacan). Fase 6.1: el botón flotante
+## de atacar se retiró del HUD por pedido de Juan Diego; la acción "atacar"
+## (Input Map, T por defecto) sigue existiendo y se testea aquí.
 ##
 ## Cómo correrlo (un solo comando, ~2 segundos):
 ##   ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_seleccion.gd
@@ -14,10 +16,7 @@ const ENT: GDScript = preload("res://scripts/core/entity.gd")
 const SB: GDScript = preload("res://scripts/core/stat_block.gd")
 const SS: GDScript = preload("res://scripts/skills/skill_system.gd")
 const SDB: GDScript = preload("res://scripts/skills/skill_db.gd")
-const BA: GDScript = preload("res://scripts/ui/boton_atacar.gd")
 const IND: GDScript = preload("res://scripts/ui/indicador_seleccion.gd")
-
-const CFG_TMP: String = "user://test_boton_atacar_tmp.cfg"
 
 var _ok: int = 0
 var _fallos: int = 0
@@ -49,7 +48,7 @@ func _process(_delta: float) -> bool:
 	_t_npc_no_atacable()
 	_t_skill_no_combatible()
 	_t_flash()
-	_t_rebind()
+	_t_accion_atacar()
 	_t_skill_acercamiento()
 	_t_skill_pendiente_cancel_muerte()
 	_t_skill_pendiente_cancel_deseleccion()
@@ -234,33 +233,16 @@ func _t_flash() -> void:
 	_check(e.intensidad_flash() == 0.0, "el flash llega a cero", "")
 
 
-## Rebind: reescribe el InputMap, persiste en ConfigFile y se restaura.
-func _t_rebind() -> void:
-	DirAccess.remove_absolute(CFG_TMP)
-	var b: BotonAtacar = BA.new()
-	b.ruta_config = CFG_TMP
-	root.add_child(b)
-	_basura.append(b)
-	_check(b.tecla_actual() == 84, "tecla por defecto = T", "")
-	_check(_accion_tiene(84), "el InputMap trae 'atacar' con T del proyecto", "")
-	b.aplicar_tecla(KEY_G)
-	_check(b.tecla_actual() == KEY_G, "aplicar_tecla cambia la tecla", "")
-	_check(_accion_tiene(KEY_G) and not _accion_tiene(84),
-		"el InputMap se reescribe (G sí, T no)", "")
-	# Posición + tecla persisten y se restauran en una instancia nueva.
-	b._boton.position = Vector2(100, 200)
-	b.guardar_config()
-	var b2: BotonAtacar = BA.new()
-	b2.ruta_config = CFG_TMP
-	root.add_child(b2)
-	_basura.append(b2)
-	_check(b2.tecla_actual() == KEY_G, "la tecla persiste en el ConfigFile", "")
-	_check(b2._boton.position == Vector2(100, 200),
-		"la posición persiste en el ConfigFile", "")
-	# Limpieza: se restaura T sin guardar y se borra el temporal.
-	b2._aplicar_runtime(84)
-	DirAccess.remove_absolute(CFG_TMP)
-	_check(_accion_tiene(84), "tras el test 'atacar' vuelve a T", "")
+## Fase 6.1: el botón flotante se retiró del HUD, pero la acción "atacar"
+## sigue viva en el Input Map (T por defecto). Test de solo lectura: no
+## muta el InputMap.
+func _t_accion_atacar() -> void:
+	_check(InputMap.has_action("atacar"),
+		"la acción 'atacar' sigue existiendo en el Input Map", "")
+	_check(_accion_tiene(84), "'atacar' trae T (84) por defecto del proyecto", "")
+	var p: Player = _player(Vector3(700, 0, 700))
+	_check(p.has_method("solicitar_ataque"),
+		"Player.solicitar_ataque sigue disponible sin el botón", "")
 
 
 func _accion_tiene(fisica: int) -> bool:

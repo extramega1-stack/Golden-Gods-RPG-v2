@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.7 — Fase 6 (2026-09-21)
+**Versión del documento:** 1.8 — Fase 6.1 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,17 +15,25 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 6 terminada — NPCs e interacción básica:
+**Estado:** Fase 6.1 terminada — hotfix por feedback de playtest: botón de
+atacar retirado del HUD (la acción `atacar` por T/doble clic sigue igual).
+Fase 6: NPCs e interacción básica:
 - **Selección:** clic simple selecciona mob/NPC (anillo dorado 3D bajo sus
   pies, `IndicadorSeleccion`); clic en suelo vacío o ESC deselecciona. La
   selección muerta se limpia sola.
 - **Flash rojo al recibir daño:** estado `flash_tiempo` en `Entity`
   (testeable, decae en `_process`) + gancho visual `DamageFlash` (tiñe el
   "Cuerpo" sin mutar materiales compartidos).
-- **Botón de atacar en el HUD** (`BotonAtacar`): emite la intención, el Player
-  la consume (`solicitar_ataque`: foco > mob más cercano en rango ≤ 8 m).
-  Arrastrable (posición en `user://boton_atacar.cfg`); clic derecho = rebind
-  de la tecla de la acción `atacar` (defecto T), persiste y se aplica al arrancar.
+- **Botón de atacar: RETIRADO del HUD (fase 6.1, pedido de Juan Diego por
+  feedback de playtest — le molestaba en pantalla).** El script
+  `scripts/ui/boton_atacar.gd` y su nodo en las demos se eliminaron; la
+  acción `atacar` del Input Map (T por defecto + doble clic) sigue
+  funcionando igual vía `Player.solicitar_ataque` (foco > mob más cercano
+  en rango ≤ 8 m). El rebind de tecla por clic derecho murió con el botón:
+  vuelve con la barra de acciones arrastrable (feature planificada, §9.3).
+  Capa UI 13 queda reservada.
+- **Feature planificada (idea de Juan Diego, NO implementada):** barra de
+  acciones arrastrable estilo Flyff — ver §9.3.
 - **Skills con acercamiento:** skill dañina fuera de rango → lanzamiento
   pendiente: el jugador se acerca (reusa persecución) y la lanza al llegar;
   se cancela si el objetivo muere o deja de ser el foco. Curaciones al
@@ -429,11 +437,22 @@ Reglas de la rebuild:
   "tipo MMORPG".
 - **Tecla E fija (decisión de diseño, fase 6):** la acción `interactuar` es
   reasignable solo editando el Input Map. El patrón de rebind en runtime
-  (clic derecho + `user://`) pertenece a las acciones que tienen un botón
-  del HUD que la "posee" (`atacar` → BotonAtacar); `interactuar` no tiene
-  botón, así que añadirle rebind exigiría una UI de ajustes (fase futura:
-  pila de paneles, §6 dominio 1). La tecla sigue siendo 100% data-driven
-  (Input Map en `project.godot`), sin keycode hardcodeado en el código.
+  (clic derecho + `user://`) pertenecía a las acciones con botón del HUD
+  que la "posee"; el botón de atacar se retiró en fase 6.1 y el rebind
+  vuelve con la barra de acciones (abajo). La tecla sigue siendo 100%
+  data-driven (Input Map en `project.godot`), sin keycode hardcodeado en
+  el código.
+- **Feature planificada — barra de acciones arrastrable estilo Flyff (idea
+  de Juan Diego, fase 6.1; NO implementada):** menú de acciones disponibles
+  (atacar, skills, pociones, items…) desde el que el usuario **arrastra cada
+  acción al slot de la barra que quiera**; la tecla del slot ejecuta la
+  acción asignada (ej.: arrastrar "atacar" al slot 1 → la tecla 1 ataca en
+  vez de lanzar la skill). Requisitos cuando se implemente: mapeo
+  slot→acción data-driven y persistido en `user://`; la barra emite
+  intenciones y los sistemas las consumen (la UI nunca escribe stats);
+  el rebind de teclas por slot reemplaza al rebind del botón retirado;
+  convivir con la barra de skills actual (o absorberla) sin romper el save
+  versionado.
 
 Cada fase: especificación cerrada → implementación → `--check-only` (0 fallos) →
 tests headless en verde → ZIP con versión → **playtest de Juan Diego** →
@@ -442,4 +461,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.7 — Fase 6 (NPCs data-driven completos + interacción con diálogo, save v3).*
+*Fin del documento maestro v1.8 — Fase 6.1 (botón de atacar retirado del HUD; barra de acciones arrastrable estilo Flyff como feature planificada).*
