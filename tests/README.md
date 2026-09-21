@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7 y 8
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8 y 8.1
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -67,6 +67,12 @@ sitio; las partidas v4 sin bloque "misiones" cargan con QuestLog vacío),
 `PanelMisiones` (arranca oculto; `alternar()`; `toast()` no revienta) y
 `VentanaDialogo` (`mostrar_mision`: disponible/entregar/ocultar; la señal
 `mision_solicitada` se emite sin cerrar el diálogo).
+La fase 8.1 añade `test_ui_layout.gd` (36 asserts): layout responsivo del
+diálogo en 3440×1440 (21:9, con Bram —el texto de misión más largo) y
+1920×1080 (16:9, con Ilya) — el panel queda dentro del viewport, no
+solapa la barra de skills, su borde inferior queda por encima de la
+barra, capas diálogo(81) > barra(12), todas las barras del HUD dentro
+del viewport y la descripción de la misión sin encimarse con los botones.
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -87,6 +93,7 @@ sitio; las partidas v4 sin bloque "misiones" cargan con QuestLog vacío),
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_clic.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_tienda.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_quests.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_ui_layout.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300

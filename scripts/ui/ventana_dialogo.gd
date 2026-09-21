@@ -58,9 +58,17 @@ func _construir() -> void:
 
 	var panel: PanelContainer = PanelContainer.new()
 	panel.name = "Panel"
+	# Fase 8.1: anclado abajo-centro RESPONSIVO — el panel crece hacia ARRIBA
+	# (GROW_DIRECTION_BEGIN) y su borde inferior queda por encima de la
+	# barra de skills (ZONA_INFERIOR_RESERVADA + 16 px de aire). Sin offsets
+	# mágicos ligados a la resolución: el contenido empuja el panel hacia
+	# arriba y nunca se sale por el borde inferior del viewport.
 	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	panel.offset_top = -float(UiLayers.ZONA_INFERIOR_RESERVADA) - 16.0
+	panel.offset_bottom = panel.offset_top
 	panel.custom_minimum_size = Vector2(520, 180)
-	panel.position -= Vector2(260, 220)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	velo.gui_input.connect(_al_gui_input_velo)
 	panel.gui_input.connect(_al_gui_input_panel)

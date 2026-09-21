@@ -21,7 +21,9 @@ func _construir() -> void:
 	barra.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	barra.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	barra.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	barra.offset_top = -100.0
+	# Fase 8.1: el alto reservado vive en UiLayers (misma constante que usa
+	# la VentanaDialogo como tope inferior + aire).
+	barra.offset_top = -float(UiLayers.ZONA_INFERIOR_RESERVADA)
 	barra.offset_bottom = -24.0
 	barra.add_theme_constant_override("separation", 8)
 	barra.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 2.1 — Fase 8 (2026-09-21)
+**Versión del documento:** 2.2 — Fase 8.1 hotfix (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -51,6 +51,27 @@ desechable; el diseño no.
   muertes avanzan "matar"; pickups y compras/ventas sincronizan
   "recolectar" (vender baja el progreso); F9 guarda / F10 carga con las
   misiones.
+
+**Fase 8.1 terminada — Hotfix layout responsivo del diálogo** (bug de
+Juan Diego en monitor 21:9: el panel se cortaba por el borde inferior y
+la barra de skills tapaba el texto):
+- `VentanaDialogo`: el panel va anclado abajo-centro con
+  `grow_horizontal = GROW_DIRECTION_BOTH` +
+  `grow_vertical = GROW_DIRECTION_BEGIN` (crece hacia ARRIBA) y su borde
+  inferior queda en `-(ZONA_INFERIOR_RESERVADA + 16) = -116` px, por
+  encima de la barra de skills. Se eliminó el hack
+  `panel.position -= Vector2(260, 220)`; sin offsets mágicos ligados a la
+  resolución.
+- `UiLayers.ZONA_INFERIOR_RESERVADA = 100` (constante compartida): la
+  barra de skills la usa en su `offset_top` y el diálogo como tope
+  inferior + aire — consistentes por construcción.
+- `tests/test_ui_layout.gd` (36 asserts): en 3440×1440 (Bram, texto de
+  misión más largo) y 1920×1080 (Ilya) verifica panel dentro del
+  viewport, panel sin solapar la barra, borde inferior del panel por
+  encima de la barra, capas diálogo(81) > barra(12), todas las barras
+  del HUD dentro del viewport y la descripción de la misión sin
+  encimarse con los botones (el VBox `separation` les da aire).
+
 Fase 7 terminada — Tienda / economía básica:
 - **Tienda data-driven** (`data/tiendas.json` + `TiendaDB`, mismo patrón
   que NpcDB/ItemDB): 2 tiendas — Forja de Bram (armas/armaduras) y Botica
@@ -493,6 +514,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 6.2 | **Hotfix modelo de clic Flyff** ✅: un solo handler `_clic_izquierdo` (se elimina la rama `double_click` del motor) — primer clic selecciona mob/NPC (sin atacar ni mover), segundo clic sobre el mismo enemigo combatible ataca (rápido o lento valen igual), clic en otro mob cambia la selección sin atacar, segundo clic en NPC no hace nada, suelo/nada mueve y deselecciona · decisión pura `_resolver_clic_entidad` (enum `AccionClic`) testeable sin cámara + `_aplicar_clic` + `_orden_mover_punto` · `tests/test_clic.gd` (36 asserts) | Loop jugable: clic → seleccionar → segundo clic → atacar (como Flyff) |
 | 7 | **Tienda / economía básica** ✅: `data/tiendas.json` + `TiendaDB` (data-driven, mismo patrón que NpcDB/ItemDB; NPCs vendedores con `"tienda_id"` en `data/npcs.json`; nuevo NPC Alquimista Sira, diálogo coherente con el canon Liberty) · `Tienda` (RefCounted, lógica pura SIN UI: `comprar`/`vender` con códigos de resultado, stock finito que se agota, `gastar_oro` como única vía para restar oro; vender rechaza lo equipado con "equipado"; precios data-driven —`precio_compra` explícito, `precio_venta` explícito o default `precio_compra/2`—) · `PanelTienda` (capa 82; arranca oculto, UI solo lee, stock/mochila/oro, ESC cierra) · "Comerciar" en la `VentanaDialogo` solo con NPC vendedor (señal `comerciar_solicitado`) · **save v4** tolerante (bloque `"tiendas"`; las v3 cargan con stock completo) | Loop jugable: hablar con Bram/Sira → comerciar → comprar/vender con oro → agotar stock → guardar (F9) / cargar (F10) con stock restaurado |
 | 8 | **Misiones** ✅: `data/quests.json` + `QuestDB` (data-driven, mismo patrón que NpcDB/TiendaDB; 3 misiones del canon Liberty: Goblins fuera / Colmillos para la forja / Un mensaje urgente) · `QuestLog` (RefCounted, lógica pura SIN UI: estados disponible→activa→lista→entregada, señal `cambiada`; aceptar con códigos, registrar_muerte, sincronizar_recoleccion idempotente, registrar_dialogo, oferta_para_npc, entregar —consume lo recolectado y da oro/XP/items por las APIs del Player—, progreso_texto, to_dict/from_dict versionados) · botón de misión en la `VentanaDialogo` (`mostrar_mision`; la señal `mision_solicitada` no cierra el diálogo; sin oferta no hay botón —fase 6/7 intactas) · `PanelMisiones` (capa 27; arranca oculto; J alterna con la acción `abrir_misiones`, ESC cierra; en curso con progreso "x/y" y "¡Lista para entregar!", completadas aparte; toast integrado 2.5 s) · **save v5** tolerante (bloque `"misiones"` restaurado en sitio; las v4 cargan con QuestLog vacío) | Loop jugable: hablar con Ilya → aceptar → matar 5 goblins → entregar (+150 oro, +120 XP) · llevar colmillos a Bram → espada de hierro · mensaje de Sira a Ilya · panel J con progreso en vivo · guardar (F9) / cargar (F10) con misiones restauradas |
+| 8.1 | **Hotfix layout responsivo del diálogo** ✅: `VentanaDialogo` anclado abajo-centro con `grow_vertical = GROW_DIRECTION_BEGIN` (el panel crece hacia arriba) + borde inferior en `-(ZONA_INFERIOR_RESERVADA + 16) = -116` px (por encima de la barra de skills); `UiLayers.ZONA_INFERIOR_RESERVADA = 100` compartida con `barra_skills.gd`; se eliminó el hack `panel.position -= Vector2(260, 220)` · `tests/test_ui_layout.gd` (36 asserts: panel dentro del viewport, sin solapar la barra, capas 81 > 12, HUD dentro del viewport, en 3440×1440 y 1920×1080) | Bug de Juan Diego en 21:9: el panel se cortaba por abajo y la barra tapaba el texto — ahora el diálogo completo se ve en 16:9 y 21:9 |
 | 9+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -534,4 +556,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.1 — Fase 8 (Misiones: 3 quests Liberty data-driven, QuestLog lógica pura con estados disponible→activa→lista→entregada, botón de misión en el diálogo, PanelMisiones capa 27 con J + toast, save v5 tolerante; UI solo lee).*
+*Fin del documento maestro v2.2 — Fase 8.1 (hotfix: diálogo responsivo que crece hacia arriba, ZONA_INFERIOR_RESERVADA=100 compartida, test_ui_layout.gd 36 asserts en 3440×1440 y 1920×1080; 632 tests en verde).*
