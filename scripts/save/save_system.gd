@@ -3,12 +3,13 @@ extends RefCounted
 ## Guardado/carga versionado y tolerante: nunca rompe la carga.
 ##
 ## API chica: guardar() -> bool, cargar() -> bool, hay_partida() -> bool.
-## Guarda el jugador (entidad versionada + oro + items + posición) y la lista
-## de enemigos (entidad + posición; vivo/muerto se deduce de la vida).
+## Guarda el jugador (entidad versionada + oro + inventario + equipo +
+## posición) y la lista de enemigos (entidad + posición; vivo/muerto se
+## deduce de la vida).
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -29,7 +30,8 @@ func guardar() -> bool:
 		"jugador": {
 			"entidad": jugador.to_dict(),
 			"oro": jugador.oro,
-			"items": jugador.inventario_simple,
+			"inventario": jugador.inventario.to_dict() if jugador.inventario != null else {},
+			"equipo": jugador.equipo.to_dict() if jugador.equipo != null else {},
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
@@ -80,10 +82,52 @@ func _cargar_jugador(dj: Dictionary) -> void:
 	jugador.restaurar(dj.get("entidad", {}))
 	jugador.oro = maxi(0, int(dj.get("oro", 0)))
 	jugador.oro_cambiado.emit(jugador.oro)
-	jugador.inventario_simple = dj.get("items", [])
+	_cargar_inventario(dj)
+	_cargar_equipo(dj)
 	var pos: Array = dj.get("pos", [])
 	if pos.size() >= 3:
 		jugador.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+
+
+## Inventario (formato v2: dict de to_dict/from_dict). Tolerancia: si no hay
+## "inventario" pero hay "items" del formato viejo de la fase 4 (array de
+## {item_id, cantidad}), se importa item por item.
+func _cargar_inventario(dj: Dictionary) -> void:
+	if dj.has("inventario"):
+		jugador.inventario = Inventario.from_dict(dj.get("inventario", {}))
+		return
+	var inv: Inventario = Inventario.new()
+	var viejos: Array = dj.get("items", [])
+	for it in viejos:
+		if not (it is Dictionary):
+			continue
+		var di: Dictionary = it
+		var iid: String = str(di.get("item_id", ""))
+		if iid == "":
+			continue
+		inv.agregar(iid, maxi(1, int(di.get("cantidad", 1))))
+	jugador.inventario = inv
+
+
+## Equipo (formato v2). Ojo con la doble aplicación: restaurar() ya re-aplicó
+## los mods guardados en el dict de stats, así que se retiran los de fuente
+## "equipo:<slot>:<stat>" antes de que Equipo.from_dict los reaplique.
+## Sin "equipo" (partidas viejas): equipo vacío, sin tocar stats.
+func _cargar_equipo(dj: Dictionary) -> void:
+	var dj_equipo: Dictionary = dj.get("equipo", {})
+	var slots: Dictionary = dj_equipo.get("slots", {})
+	for slot in Equipo.SLOTS:
+		var item_id: String = str(slots.get(slot, ""))
+		if item_id == "" or not ItemDB.existe(item_id):
+			continue
+		var item: Dictionary = ItemDB.obtener(item_id)
+		var mods: Array = item.get("mods", [])
+		for m in mods:
+			if not (m is Dictionary):
+				continue
+			var md: Dictionary = m
+			jugador.stats.remove_mod("equipo:%s:%s" % [slot, str(md.get("stat", ""))])
+	jugador.equipo = Equipo.from_dict(dj_equipo, jugador.stats)
 
 
 func _cargar_enemigos(lista: Array) -> void:

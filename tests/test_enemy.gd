@@ -200,5 +200,5 @@ func _t_oro() -> void:
 	_check(j.oro == 50 and _oros == 1, "ganar_oro suma y emite señal")
 	j.ganar_oro(-999)
 	_check(j.oro == 0, "el oro nunca baja de 0")
-	j.guardar_item({"tipo": "item", "item_id": "x"})
-	_check(j.inventario_simple.size() == 1, "guardar_item apila datos")
+	j.inventario.agregar("colmillo", 1)
+	_check(j.inventario.contar("colmillo") == 1, "inventario real: agregar/contar")

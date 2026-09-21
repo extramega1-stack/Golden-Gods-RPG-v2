@@ -96,10 +96,15 @@ func _t_round_trip() -> void:
 	s.jugador = j
 	s.enemigos = [e]
 
-	# Estado a guardar: jugador herido con oro y posición; enemigo muerto.
+	# Estado a guardar: jugador herido con oro, pociones y espada equipada;
+	# enemigo muerto.
 	j.take_damage(80.0, null)
 	j.ganar_oro(75)
-	j.guardar_item({"tipo": "item", "item_id": "x"})
+	j.inventario.agregar("pocion_vida", 2)
+	j.inventario.agregar("espada_corta", 1)
+	_check(j.equipo.equipar("espada_corta", j.stats, j.inventario), "pre: espada equipada")
+	var atk_eq: float = j.stats.ataque
+	_check(atk_eq > 29.0, "pre: el mod del equipo sube el ataque", str(atk_eq))
 	j.position = Vector3(3, 0, 4)
 	e.position = Vector3(6, 0, -6)
 	_botines = 0
@@ -112,13 +117,22 @@ func _t_round_trip() -> void:
 	# Se modifica todo para probar que la carga restaura.
 	j.heal(9999.0)
 	j.oro = 0
-	j.inventario_simple = []
+	j.equipo.desequipar("arma", j.stats, j.inventario)
+	j.inventario.quitar("pocion_vida", 2)
+	j.inventario.quitar("espada_corta", 1)
 	j.position = Vector3.ZERO
+	_check(j.equipo.equipado_en("arma") == "", "pre-corrupción: espada desequipada")
+	_check(j.stats.ataque == 29.0, "pre-corrupción: sin el mod el ataque vuelve a base",
+		str(j.stats.ataque))
 
 	_check(s.cargar(), "cargar() retorna true")
 	_check(j.vida_actual == 220.0, "vida restaurada", str(j.vida_actual))
 	_check(j.oro == 75, "oro restaurado", str(j.oro))
-	_check(j.inventario_simple.size() == 1, "items restaurados")
+	_check(j.inventario.contar("pocion_vida") == 2, "pociones restauradas")
+	_check(j.inventario.contar("espada_corta") == 0, "la espada sigue equipada (no duplicada)")
+	_check(j.equipo.equipado_en("arma") == "espada_corta", "equipo restaurado")
+	_check(j.stats.ataque == atk_eq, "el mod del equipo sigue aplicado en stats (sin duplicar)",
+		str(j.stats.ataque))
 	_check(j.position == Vector3(3, 0, 4), "posición restaurada", str(j.position))
 	_check(not e.esta_vivo(), "el enemigo sigue muerto tras cargar")
 	_check(e.estado == Enemy.Estado.MUERTO, "estado MUERTO tras cargar")

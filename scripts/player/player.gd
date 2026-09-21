@@ -15,7 +15,6 @@ extends Entity
 
 signal intencion_atacar(objetivo: Entity)
 signal oro_cambiado(oro: int)
-signal item_recogido(item: Dictionary)
 
 ## --- Game feel: todos los tunables en un solo sitio ---
 const ACEL_TASA: float = 9.0      ## Qué tan rápido arranca (mayor = más inmediato).
@@ -35,9 +34,12 @@ const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
 var intent: Intent
 ## Objetivo de ataque (doble clic sobre un enemigo). null = sin objetivo.
 var objetivo_ataque: Entity = null
-## Oro e inventario simple (el inventario real llega en la fase 5).
+## Oro del héroe.
 var oro: int = 0
-var inventario_simple: Array = []
+## Sistemas de la fase 5 (se crean en _ready; nunca son null en juego).
+var inventario: Inventario = null
+var equipo: Equipo = null
+var skills: SkillSystem = null
 
 var _rig: CameraRig = null
 var _tiene_destino: bool = false
@@ -58,10 +60,24 @@ func _ready() -> void:
 		vida_actual = stats.vida_max
 	if ruta_rig != NodePath(""):
 		_rig = get_node_or_null(ruta_rig) as CameraRig
+	# Sistemas de la fase 5 (después de lo existente: no dependen del rig).
+	inventario = Inventario.new()
+	equipo = Equipo.new()
+	skills = SkillSystem.new()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
+	if event.is_action_pressed("habilidad_1"):
+		_lanzar_skill(0)
+	elif event.is_action_pressed("habilidad_2"):
+		_lanzar_skill(1)
+	elif event.is_action_pressed("habilidad_3"):
+		_lanzar_skill(2)
+	elif event.is_action_pressed("habilidad_4"):
+		_lanzar_skill(3)
+	elif event.is_action_pressed("habilidad_5"):
+		_lanzar_skill(4)
+	elif event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if not mb.pressed:
 			return
@@ -70,6 +86,33 @@ func _unhandled_input(event: InputEvent) -> void:
 				_intentar_fijar_objetivo(mb.position)
 			else:
 				_orden_mover_a(mb.position)
+
+
+## Habilidades 1-5: lanza el skill i-ésimo del hotbar con objetivo inteligente.
+## Sin animaciones todavía: el efecto lo aplica SkillSystem.
+func _lanzar_skill(i: int) -> void:
+	if skills == null:
+		return
+	var ids: Array[String] = SkillDB.lista()
+	if i < 0 or i >= ids.size():
+		return
+	skills.lanzar(ids[i], self, _objetivo_skill(ids[i]))
+
+
+## Objetivo para un skill: las curaciones van al lanzador (null, el sistema
+## las aplica sobre sí mismo); el daño usa el objetivo de ataque si sigue
+## vivo, y si no, el enemigo vivo más cercano.
+func _objetivo_skill(skill_id: String) -> Entity:
+	var sk: Dictionary = SkillDB.obtener(skill_id)
+	var efecto: Dictionary = sk.get("efecto", {})
+	if str(efecto.get("tipo", "")) == "curar":
+		return null
+	if objetivo_ataque != null and objetivo_ataque.esta_vivo():
+		return objetivo_ataque
+	var arbol: SceneTree = get_tree()
+	if arbol == null:
+		return null
+	return SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
 
 
 ## Doble clic: si el rayo pega en un enemigo vivo, se vuelve el objetivo de
@@ -133,6 +176,8 @@ func _orden_mover_a(pantalla: Vector2) -> void:
 func _physics_process(delta: float) -> void:
 	if not esta_vivo():
 		return
+	if skills != null:
+		skills.tick(delta)
 	_cd_ataque = maxf(_cd_ataque - delta, 0.0)
 	_construir_intent()
 	_consumir_intent(delta)
@@ -252,9 +297,3 @@ func ejecutar_ataque() -> void:
 func ganar_oro(cantidad: int) -> void:
 	oro = maxi(0, oro + cantidad)
 	oro_cambiado.emit(oro)
-
-
-## Guarda un item como dato (el inventario real llega en la fase 5).
-func guardar_item(item: Dictionary) -> void:
-	inventario_simple.append(item)
-	item_recogido.emit(item)

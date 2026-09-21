@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3 y 4
+# Tests headless — Fases 1, 2, 3, 4 y 5
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -9,7 +9,11 @@ añade: `test_enemy.gd` (enemigo data-driven, IA QUIETO→PERSEGUIR→ATACAR→M
 golpe con fórmulas, botín + XP al morir, ataque del jugador, oro),
 `test_loot.gd` (tabla de botín determinista por semilla, rangos de oro
 y cantidades, pickups por proximidad) y `test_save.gd` (guardar/cargar
-versionado: vida, oro, posición, inventario simple y muertos/vivos).
+versionado: vida, oro, posición, inventario y equipo reales —incluye que
+los mods del equipo siguen aplicados en stats— y muertos/vivos). La fase 5
+añade: `test_inventory.gd` (`ItemDB` + `Inventario`: apilado, quitar, usar
+consumibles, serialización) y `test_skills.gd` (`SkillDB` + `SkillSystem`:
+mana, cooldowns, rango, curación al lanzador, objetivo más cercano).
 Todo sin abrir el juego.
 
 ```bash
@@ -24,9 +28,11 @@ Todo sin abrir el juego.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_enemy.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_loot.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_save.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_inventory.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_skills.gd
 
-# Smoke test de la escena demo de la fase 4 (300 frames sin errores):
-~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase4_demo.tscn --quit-after 300
+# Smoke test de la escena demo de la fase 5 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase5_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.

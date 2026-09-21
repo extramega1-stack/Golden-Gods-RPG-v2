@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.4 — Fase 4 (2026-09-21)
+**Versión del documento:** 1.5 — Fase 5 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,12 +15,18 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 4 terminada — enemigo (`Enemy` data-driven con IA
-QUIETO→PERSEGUIR→ATACAR→MUERTO), ataque del jugador con cooldown,
-`DropTable` + pickups, save/load versionado (`SaveSystem`) y HUD mínimo
-de solo lectura. Escena demo `scenes/demo/fase4_demo.tscn` con el loop
-completo jugable: moverse → pegar → lootear → subir de nivel → guardar
-(F9) / cargar (F10). La reimplementación sigue en la Fase 5 (§11).
+**Estado:** Fase 5 terminada — inventario (`Inventario`: apilables,
+capacidad 20), equipo (`Equipo`: slots arma/armadura, mods por fuente
+`equipo:<slot>:<stat>` vía `StatBlock.add_mod`, sin tocar stats base) y
+5 skills data-driven (`SkillDB` + `SkillSystem`: maná, cooldown, rango;
+teclas 1–5 por Input Map; daño con `Formulas.damage`, curación con
+`Entity.heal`). Datos: `data/items.json` (10 items) y `data/skills.json`
+(5 skills). El loot de enemigos cae al inventario; HUD con barra de
+skills (cooldown visible), panel de inventario (I) y panel de equipo (C);
+la UI solo lee datos/señales. Save/load v2 (tolerante a partidas v1).
+Escena demo `scenes/demo/fase5_demo.tscn`: recoger → equipar → skills
+contra los 3 enemigos → guardar (F9) / cargar (F10). La reimplementación
+sigue en la Fase 6 (§11).
 
 ---
 
@@ -376,7 +382,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 2 | **Entidad base**: `Entity` con StatBlock, vida, `take_damage()`, `die()`, `gain_xp()`; jugador, creep, jefe y NPC son Entity | Un solo camino para el daño |
 | 3 | **Jugador + cámara**: el input genera *intenciones*, no ejecuta acciones; game feel antes de que haya contenido que lo distraiga | Caminar con cámara L2/MU que se siente bien |
 | 4 | **Enemigo mínimo + loot + save/load temprano** ✅: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados, HUD mínimo de solo lectura | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar (F9) / cargar (F10) |
-| 5 | **HUD**: la UI solo *lee* el StatBlock, nunca lo escribe | HUD funcional sobre datos reales |
+| 5 | **Inventario, equipo y skills** ✅: `data/items.json` (10 items) y `data/skills.json` (5 skills); `Inventario` (apilar, capacidad), `Equipo` (slots arma/armadura, mods por fuente sin tocar stats base), `SkillSystem` (maná/cooldown/rango, teclas 1–5); loot → inventario; HUD con barra de skills + paneles I/C (solo lectura); save/load v2 tolerante | Loop jugable: recoger → equipar → lanzar skills → guardar (F9) / cargar (F10) |
 | 6+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -400,4 +406,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.4 — Fase 4 (enemigo + loot + save/load + HUD mínimo).*
+*Fin del documento maestro v1.5 — Fase 5 (inventario + equipo + skills).*
