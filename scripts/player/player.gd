@@ -154,6 +154,10 @@ func _unhandled_input(event: InputEvent) -> void:
 ## todavía: queda "pendiente" y el jugador se acerca hasta el rango para
 ## lanzarla (se cancela si el objetivo muere o se deselecciona). Las
 ## curaciones se aplican al lanzador sin moverse. Pública para tests.
+## Fase 10: un skill dañino sobre un objetivo válido fija el objetivo de
+## ataque (auto-ataque persistente): tras el casteo el héroe sigue
+## golpeando solo hasta que el mob muera, salga del rango (lo persigue y
+## retoma) o llegue otra orden.
 func lanzar_skill(i: int) -> void:
 	if skills == null:
 		return
@@ -166,16 +170,25 @@ func lanzar_skill(i: int) -> void:
 	var es_dano: bool = str(efecto.get("tipo", "")) == "dano"
 	var obj: Entity = _objetivo_skill(id)
 	if es_dano and obj != null and obj.esta_vivo():
+		# Fase 10 — auto-ataque persistente (pedido de Juan Diego: "cuando
+		# llega le pega, el personaje le sigue atacando al mob"). Entrar en
+		# combate con un skill fija el objetivo de ataque; el bucle de
+		# `_actualizar_ataque` + la persecución ya existentes hacen el resto
+		# con la cadencia y el daño intactos. El bucle lo detienen: la muerte
+		# del objetivo (fase 9.3: deselección + sin caminar al cadáver), otra
+		# orden (mover, WASD, deselección/ESC), otro objetivo u otro skill
+		# dañino sobre otro objetivo. Vale aunque el casteo falle (sin maná
+		# o en cooldown): el jugador quería pelear con ese mob. Las
+		# curaciones (obj null) no tocan el combate en curso.
+		# `_objetivo_skill` ya excluye NPCs y muertos (REGLA DURA intacta).
+		objetivo_ataque = obj
+		intent.objetivo = obj
+		intent.quiere_atacar = true
+		intencion_atacar.emit(obj)
 		var rango: float = float(sk.get("rango", 0.0))
 		if _dist_a(obj) > rango:
 			_pend_skill = id
 			_pend_objetivo = obj
-			# El objetivo pendiente se vuelve foco de combate: así la regla
-			# de cancelación (muerte / deselección / WASD) vale igual para
-			# el caso "sin selección" (fallback al más cercano).
-			if obj != seleccion and obj != objetivo_ataque:
-				objetivo_ataque = obj
-				intent.objetivo = obj
 			_tiene_destino = true
 			_destino = obj.global_position
 			return
@@ -223,7 +236,15 @@ func seleccionar(e: Entity) -> void:
 
 ## Fase 5.1 — quita la selección (clic en suelo vacío, ESC). Idempotente.
 ## Fase 9.1: también cancela la interacción pendiente (caminar a un NPC).
+## Fase 10: también suelta el objetivo de ataque y la orden de movimiento.
+## Deseleccionar es soltar el foco de combate por completo: ESC detiene el
+## auto-ataque y la marcha (como en los MMO), nadie camina al cadáver
+## (fase 9.3) y la cancelación del lanzamiento pendiente por deselección
+## vale siempre (foco = selección u objetivo de ataque, ambos null aquí).
 func deseleccionar() -> void:
+	objetivo_ataque = null
+	_tiene_destino = false
+	intent.tiene_destino = false
 	if seleccion == null:
 		_pend_npc = null
 		return

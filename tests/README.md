@@ -103,6 +103,18 @@ lista del guardado vuelve a 15). Además `test_clic.gd` (38 asserts)
 cubre el nuevo comportamiento del segundo clic en NPC (INTERACTUAR en
 vez de NADA).
 
+La fase 10 añade `test_fase10.gd` (26 asserts): auto-ataque persistente
+(pedido de Juan Diego: "cuando llega le pega, el personaje le sigue
+atacando al mob") — un skill dañino sobre un objetivo válido fija
+`objetivo_ataque` (antes solo el pendiente sin selección lo hacía);
+tras el casteo los básicos se repiten solos con la cadencia existente
+(skill en rango, skill pendiente al llegar, T y doble clic inician el
+bucle); si el objetivo se aleja el destino lo sigue y al volver a rango
+retoma; la muerte del objetivo detiene el bucle, deselecciona y no
+camina al cadáver (9.3); la orden de mover lo cancela; `deseleccionar()`
+suelta el foco de combate completo (objetivo + orden de movimiento);
+la curación no fija objetivo ni mueve.
+
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
 # (regenera el caché de clases; sin esto los tests no resuelven los tipos):
@@ -124,6 +136,7 @@ vez de NADA).
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_quests.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_ui_layout.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_detalle_mision.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase10.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_respawn.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
