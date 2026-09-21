@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 4
+const SAVE_VERSION: int = 5
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -21,6 +21,9 @@ var npcs: Array = []
 ## Fase 7: tienda viva (stock restante). Sin asignar, el bloque "tiendas"
 ## se guarda vacío y la carga avisa sin reventar.
 var tienda: Tienda = null
+## Fase 8: misiones (estados + progreso). Sin asignar, el bloque
+## "misiones" se guarda vacío y la carga avisa sin reventar.
+var misiones: QuestLog = null
 
 
 func hay_partida() -> bool:
@@ -43,6 +46,7 @@ func guardar() -> bool:
 		"enemigos": _enemigos_a_datos(),
 		"npcs": _npcs_a_datos(),
 		"tiendas": tienda.to_dict() if tienda != null else {"version": Tienda.SAVE_VERSION, "tiendas": {}},
+		"misiones": misiones.to_dict() if misiones != null else {"version": QuestLog.SAVE_VERSION, "misiones": {}},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -72,6 +76,7 @@ func cargar() -> bool:
 	_cargar_enemigos(datos.get("enemigos", []))
 	_cargar_npcs(datos.get("npcs", []))
 	_cargar_tiendas(datos.get("tiendas", {}))
+	_cargar_misiones(datos.get("misiones", {}))
 	return true
 
 
@@ -167,6 +172,18 @@ func _cargar_tiendas(bloque: Dictionary) -> void:
 		push_warning("[SaveSystem] sin tienda asignada; el stock queda sin cargar")
 		return
 	tienda.cargar_estado(bloque)
+
+
+## Fase 8 — Misiones: se guardan los estados y el progreso por objetivo.
+## Tolerante: las partidas v4 (sin bloque "misiones") cargan con el
+## QuestLog vacío; una versión distinta también arranca vacío
+## (cargar_estado avisa y no revienta). El QuestLog se restaura EN SITIO
+## (como Tienda): las referencias de la demo y del panel siguen válidas.
+func _cargar_misiones(bloque: Dictionary) -> void:
+	if misiones == null:
+		push_warning("[SaveSystem] sin QuestLog asignado; las misiones quedan sin cargar")
+		return
+	misiones.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que

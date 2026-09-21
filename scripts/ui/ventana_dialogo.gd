@@ -18,6 +18,10 @@ signal dialogo_cerrado
 ## Fase 7: el jugador pulsó "Comerciar" con un NPC vendedor (la demo abre
 ## el PanelTienda; el diálogo se cierra solo).
 signal comerciar_solicitado(npc: NPC)
+## Fase 8: el jugador pulsó el botón de misión ("¡Misión disponible!" o
+## "Entregar misión"). NO cierra el diálogo: la demo acepta/entrega y
+## refresca el botón.
+signal mision_solicitada(npc: NPC)
 
 var _npc: NPC = null
 var _lineas: Array[String] = []
@@ -30,6 +34,10 @@ var _boton: Button = null
 ## Fase 7: solo visible si el NPC actual tiene tienda
 ## (TiendaDB.tienda_de_npc != ""); sin tienda no hay botón ni flujo.
 var _boton_comerciar: Button = null
+## Fase 8: botón + descripción de misión (ocultos por defecto; la demo los
+## refresca con mostrar_mision() según oferta_para_npc).
+var _boton_mision: Button = null
+var _desc_mision: Label = null
 
 
 func _ready() -> void:
@@ -96,6 +104,18 @@ func _construir() -> void:
 	fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caja.add_child(fila)
 
+	# Fase 8: descripción de la misión ofrecida (oculta por defecto).
+	_desc_mision = Label.new()
+	_desc_mision.add_theme_font_size_override("font_size", 15)
+	_desc_mision.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
+	_desc_mision.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_desc_mision.custom_minimum_size = Vector2(480, 0)
+	_desc_mision.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_desc_mision.visible = false
+	caja.add_child(_desc_mision)
+	# Se mueve antes de la fila de botones (el orden visual importa).
+	caja.move_child(_desc_mision, fila.get_index())
+
 	_boton = Button.new()
 	_boton.focus_mode = Control.FOCUS_NONE
 	_boton.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -111,6 +131,14 @@ func _construir() -> void:
 	fila.add_child(_boton_comerciar)
 	_boton_comerciar.visible = false
 
+	# Fase 8: botón de misión (la demo lo muestra con mostrar_mision()).
+	_boton_mision = Button.new()
+	_boton_mision.focus_mode = Control.FOCUS_NONE
+	_boton_mision.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton_mision.pressed.connect(_al_mision)
+	fila.add_child(_boton_mision)
+	_boton_mision.visible = false
+
 
 ## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
 func mostrar(npc: NPC) -> void:
@@ -123,6 +151,10 @@ func mostrar(npc: NPC) -> void:
 		_lineas.append("…")
 	# Fase 7: botón "Comerciar" solo para NPCs vendedores.
 	_boton_comerciar.visible = TiendaDB.tienda_de_npc(npc.npc_id) != ""
+	# Fase 8: la misión se refresca desde fuera (la demo llama
+	# mostrar_mision()); aquí se oculta para no arrastrar estado viejo.
+	_boton_mision.visible = false
+	_desc_mision.visible = false
 	_pintar()
 	visible = true
 
@@ -183,6 +215,42 @@ func rol_texto() -> String:
 ## Sin tienda no hay botón: el comportamiento de la fase 6 queda intacto.
 func tiene_comerciar() -> bool:
 	return _boton_comerciar != null and _boton_comerciar.visible
+
+
+## Fase 8: true si el botón de misión está visible (hay oferta disponible
+## o lista para entregar para el NPC actual).
+func tiene_mision() -> bool:
+	return _boton_mision != null and _boton_mision.visible
+
+
+## Fase 8: refresca el botón/descripción de misión. modo "" oculta ambos;
+## "disponible" muestra "¡Misión disponible: <nombre>!" + la descripción;
+## "entregar" muestra "Entregar misión: <nombre>" (sin descripción).
+func mostrar_mision(modo: String, nombre: String, descripcion: String) -> void:
+	if modo == "":
+		_boton_mision.visible = false
+		_desc_mision.visible = false
+		return
+	if modo == "disponible":
+		_boton_mision.text = "¡Misión disponible: %s!" % nombre
+		_desc_mision.text = descripcion
+		_desc_mision.visible = true
+	elif modo == "entregar":
+		_boton_mision.text = "Entregar misión: %s" % nombre
+		_desc_mision.visible = false
+	else:
+		_boton_mision.visible = false
+		_desc_mision.visible = false
+		return
+	_boton_mision.visible = true
+
+
+## Fase 8: pulsar el botón de misión emite la señal SIN cerrar el diálogo
+## (la demo acepta/entrega y refresca el botón en su lugar).
+func _al_mision() -> void:
+	if not esta_abierta() or _npc == null:
+		return
+	mision_solicitada.emit(_npc)
 
 
 ## Fase 7: pulsar "Comerciar" emite la señal y cierra el diálogo (la demo

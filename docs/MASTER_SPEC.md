@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 2.0 — Fase 7 (2026-09-21)
+**Versión del documento:** 2.1 — Fase 8 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,43 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 7 terminada — Tienda / economía básica:
+**Estado:** Fase 8 terminada — Misiones (quests data-driven):
+- **`data/quests.json`** + `QuestDB` (mismo patrón que NpcDB/TiendaDB): 3
+  misiones coherentes con el canon Liberty — *Goblins fuera* (Ilya: matar 5
+  goblins; 150 oro, 120 XP, 2 pociones de vida), *Colmillos para la forja*
+  (Bram: recolectar 4 colmillos de lobo; 100 oro, 80 XP, espada de hierro)
+  y *Un mensaje urgente* (Sira: llevar el mensaje a Ilya; 50 oro, 60 XP,
+  2 pociones de maná). Tipos de objetivo: `matar` (arquetipo+cantidad),
+  `recolectar` (item+cantidad), `hablar` (npc).
+- **Lógica pura** `QuestLog` (RefCounted, SIN UI): estados
+  disponible → activa → lista → entregada, señal `cambiada`;
+  `aceptar()` ("ok"/"desconocida"/"no_disponible"), `registrar_muerte`,
+  `sincronizar_recoleccion` (idempotente, min(inv, cantidad)),
+  `registrar_dialogo`, `oferta_para_npc` (primero "disponible" de ese NPC,
+  si no la primera "lista" para entregar), `entregar` (consume lo
+  recolectado, da oro/XP/items por las APIs del Player; la UI nunca toca
+  stats), `progreso_texto` ("Goblins derrotados: 3/5"), `to_dict`/
+  `from_dict` versionados y tolerantes.
+- **`VentanaDialogo`**: botón + descripción de misión (ocultos por
+  defecto); `mostrar_mision(modo, nombre, descripcion)` ("disponible" →
+  "¡Misión disponible: X!" + descripción; "entregar" → "Entregar misión:
+  X"); la señal `mision_solicitada` NO cierra el diálogo (la demo
+  acepta/entrega y refresca). Sin oferta no hay botón: fase 6/7 intactas.
+- **`PanelMisiones`** (capa 27; arranca oculto —lección 11—): tecla **J**
+  (nueva acción `abrir_misiones` del Input Map) alterna; ESC cierra.
+  Misiones en curso con progreso "x/y" y "¡Lista para entregar!";
+  completadas en su sección. **Toast** integrado (CanvasLayer hijo, capa
+  15): mensajes 2.5 s con fundido ("Misión aceptada: X" / "Misión
+  completada: +N oro, +M XP").
+- **Guardado v5**: bloque `"misiones"` (estados + progreso; restaurado en
+  sitio como Tienda); tolerante (las partidas v4 sin misiones cargan con el
+  QuestLog vacío).
+- Escena demo `scenes/demo/fase8_demo.tscn` (principal del proyecto):
+  hablar con NPC registra el diálogo y refresca el botón de misión; las
+  muertes avanzan "matar"; pickups y compras/ventas sincronizan
+  "recolectar" (vender baja el progreso); F9 guarda / F10 carga con las
+  misiones.
+Fase 7 terminada — Tienda / economía básica:
 - **Tienda data-driven** (`data/tiendas.json` + `TiendaDB`, mismo patrón
   que NpcDB/ItemDB): 2 tiendas — Forja de Bram (armas/armaduras) y Botica
   de Sira (pociones/materiales; **nueva NPC** Alquimista Sira en
@@ -90,7 +126,7 @@ Fase 6: NPCs e interacción básica:
   tolerante (las partidas v2 sin NPCs cargan igual). **REGLA DURA intacta:**
   los NPCs siguen no atacables (solo hablar y seleccionar).
 - Escena demo `scenes/demo/fase6_demo.tscn` (principal del proyecto).
-La reimplementación sigue en la Fase 8 (§11).
+La reimplementación sigue en la Fase 9+ (§11).
 
 ---
 
@@ -185,7 +221,7 @@ La reimplementación sigue en la Fase 8 (§11).
 | Shift+F | Montura | G | Pesca |
 | Shift+G | Expediciones | Shift+H | Perfiles de equipo |
 | Alt+H | Narrador (tono/intensidad) | I | Títulos |
-| Shift+I | Cocina | J | Diario |
+| Shift+I | Cocina | J | **Misiones** (rewrite, fase 8) |
 | Alt+J | Visiones del otro sendero | K | Gemas |
 | Shift+K | Soulshots/Spiritshots | L | Stats de sesión |
 | Shift+L | Calendario | M | Viaje rápido |
@@ -456,7 +492,8 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 6 | **NPCs e interacción básica** ✅: NPCs data-driven completos (`NpcDB` + `nombre`/`rol`/`dialogo` en `data/npcs.json`) · E abre la VentanaDialogo con el NPC seleccionado (nombre, rol, líneas; E/clic/Continuar avanza, Cerrar/ESC cierra; UI solo lee) · save v3 tolerante con NPCs (id + posición) | Loop jugable: seleccionar NPC → hablar con E → guardar (F9) / cargar (F10) con NPCs restaurados |
 | 6.2 | **Hotfix modelo de clic Flyff** ✅: un solo handler `_clic_izquierdo` (se elimina la rama `double_click` del motor) — primer clic selecciona mob/NPC (sin atacar ni mover), segundo clic sobre el mismo enemigo combatible ataca (rápido o lento valen igual), clic en otro mob cambia la selección sin atacar, segundo clic en NPC no hace nada, suelo/nada mueve y deselecciona · decisión pura `_resolver_clic_entidad` (enum `AccionClic`) testeable sin cámara + `_aplicar_clic` + `_orden_mover_punto` · `tests/test_clic.gd` (36 asserts) | Loop jugable: clic → seleccionar → segundo clic → atacar (como Flyff) |
 | 7 | **Tienda / economía básica** ✅: `data/tiendas.json` + `TiendaDB` (data-driven, mismo patrón que NpcDB/ItemDB; NPCs vendedores con `"tienda_id"` en `data/npcs.json`; nuevo NPC Alquimista Sira, diálogo coherente con el canon Liberty) · `Tienda` (RefCounted, lógica pura SIN UI: `comprar`/`vender` con códigos de resultado, stock finito que se agota, `gastar_oro` como única vía para restar oro; vender rechaza lo equipado con "equipado"; precios data-driven —`precio_compra` explícito, `precio_venta` explícito o default `precio_compra/2`—) · `PanelTienda` (capa 82; arranca oculto, UI solo lee, stock/mochila/oro, ESC cierra) · "Comerciar" en la `VentanaDialogo` solo con NPC vendedor (señal `comerciar_solicitado`) · **save v4** tolerante (bloque `"tiendas"`; las v3 cargan con stock completo) | Loop jugable: hablar con Bram/Sira → comerciar → comprar/vender con oro → agotar stock → guardar (F9) / cargar (F10) con stock restaurado |
-| 8+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
+| 8 | **Misiones** ✅: `data/quests.json` + `QuestDB` (data-driven, mismo patrón que NpcDB/TiendaDB; 3 misiones del canon Liberty: Goblins fuera / Colmillos para la forja / Un mensaje urgente) · `QuestLog` (RefCounted, lógica pura SIN UI: estados disponible→activa→lista→entregada, señal `cambiada`; aceptar con códigos, registrar_muerte, sincronizar_recoleccion idempotente, registrar_dialogo, oferta_para_npc, entregar —consume lo recolectado y da oro/XP/items por las APIs del Player—, progreso_texto, to_dict/from_dict versionados) · botón de misión en la `VentanaDialogo` (`mostrar_mision`; la señal `mision_solicitada` no cierra el diálogo; sin oferta no hay botón —fase 6/7 intactas) · `PanelMisiones` (capa 27; arranca oculto; J alterna con la acción `abrir_misiones`, ESC cierra; en curso con progreso "x/y" y "¡Lista para entregar!", completadas aparte; toast integrado 2.5 s) · **save v5** tolerante (bloque `"misiones"` restaurado en sitio; las v4 cargan con QuestLog vacío) | Loop jugable: hablar con Ilya → aceptar → matar 5 goblins → entregar (+150 oro, +120 XP) · llevar colmillos a Bram → espada de hierro · mensaje de Sira a Ilya · panel J con progreso en vivo · guardar (F9) / cargar (F10) con misiones restauradas |
+| 9+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
 
@@ -497,4 +534,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.0 — Fase 7 (Tienda / economía básica: tiendas data-driven, lógica pura sin UI, precios explícitos o compra/2, stock finito persistido en save v4; UI solo lee).*
+*Fin del documento maestro v2.1 — Fase 8 (Misiones: 3 quests Liberty data-driven, QuestLog lógica pura con estados disponible→activa→lista→entregada, botón de misión en el diálogo, PanelMisiones capa 27 con J + toast, save v5 tolerante; UI solo lee).*

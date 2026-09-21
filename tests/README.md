@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2 y 7
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7 y 8
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -53,6 +53,20 @@ stock completo), `PanelTienda` (arranca oculto; `mostrar()` con NPC sin
 tienda no revienta ni abre; ESC cierra) y `VentanaDialogo` (flujo
 "Comerciar": la señal `comerciar_solicitado` solo con NPC vendedor; sin
 tienda no hay botón —fase 6 intacta).
+La fase 8 añade `test_quests.gd` (99 asserts): `QuestDB` carga las 3
+misiones desde `data/quests.json` (mismo patrón que NpcDB/TiendaDB),
+`QuestLog` (aceptar "ok"/"desconocida"/"no_disponible";
+`registrar_muerte` x5 → "lista" y progreso_texto "5/5";
+`sincronizar_recoleccion` con Inventario real → "lista"; `entregar` da
+oro/XP/items, consume los 4 colmillos y pasa a "entregada"; entregar sin
+completar → "no_lista"; `registrar_dialogo("ilya")` completa el objetivo
+"hablar"; `oferta_para_npc` disponible/activa/lista/entregada; señal
+`cambiada`; round-trip `to_dict`/`from_dict` versionado; `from_dict({})`
+vacío tolerante), save v5 con misiones (estados + progreso restaurados en
+sitio; las partidas v4 sin bloque "misiones" cargan con QuestLog vacío),
+`PanelMisiones` (arranca oculto; `alternar()`; `toast()` no revienta) y
+`VentanaDialogo` (`mostrar_mision`: disponible/entregar/ocultar; la señal
+`mision_solicitada` se emite sin cerrar el diálogo).
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -72,12 +86,16 @@ tienda no hay botón —fase 6 intacta).
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_npcs.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_clic.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_tienda.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_quests.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
 
 # Smoke test de la escena demo de la fase 7 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase7_demo.tscn --quit-after 300
+
+# Smoke test de la escena demo de la fase 8 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase8_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.
