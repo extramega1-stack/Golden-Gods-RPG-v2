@@ -9,12 +9,15 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 2
+const SAVE_VERSION: int = 3
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
 var jugador: Player = null
 var enemigos: Array = []
+## Fase 6: NPCs en escena (id + posición; los NPCs no mueren, así que no se
+## guarda vida: el estado básico es su posición).
+var npcs: Array = []
 
 
 func hay_partida() -> bool:
@@ -35,6 +38,7 @@ func guardar() -> bool:
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
+		"npcs": _npcs_a_datos(),
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -62,6 +66,7 @@ func cargar() -> bool:
 		push_warning("[SaveSystem] versión %d (esperada %d); se intenta cargar igual" % [version, SAVE_VERSION])
 	_cargar_jugador(datos.get("jugador", {}))
 	_cargar_enemigos(datos.get("enemigos", []))
+	_cargar_npcs(datos.get("npcs", []))
 	return true
 
 
@@ -147,3 +152,42 @@ func _cargar_enemigos(lista: Array) -> void:
 			en.mostrar_cuerpo()
 		else:
 			en.ocultar_cuerpo()
+
+
+## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que
+## guardar). Al cargar se busca cada NPC en escena por npc_id (independiente
+## del orden) y se restaura la posición sin emitir ninguna señal.
+func _npcs_a_datos() -> Array:
+	var lista: Array = []
+	for n in npcs:
+		var npc: NPC = n as NPC
+		if npc == null:
+			continue
+		lista.append({
+			"npc_id": npc.npc_id,
+			"pos": [npc.global_position.x, npc.global_position.y, npc.global_position.z],
+		})
+	return lista
+
+
+## Tolerante: las partidas viejas (v2) no traen el bloque "npcs" y cargan
+## igual (los NPCs quedan donde los dejó la escena).
+func _cargar_npcs(lista: Array) -> void:
+	if lista.is_empty():
+		return
+	var por_id: Dictionary = {}
+	for n in npcs:
+		var npc: NPC = n as NPC
+		if npc != null and npc.npc_id != "":
+			por_id[npc.npc_id] = npc
+	for d in lista:
+		if not (d is Dictionary):
+			continue
+		var dd: Dictionary = d
+		var npc: NPC = por_id.get(str(dd.get("npc_id", "")), null)
+		if npc == null:
+			push_warning("[SaveSystem] NPC guardado no está en escena: %s" % str(dd.get("npc_id", "")))
+			continue
+		var pos: Array = dd.get("pos", [])
+		if pos.size() >= 3:
+			npc.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))

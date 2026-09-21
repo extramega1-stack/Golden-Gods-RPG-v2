@@ -1,14 +1,19 @@
 class_name NPC
 extends Entity
-## NPC no combatible de la fase 5.1: se puede seleccionar (indicador) y
-## con él se hablará en fases futuras, pero NUNCA se le puede atacar.
+## NPC no combatible (fases 5.1–6): se puede seleccionar (indicador) y con
+## él se habla (ventana de diálogo, fase 6), pero NUNCA se le puede atacar.
 ##
 ## REGLA DURA: `combatible = false`. `Entity.take_damage` ignora el daño,
 ## `Player` rechaza fijarlo como objetivo de ataque y `SkillSystem`
 ## rechaza skills dañinas sobre él (motivo "no_combatible").
-## Data-driven: `configurar(datos)` recibe el diccionario de data/npcs.json.
+## Data-driven: `configurar(datos)` recibe la entrada de data/npcs.json
+## (via NpcDB): nombre, rol, color y líneas de diálogo.
 
 var nombre_mostrado: String = "NPC"
+## Identificador en data/npcs.json (fase 6: para el guardado).
+var npc_id: String = ""
+var rol: String = ""
+var lineas_dialogo: Array[String] = []
 
 
 func _init(p_stats: StatBlock = null) -> void:
@@ -16,9 +21,16 @@ func _init(p_stats: StatBlock = null) -> void:
 	combatible = false
 
 
-## Aplica una entrada de data/npcs.json (nombre + tinte del cuerpo).
+## Aplica una entrada de data/npcs.json. Tolerante: los campos nuevos
+## (rol, dialogo) tienen valores por defecto si faltan.
 func configurar(datos: Dictionary) -> void:
+	npc_id = str(datos.get("id", ""))
 	nombre_mostrado = str(datos.get("nombre", "NPC"))
+	rol = str(datos.get("rol", ""))
+	lineas_dialogo.clear()
+	var lineas: Array = datos.get("dialogo", [])
+	for l in lineas:
+		lineas_dialogo.append(str(l))
 	_tintar(datos.get("color", [0.35, 0.55, 0.95]))
 
 

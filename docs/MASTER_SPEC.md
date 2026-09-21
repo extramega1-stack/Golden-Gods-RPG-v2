@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.6 — Fase 5.1 (2026-09-21)
+**Versión del documento:** 1.7 — Fase 6 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 5.1 terminada — pulido de selección y combate:
+**Estado:** Fase 6 terminada — NPCs e interacción básica:
 - **Selección:** clic simple selecciona mob/NPC (anillo dorado 3D bajo sus
   pies, `IndicadorSeleccion`); clic en suelo vacío o ESC deselecciona. La
   selección muerta se limpia sola.
@@ -38,7 +38,20 @@ desechable; el diseño no.
   Datos: `data/npcs.json` (Mariscala Ilya Voss, Herrero Bram).
 - Nuevas acciones Input Map: `atacar` (T), `cancelar_seleccion` (ESC).
 - Escena demo `scenes/demo/fase5_1_demo.tscn` (principal del proyecto).
-La reimplementación sigue en la Fase 6 (§11).
+- **Fase 6 — NPCs e interacción básica:** NPCs data-driven completos
+  (`scripts/npc/npc_db.gd`, mismo patrón que ItemDB/SkillDB; `data/npcs.json`
+  con `nombre`, `rol` y `dialogo` por NPC); tecla **E** (nueva acción
+  `interactuar` del Input Map) con un NPC vivo seleccionado abre la
+  **VentanaDialogo** (`scripts/ui/ventana_dialogo.gd`, capa 81: nombre, rol y
+  líneas; avance con E/clic/"Continuar", cierre con "Cerrar"/ESC; arranca
+  oculta y sin comerse clics — lección 11); el Player emite la intención
+  `hablar_con` y la UI solo lee (nunca escribe stats); interactuar sin
+  selección no hace nada. **Guardado v3** (`user://partida.json`): incluye
+  los NPCs (id + posición; no mueren, así que no se guarda vida) y es
+  tolerante (las partidas v2 sin NPCs cargan igual). **REGLA DURA intacta:**
+  los NPCs siguen no atacables (solo hablar y seleccionar).
+- Escena demo `scenes/demo/fase6_demo.tscn` (principal del proyecto).
+La reimplementación sigue en la Fase 7 (§11).
 
 ---
 
@@ -398,7 +411,8 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 4 | **Enemigo mínimo + loot + save/load temprano** ✅: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados, HUD mínimo de solo lectura | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar (F9) / cargar (F10) |
 | 5 | **Inventario, equipo y skills** ✅: `data/items.json` (10 items) y `data/skills.json` (5 skills); `Inventario` (apilar, capacidad), `Equipo` (slots arma/armadura, mods por fuente sin tocar stats base), `SkillSystem` (maná/cooldown/rango, teclas 1–5); loot → inventario; HUD con barra de skills + paneles I/C (solo lectura); save/load v2 tolerante | Loop jugable: recoger → equipar → lanzar skills → guardar (F9) / cargar (F10) |
 | 5.1 | **Pulido de selección y combate** ✅: indicador de selección 3D (clic simple selecciona mob/NPC; suelo vacío o ESC deselecciona) · flash rojo al recibir daño (estado en `Entity` + `DamageFlash`) · botón de atacar arrastrable con tecla reasignable (acción `atacar`, defecto T; persiste en `user://`) · skills dañinas con acercamiento automático (lanzamiento pendiente, cancelable) · **REGLA DURA: NPCs no atacables** (`combatible = false`; `data/npcs.json`) | Loop jugable: seleccionar → atacar con botón/tecla → skills que se acercan solas → NPCs que se seleccionan pero no se pueden dañar |
-| 6+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
+| 6 | **NPCs e interacción básica** ✅: NPCs data-driven completos (`NpcDB` + `nombre`/`rol`/`dialogo` en `data/npcs.json`) · E abre la VentanaDialogo con el NPC seleccionado (nombre, rol, líneas; E/clic/Continuar avanza, Cerrar/ESC cierra; UI solo lee) · save v3 tolerante con NPCs (id + posición) | Loop jugable: seleccionar NPC → hablar con E → guardar (F9) / cargar (F10) con NPCs restaurados |
+| 7+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
 
@@ -413,6 +427,13 @@ Reglas de la rebuild:
   barato cuando la base es sólida; carísimo cuando no.
 - NO primero: pulido de UI, contenido masivo, talentos grandes, nada
   "tipo MMORPG".
+- **Tecla E fija (decisión de diseño, fase 6):** la acción `interactuar` es
+  reasignable solo editando el Input Map. El patrón de rebind en runtime
+  (clic derecho + `user://`) pertenece a las acciones que tienen un botón
+  del HUD que la "posee" (`atacar` → BotonAtacar); `interactuar` no tiene
+  botón, así que añadirle rebind exigiría una UI de ajustes (fase futura:
+  pila de paneles, §6 dominio 1). La tecla sigue siendo 100% data-driven
+  (Input Map en `project.godot`), sin keycode hardcodeado en el código.
 
 Cada fase: especificación cerrada → implementación → `--check-only` (0 fallos) →
 tests headless en verde → ZIP con versión → **playtest de Juan Diego** →
@@ -421,4 +442,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.6 — Fase 5.1 (selección + combate pulido, NPCs no atacables).*
+*Fin del documento maestro v1.7 — Fase 6 (NPCs data-driven completos + interacción con diálogo, save v3).*

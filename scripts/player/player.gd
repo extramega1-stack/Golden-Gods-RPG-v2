@@ -18,6 +18,10 @@ signal oro_cambiado(oro: int)
 ## Fase 5.1: cambió la entidad seleccionada (clic simple). null = deselección.
 ## La escuchan el indicador 3D y la UI futura; la emite solo Player.
 signal seleccion_cambiada(entidad: Entity)
+## Fase 6: el jugador quiere hablar con este NPC (acción `interactuar`).
+## La emite solo Player; la demo abre la VentanaDialogo (la UI no toca
+## al Player ni a sus stats).
+signal hablar_con(npc: NPC)
 
 ## --- Game feel: todos los tunables en un solo sitio ---
 const ACEL_TASA: float = 9.0      ## Qué tan rápido arranca (mayor = más inmediato).
@@ -95,6 +99,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("atacar"):
 		# Fase 5.1: tecla reasignable (Input Map, acción "atacar").
 		solicitar_ataque()
+	elif event.is_action_pressed("interactuar"):
+		# Fase 6: tecla E (Input Map, acción "interactuar").
+		interactuar()
 	elif event.is_action_pressed("cancelar_seleccion"):
 		# Fase 5.1: ESC deselecciona (el lanzamiento pendiente se cancela
 		# solo en el siguiente frame, porque su objetivo deja de ser el foco).
@@ -146,6 +153,19 @@ func lanzar_skill(i: int) -> void:
 ## ¿Hay un lanzamiento pendiente de resolverse? (tests + UI futura).
 func tiene_lanzamiento_pendiente() -> bool:
 	return _pend_skill != "" and _pend_objetivo != null
+
+
+## Fase 6 — interacción contextual: con un NPC vivo seleccionado emite
+## `hablar_con` (la demo abre la VentanaDialogo). Sin selección útil
+## (nada, un enemigo, o un NPC muerto) no hace nada y no falla: los
+## enemigos no abren diálogo. Pública para tests y la UI.
+func interactuar() -> void:
+	if not esta_vivo():
+		return
+	var npc: NPC = seleccion as NPC
+	if npc == null or not npc.esta_vivo():
+		return
+	hablar_con.emit(npc)
 
 
 ## Fase 5.1 — selecciona una entidad (mob o NPC). Idempotente: seleccionar

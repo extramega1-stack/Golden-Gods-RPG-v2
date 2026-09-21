@@ -14,3 +14,4 @@ const BARRA_SKILLS: int = 12
 const BOTON_ATACAR: int = 13
 const PANEL_INVENTARIO: int = 25
 const PANEL_EQUIPO: int = 26
+const VENTANA_DIALOGO: int = 81

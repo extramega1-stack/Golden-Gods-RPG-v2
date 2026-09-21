@@ -1,0 +1,200 @@
+class_name VentanaDialogo
+extends CanvasLayer
+## Ventana de diálogo de la fase 6: muestra nombre, rol y líneas del NPC
+## con el que el jugador habla (acción `interactuar`, tecla E).
+##
+## Solo LEE los datos del NPC (nombre_mostrado, rol, lineas_dialogo);
+## nunca escribe stats ni llama a take_damage.
+##
+## Lección 11: arranca OCULTA (visible=false) y sin velo activo; cuando
+## está inactiva no se come ningún clic. Al abrirse, el velo a pantalla
+## completa SÍ captura clics (modal): el juego detrás no recibe órdenes.
+##
+## Avance: E (acción `interactuar`), clic izquierdo sobre la ventana o el
+## botón "Continuar"/"Cerrar". ESC cierra el diálogo (la ventana consume
+## el ESC en _input antes de que el Player lo vea como deselección).
+
+signal dialogo_cerrado
+
+var _npc: NPC = null
+var _lineas: Array[String] = []
+var _indice: int = 0
+
+var _titulo: Label = null
+var _rol: Label = null
+var _texto: Label = null
+var _boton: Button = null
+
+
+func _ready() -> void:
+	layer = UiLayers.VENTANA_DIALOGO
+	_construir()
+	# Lección 11: oculto desde el arranque; el velo no existe como obstáculo
+	# mientras no hay diálogo abierto.
+	visible = false
+
+
+func _construir() -> void:
+	var velo: ColorRect = ColorRect.new()
+	velo.name = "Velo"
+	velo.color = Color(0.0, 0.0, 0.0, 0.55)
+	velo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	velo.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(velo)
+
+	var panel: PanelContainer = PanelContainer.new()
+	panel.name = "Panel"
+	panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	panel.custom_minimum_size = Vector2(520, 180)
+	panel.position -= Vector2(260, 220)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	velo.gui_input.connect(_al_gui_input_velo)
+	panel.gui_input.connect(_al_gui_input_panel)
+	add_child(panel)
+
+	var margen: MarginContainer = MarginContainer.new()
+	margen.add_theme_constant_override("margin_left", 20)
+	margen.add_theme_constant_override("margin_right", 20)
+	margen.add_theme_constant_override("margin_top", 16)
+	margen.add_theme_constant_override("margin_bottom", 16)
+	margen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(margen)
+
+	var caja: VBoxContainer = VBoxContainer.new()
+	caja.add_theme_constant_override("separation", 8)
+	caja.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margen.add_child(caja)
+
+	_titulo = Label.new()
+	_titulo.add_theme_font_size_override("font_size", 20)
+	_titulo.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
+	_titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(_titulo)
+
+	_rol = Label.new()
+	_rol.add_theme_font_size_override("font_size", 14)
+	_rol.add_theme_color_override("font_color", Color(0.75, 0.72, 0.68))
+	_rol.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(_rol)
+
+	_texto = Label.new()
+	_texto.add_theme_font_size_override("font_size", 17)
+	_texto.add_theme_color_override("font_color", Color(0.94, 0.93, 0.9))
+	_texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_texto.custom_minimum_size = Vector2(480, 64)
+	_texto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(_texto)
+
+	var fila: HBoxContainer = HBoxContainer.new()
+	fila.alignment = BoxContainer.ALIGNMENT_END
+	fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(fila)
+
+	_boton = Button.new()
+	_boton.focus_mode = Control.FOCUS_NONE
+	_boton.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton.pressed.connect(avanzar)
+	fila.add_child(_boton)
+
+
+## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
+func mostrar(npc: NPC) -> void:
+	if npc == null:
+		return
+	_npc = npc
+	_lineas = npc.lineas_dialogo.duplicate()
+	_indice = 0
+	if _lineas.is_empty():
+		_lineas.append("…")
+	_pintar()
+	visible = true
+
+
+## Avanza a la siguiente línea; al pasar la última cierra el diálogo.
+func avanzar() -> void:
+	if not esta_abierta():
+		return
+	_indice += 1
+	if _indice >= _lineas.size():
+		cerrar()
+	else:
+		_pintar()
+
+
+func cerrar() -> void:
+	if not esta_abierta():
+		return
+	visible = false
+	_npc = null
+	_lineas.clear()
+	_indice = 0
+	dialogo_cerrado.emit()
+
+
+func esta_abierta() -> bool:
+	return visible
+
+
+## NPC actual (null si el diálogo está cerrado). Solo lectura.
+func npc_actual() -> NPC:
+	return _npc
+
+
+## Línea que se está mostrando ("" si está cerrado).
+func linea_actual() -> String:
+	if not esta_abierta():
+		return ""
+	return _lineas[_indice]
+
+
+## Posición de la línea actual (0-based); -1 si está cerrado.
+func indice() -> int:
+	return _indice if esta_abierta() else -1
+
+
+## Texto que muestra el título (nombre del NPC); solo lectura (tests).
+func titulo_texto() -> String:
+	return _titulo.text
+
+
+## Texto que muestra el rol; solo lectura (tests).
+func rol_texto() -> String:
+	return _rol.text
+
+
+func _pintar() -> void:
+	_titulo.text = _npc.nombre_mostrado if _npc != null else "NPC"
+	_rol.text = _npc.rol if _npc != null and _npc.rol != "" else ""
+	_texto.text = _lineas[_indice]
+	_boton.text = "Cerrar" if _indice == _lineas.size() - 1 else "Continuar"
+
+
+## Clic izquierdo sobre el velo o el panel: avanza el diálogo. El velo
+## tiene MOUSE_FILTER_STOP, así que estos clics nunca llegan al Player
+## (el juego detrás no se mueve mientras se habla).
+func _al_gui_input_velo(event: InputEvent) -> void:
+	_al_clic_avanzar(event)
+
+
+func _al_gui_input_panel(event: InputEvent) -> void:
+	_al_clic_avanzar(event)
+
+
+func _al_clic_avanzar(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			avanzar()
+
+
+## _input corre antes que el _unhandled_input del Player: el diálogo
+## consume E (avanzar) y ESC (cerrar) antes de que lleguen al juego.
+func _input(event: InputEvent) -> void:
+	if not esta_abierta():
+		return
+	if event.is_action_pressed("interactuar"):
+		avanzar()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("cancelar_seleccion"):
+		cerrar()
+		get_viewport().set_input_as_handled()

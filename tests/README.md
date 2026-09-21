@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5 y 5.1
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1 y 6
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -23,6 +23,16 @@ en ConfigFile con ruta temporal inyectada), skills con acercamiento
 muerte y por deselección; curaciones sin moverse) y la REGLA DURA de NPCs
 no atacables (doble clic, botón/tecla y skill dañina ignorados con motivo
 "no_combatible"; el NPC sí se selecciona; `take_damage` sin efecto).
+La fase 6 añade `test_npcs.gd` (56 asserts): `NpcDB` carga nombre/rol/líneas
+de `data/npcs.json` (mismo patrón que ItemDB/SkillDB), `NPC.configurar` lee
+rol y diálogo y tolera campos ausentes, `Player.interactuar` emite
+`hablar_con` solo con un NPC vivo seleccionado (sin selección o con un
+enemigo no hace nada), la `VentanaDialogo` arranca oculta y muestra
+nombre/rol/líneas correctas (avanzar por líneas, cerrar al final, E avanza
+y ESC cierra consumidas antes que el Player), save v3 con NPCs (id +
+posición; las partidas v2 sin bloque "npcs" cargan igual) y regresión de la
+REGLA DURA (el NPC sigue no atacable: `take_damage` sin efecto,
+`solicitar_ataque` lo ignora, pero sí se selecciona).
 Todo sin abrir el juego.
 
 ```bash
@@ -40,9 +50,10 @@ Todo sin abrir el juego.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_inventory.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_skills.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_seleccion.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_npcs.gd
 
-# Smoke test de la escena demo de la fase 5.1 (300 frames sin errores):
-~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase5_1_demo.tscn --quit-after 300
+# Smoke test de la escena demo de la fase 6 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.
