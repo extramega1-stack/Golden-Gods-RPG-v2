@@ -58,17 +58,19 @@ jobs:
           du -sh build/web
           ls build/web
 
-      - name: Aviso si falta el secret de despliegue
-        if: secrets.WEB_DEPLOY_TOKEN == ''
-        run: |
-          echo "::warning::Falta el secret WEB_DEPLOY_TOKEN en el repo: la exportación quedó verificada pero NO se desplegó. Agrégalo en Settings > Secrets and variables > Actions y re-ejecuta el workflow."
-
       - name: Desplegar a GitHub Pages
-        if: secrets.WEB_DEPLOY_TOKEN != ''
+        # Sin el secret WEB_DEPLOY_TOKEN la exportación queda verificada
+        # pero el despliegue se omite con un aviso (el chequeo se hace en
+        # bash: el contexto `secrets` en un `if:` ha dado fallos de parseo).
         env:
-          GH_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN }}
+          WEB_DEPLOY_TOKEN: ${{ secrets.WEB_DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${WEB_DEPLOY_TOKEN:-}" ]; then
+            echo "::warning::Falta el secret WEB_DEPLOY_TOKEN en el repo: la exportación quedó verificada pero NO se desplegó. Agrégalo en Settings > Secrets and variables > Actions y re-ejecuta el workflow."
+            exit 0
+          fi
+          export GH_TOKEN="$WEB_DEPLOY_TOKEN"
           cd build/web
           touch .nojekyll
           git init -b gh-pages
