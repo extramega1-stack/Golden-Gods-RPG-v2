@@ -24,7 +24,7 @@ Nada jugable todavía. La reimplementación empieza en la Fase 1 (§11).
 
 | Rol | URL / ruta |
 |---|---|
-| Proyecto nuevo (este) | `https://github.com/extramega1-stack/Golden-Gods-RPG-Remake` (remoto pendiente de creación — ver nota) |
+| Proyecto nuevo (este) | `https://github.com/extramega1-stack/Golden-Gods-RPG-v2` (remoto pendiente de creación — ver nota) |
 | Clon local | `~/workspace/godot-rpg-remake` |
 | Proyecto legado (congelado en v10.26.0, **no tocar**) | `https://github.com/extramega1-stack/Golden-Gods-RPG` · local `~/workspace/godot-rpg` |
 
