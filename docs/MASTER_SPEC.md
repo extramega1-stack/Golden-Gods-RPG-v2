@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.3 — Fase 3 (2026-09-21)
+**Versión del documento:** 1.4 — Fase 4 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,10 +15,12 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 3 terminada — jugador + cámara por intenciones (`Intent`,
-`Player`, `CameraRig`, `Movimiento` con tests headless en verde) y escena demo
-`scenes/demo/fase3_demo.tscn` jugable 5 minutos (WASD + clic + doble clic +
-cámara con botón derecho). La reimplementación sigue en la Fase 4 (§11).
+**Estado:** Fase 4 terminada — enemigo (`Enemy` data-driven con IA
+QUIETO→PERSEGUIR→ATACAR→MUERTO), ataque del jugador con cooldown,
+`DropTable` + pickups, save/load versionado (`SaveSystem`) y HUD mínimo
+de solo lectura. Escena demo `scenes/demo/fase4_demo.tscn` con el loop
+completo jugable: moverse → pegar → lootear → subir de nivel → guardar
+(F9) / cargar (F10). La reimplementación sigue en la Fase 5 (§11).
 
 ---
 
@@ -130,8 +132,8 @@ cámara con botón derecho). La reimplementación sigue en la Fase 4 (§11).
 | F1 | Crónica / lore | F2 | Comandos |
 | F3 | Campaña | F4 | Hoja de personaje |
 | F5 | Filtro de botín | F6 | Hardcore (doble puls.) |
-| F7 | Temporizadores | F9 | Registro misiones HUD |
-| F10 | Reasignar atributos | F11 | Atlas del mundo |
+| F7 | Temporizadores | F9 | **Guardar partida** (rewrite) |
+| F10 | **Cargar partida** (rewrite) | F11 | Atlas del mundo |
 | F12 | Modo foto | Ctrl+F8 | Forzar ruleta |
 
 ### 5.3 Conflictos del legado — decisiones del rewrite
@@ -144,6 +146,7 @@ cámara con botón derecho). La reimplementación sigue en la Fase 4 (§11).
 | P (patrulla legacy vs mascota) | **P = mascota**; el comando patrulla legacy se elimina |
 | Alt+H (narrador sin binding) | **Alt+H = panel del narrador** (oficial desde el día 1) |
 | F8 | Libre (el sistema viejo de talentos quedó retirado) |
+| F9 (registro misiones HUD) / F10 (reasignar atributos) | **F9 = guardar partida** · **F10 = cargar partida** (rewrite, fase 4): el save/load temprano necesita atajos desde el día 1. Registro de misiones y reasignación de atributos recuperan sus teclas en sus fases (§11) |
 
 > **Política de input (§9.3):** en el legado las 76 teclas estaban hardcodeadas por
 > keycode en cada script. En el remake **todo atajo vive en el Input Map del
@@ -372,7 +375,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 1 | **Datos puros**: `StatBlock` + fórmulas puras + tests headless | Tests en verde (~2 s) |
 | 2 | **Entidad base**: `Entity` con StatBlock, vida, `take_damage()`, `die()`, `gain_xp()`; jugador, creep, jefe y NPC son Entity | Un solo camino para el daño |
 | 3 | **Jugador + cámara**: el input genera *intenciones*, no ejecuta acciones; game feel antes de que haya contenido que lo distraiga | Caminar con cámara L2/MU que se siente bien |
-| 4 | **Enemigo mínimo + loot + save/load temprano**: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar/cargar |
+| 4 | **Enemigo mínimo + loot + save/load temprano** ✅: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados, HUD mínimo de solo lectura | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar (F9) / cargar (F10) |
 | 5 | **HUD**: la UI solo *lee* el StatBlock, nunca lo escribe | HUD funcional sobre datos reales |
 | 6+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
@@ -397,4 +400,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.3 — Fase 3 (jugador + cámara por intenciones).*
+*Fin del documento maestro v1.4 — Fase 4 (enemigo + loot + save/load + HUD mínimo).*

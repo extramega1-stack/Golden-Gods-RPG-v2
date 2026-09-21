@@ -40,6 +40,10 @@ var nivel: int = 1
 var xp_actual: int = 0
 
 var _muerto: bool = false
+## Capas de colisión originales (die() las apaga; restaurar() las devuelve
+## si se carga un estado vivo sobre una entidad que había muerto en la sesión).
+var _capa_guardada: int = 1
+var _mascara_guardada: int = 1
 
 
 ## p_stats null → bloque base (útil al instanciar desde escena).
@@ -106,6 +110,8 @@ func die(fuente: Entity = null) -> void:
 		return
 	_muerto = true
 	vida_actual = 0.0
+	_capa_guardada = collision_layer
+	_mascara_guardada = collision_mask
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
 	set_process(false)
@@ -137,7 +143,49 @@ func _al_subir_nivel() -> void:
 	mana_cambiado.emit(mana_actual, stats.mana_max)
 
 
-## Serialización versionada (la usará el save/load de la fase 4).
+## Restaura el estado desde un dict versionado (la usa el save/load).
+## Tolera versiones desconocidas con push_warning y nunca rompe: ante campos
+## ausentes usa valores sanos por defecto. Emite las señales de cambio
+## (vida/maná/xp) para que la UI se refresque; nunca emite `murio`.
+func restaurar(d: Dictionary) -> void:
+	var version: int = int(d.get("version", 0))
+	if version != SAVE_VERSION:
+		push_warning("[Entity] versión de guardado no soportada: %d (esperada %d)" % [version, SAVE_VERSION])
+	var estaba_muerto: bool = _muerto
+	stats = StatBlock.from_dict(d.get("stats", {}))
+	nivel = maxi(1, int(d.get("nivel", 1)))
+	xp_actual = maxi(0, int(d.get("xp_actual", 0)))
+	vida_actual = clampf(float(d.get("vida_actual", stats.vida_max)), 0.0, stats.vida_max)
+	mana_actual = clampf(float(d.get("mana_actual", stats.mana_max)), 0.0, stats.mana_max)
+	if vida_actual <= 0.0:
+		_apagar_muerto_silencioso()
+	elif estaba_muerto:
+		_revivir_silencioso()
+	vida_cambiada.emit(vida_actual, stats.vida_max)
+	mana_cambiado.emit(mana_actual, stats.mana_max)
+	xp_cambiada.emit(xp_actual, Formulas.xp_for_level(nivel + 1))
+
+
+## Marca muerte sin señales ni efectos (para cargar partidas).
+func _apagar_muerto_silencioso() -> void:
+	_muerto = true
+	set_deferred("collision_layer", 0)
+	set_deferred("collision_mask", 0)
+	set_process(false)
+	set_physics_process(false)
+
+
+## Devuelve colisión y procesado al cargar un estado vivo sobre una entidad
+## que había muerto en la sesión actual.
+func _revivir_silencioso() -> void:
+	_muerto = false
+	set_deferred("collision_layer", _capa_guardada)
+	set_deferred("collision_mask", _mascara_guardada)
+	set_process(true)
+	set_physics_process(true)
+
+
+## Serialización versionada (la usa el save/load de la fase 4).
 func to_dict() -> Dictionary:
 	return {
 		"version": SAVE_VERSION,
@@ -150,16 +198,7 @@ func to_dict() -> Dictionary:
 
 
 static func from_dict(d: Dictionary) -> Entity:
-	var version: int = int(d.get("version", 0))
-	if version != SAVE_VERSION:
-		push_warning("[Entity] versión de guardado no soportada: %d (esperada %d)" % [version, SAVE_VERSION])
-	var stats_dict: Dictionary = d.get("stats", {})
-	var e: Entity = Entity.new(StatBlock.from_dict(stats_dict))
-	e.nivel = maxi(1, int(d.get("nivel", 1)))
-	e.xp_actual = maxi(0, int(d.get("xp_actual", 0)))
-	e.vida_actual = clampf(float(d.get("vida_actual", e.stats.vida_max)), 0.0, e.stats.vida_max)
-	e.mana_actual = clampf(float(d.get("mana_actual", e.stats.mana_max)), 0.0, e.stats.mana_max)
-	if e.vida_actual <= 0.0:
-		# Se guardó muerta: carga muerta sin re-emitir señales.
-		e._muerto = true
+	# Se guardó muerta: carga muerta sin re-emitir `murio` (lo garantiza restaurar).
+	var e: Entity = Entity.new()
+	e.restaurar(d)
 	return e
