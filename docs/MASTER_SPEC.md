@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 1.5 — Fase 5 (2026-09-21)
+**Versión del documento:** 1.6 — Fase 5.1 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,18 +15,30 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 5 terminada — inventario (`Inventario`: apilables,
-capacidad 20), equipo (`Equipo`: slots arma/armadura, mods por fuente
-`equipo:<slot>:<stat>` vía `StatBlock.add_mod`, sin tocar stats base) y
-5 skills data-driven (`SkillDB` + `SkillSystem`: maná, cooldown, rango;
-teclas 1–5 por Input Map; daño con `Formulas.damage`, curación con
-`Entity.heal`). Datos: `data/items.json` (10 items) y `data/skills.json`
-(5 skills). El loot de enemigos cae al inventario; HUD con barra de
-skills (cooldown visible), panel de inventario (I) y panel de equipo (C);
-la UI solo lee datos/señales. Save/load v2 (tolerante a partidas v1).
-Escena demo `scenes/demo/fase5_demo.tscn`: recoger → equipar → skills
-contra los 3 enemigos → guardar (F9) / cargar (F10). La reimplementación
-sigue en la Fase 6 (§11).
+**Estado:** Fase 5.1 terminada — pulido de selección y combate:
+- **Selección:** clic simple selecciona mob/NPC (anillo dorado 3D bajo sus
+  pies, `IndicadorSeleccion`); clic en suelo vacío o ESC deselecciona. La
+  selección muerta se limpia sola.
+- **Flash rojo al recibir daño:** estado `flash_tiempo` en `Entity`
+  (testeable, decae en `_process`) + gancho visual `DamageFlash` (tiñe el
+  "Cuerpo" sin mutar materiales compartidos).
+- **Botón de atacar en el HUD** (`BotonAtacar`): emite la intención, el Player
+  la consume (`solicitar_ataque`: foco > mob más cercano en rango ≤ 8 m).
+  Arrastrable (posición en `user://boton_atacar.cfg`); clic derecho = rebind
+  de la tecla de la acción `atacar` (defecto T), persiste y se aplica al arrancar.
+- **Skills con acercamiento:** skill dañina fuera de rango → lanzamiento
+  pendiente: el jugador se acerca (reusa persecución) y la lanza al llegar;
+  se cancela si el objetivo muere o deja de ser el foco. Curaciones al
+  lanzador sin moverse.
+- **REGLA DURA: los NPCs NO se pueden atacar** (`Entity.combatible = false`
+  en `NPC`; `true` en jugador/enemigos). `take_damage` los ignora por completo
+  (sin vida, sin señales, sin flash); el Player rechaza fijarlos como objetivo
+  (doble clic, botón, tecla) y `SkillSystem` rechaza skills dañinas sobre ellos
+  (motivo `"no_combatible"`). Los NPCs SÍ se pueden seleccionar.
+  Datos: `data/npcs.json` (Mariscala Ilya Voss, Herrero Bram).
+- Nuevas acciones Input Map: `atacar` (T), `cancelar_seleccion` (ESC).
+- Escena demo `scenes/demo/fase5_1_demo.tscn` (principal del proyecto).
+La reimplementación sigue en la Fase 6 (§11).
 
 ---
 
@@ -153,6 +165,8 @@ sigue en la Fase 6 (§11).
 | Alt+H (narrador sin binding) | **Alt+H = panel del narrador** (oficial desde el día 1) |
 | F8 | Libre (el sistema viejo de talentos quedó retirado) |
 | F9 (registro misiones HUD) / F10 (reasignar atributos) | **F9 = guardar partida** · **F10 = cargar partida** (rewrite, fase 4): el save/load temprano necesita atajos desde el día 1. Registro de misiones y reasignación de atributos recuperan sus teclas en sus fases (§11) |
+| T (habilidades, plan futuro del legado) | **T = atacar** (rewrite, fase 5.1): intención de ataque al foco; reasignable por el jugador (clic derecho en el botón) |
+| ESC (cerrar panel superior) | **ESC = deseleccionar** (rewrite, fase 5.1); cuando haya paneles modales, ellos consumirán ESC antes (pila de paneles, fase futura) |
 
 > **Política de input (§9.3):** en el legado las 76 teclas estaban hardcodeadas por
 > keycode en cada script. En el remake **todo atajo vive en el Input Map del
@@ -383,6 +397,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 3 | **Jugador + cámara**: el input genera *intenciones*, no ejecuta acciones; game feel antes de que haya contenido que lo distraiga | Caminar con cámara L2/MU que se siente bien |
 | 4 | **Enemigo mínimo + loot + save/load temprano** ✅: IA de 4 estados (quieto → persigue → ataca → muere), tabla de drops, datos versionados, HUD mínimo de solo lectura | Loop jugable: moverse → pegar → lootear → subir de nivel → guardar (F9) / cargar (F10) |
 | 5 | **Inventario, equipo y skills** ✅: `data/items.json` (10 items) y `data/skills.json` (5 skills); `Inventario` (apilar, capacidad), `Equipo` (slots arma/armadura, mods por fuente sin tocar stats base), `SkillSystem` (maná/cooldown/rango, teclas 1–5); loot → inventario; HUD con barra de skills + paneles I/C (solo lectura); save/load v2 tolerante | Loop jugable: recoger → equipar → lanzar skills → guardar (F9) / cargar (F10) |
+| 5.1 | **Pulido de selección y combate** ✅: indicador de selección 3D (clic simple selecciona mob/NPC; suelo vacío o ESC deselecciona) · flash rojo al recibir daño (estado en `Entity` + `DamageFlash`) · botón de atacar arrastrable con tecla reasignable (acción `atacar`, defecto T; persiste en `user://`) · skills dañinas con acercamiento automático (lanzamiento pendiente, cancelable) · **REGLA DURA: NPCs no atacables** (`combatible = false`; `data/npcs.json`) | Loop jugable: seleccionar → atacar con botón/tecla → skills que se acercan solas → NPCs que se seleccionan pero no se pueden dañar |
 | 6+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, misiones, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -406,4 +421,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v1.5 — Fase 5 (inventario + equipo + skills).*
+*Fin del documento maestro v1.6 — Fase 5.1 (selección + combate pulido, NPCs no atacables).*

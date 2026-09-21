@@ -33,6 +33,16 @@ signal subio_nivel(nivel: int)
 
 const SAVE_VERSION: int = 2
 
+## Fase 5.1 — REGLA DURA: los NPCs NO se pueden atacar. `false` en NPC;
+## `true` en jugador y enemigos. `take_damage` lo ignora por completo.
+var combatible: bool = true
+
+## Fase 5.1 — flash rojo al recibir daño: estado testeable (segundos
+## restantes). El gancho visual (`DamageFlash`) lee `intensidad_flash()`;
+## la lógica vive aquí para que los tests la cubran sin 3D.
+const FLASH_DURACION: float = 0.25
+var flash_tiempo: float = 0.0
+
 var stats: StatBlock
 var vida_actual: float = 0.0
 var mana_actual: float = 0.0
@@ -63,15 +73,32 @@ func esta_vivo() -> bool:
 
 ## Recibe daño ya calculado (quien ataca usa Formulas.damage).
 ## Nunca deja la vida bajo 0; al llegar a 0 llama a die() una sola vez.
+## REGLA DURA (fase 5.1): una entidad no combatible (NPC) ignora el daño
+## por completo: sin vida perdida, sin señales, sin flash.
 func take_damage(cantidad: float, fuente: Entity) -> void:
+	if not combatible:
+		return
 	if not esta_vivo():
 		return
 	var dano: float = maxf(cantidad, 0.0)
 	vida_actual = maxf(vida_actual - dano, 0.0)
+	flash_tiempo = FLASH_DURACION
 	daniado.emit(dano, fuente)
 	vida_cambiada.emit(vida_actual, stats.vida_max)
 	if vida_actual <= 0.0:
 		die(fuente)
+
+
+## Decaimiento del flash rojo (fase 5.1). Entity no definía _process:
+## Enemy y Player solo usan _physics_process, así que no hay colisión.
+func _process(delta: float) -> void:
+	if flash_tiempo > 0.0:
+		flash_tiempo = maxf(flash_tiempo - delta, 0.0)
+
+
+## 0.0 = sin flash, 1.0 = impacto recién recibido. Lo lee DamageFlash.
+func intensidad_flash() -> float:
+	return clampf(flash_tiempo / FLASH_DURACION, 0.0, 1.0)
 
 
 ## Cura hasta el máximo. Sin efecto en muertos.
@@ -157,6 +184,7 @@ func restaurar(d: Dictionary) -> void:
 	xp_actual = maxi(0, int(d.get("xp_actual", 0)))
 	vida_actual = clampf(float(d.get("vida_actual", stats.vida_max)), 0.0, stats.vida_max)
 	mana_actual = clampf(float(d.get("mana_actual", stats.mana_max)), 0.0, stats.mana_max)
+	flash_tiempo = 0.0
 	if vida_actual <= 0.0:
 		_apagar_muerto_silencioso()
 	elif estaba_muerto:

@@ -45,6 +45,9 @@ var _cd: float = 0.0
 
 func _init(p_stats: StatBlock = null) -> void:
 	super._init(p_stats)
+	# Fase 5.1: explícito. Los NPCs (clase NPC) ponen combatible = false;
+	# los enemigos SIEMPRE son atacables.
+	combatible = true
 	rng = RandomNumberGenerator.new()
 	rng.randomize()
 

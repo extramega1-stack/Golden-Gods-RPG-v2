@@ -1,0 +1,153 @@
+[gd_scene load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://scenes/demo/fase5_1_demo.gd" id="1_demo"]
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="2_player"]
+[ext_resource type="Script" path="res://scripts/player/camera_rig.gd" id="3_rig"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="4_hud"]
+[ext_resource type="PackedScene" path="res://scenes/enemy/enemigo.tscn" id="5_enemigo"]
+[ext_resource type="Script" path="res://scripts/ui/barra_skills.gd" id="6_barra"]
+[ext_resource type="Script" path="res://scripts/ui/panel_inventario.gd" id="7_panel_inv"]
+[ext_resource type="Script" path="res://scripts/ui/panel_equipo.gd" id="8_panel_eq"]
+[ext_resource type="Script" path="res://scripts/core/damage_flash.gd" id="9_flash"]
+[ext_resource type="Script" path="res://scripts/ui/indicador_seleccion.gd" id="10_indicador"]
+[ext_resource type="Script" path="res://scripts/ui/boton_atacar.gd" id="11_boton"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_suelo"]
+size = Vector2(80, 80)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_suelo"]
+albedo_color = Color(0.22, 0.29, 0.22, 1)
+roughness = 0.95
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_suelo"]
+size = Vector3(80, 1, 80)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_heroe"]
+radius = 0.4
+height = 1.7
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_heroe"]
+radius = 0.4
+height = 1.7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_heroe"]
+albedo_color = Color(1, 0.72, 0.16, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_marca"]
+size = Vector3(1, 2, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_marca"]
+albedo_color = Color(0.45, 0.48, 0.52, 1)
+roughness = 0.9
+
+[sub_resource type="Environment" id="Environment_demo"]
+background_mode = 1
+background_color = Color(0.05, 0.07, 0.12, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.62, 0.75, 1)
+ambient_light_energy = 0.7
+
+[node name="Fase51Demo" type="Node3D"]
+script = ExtResource("1_demo")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_demo")
+
+[node name="Sol" type="DirectionalLight3D" parent="."]
+rotation = Vector3(-0.9, 0.6, 0)
+shadow_enabled = true
+
+[node name="Suelo" type="StaticBody3D" parent="."]
+
+[node name="Malla" type="MeshInstance3D" parent="Suelo"]
+mesh = SubResource("PlaneMesh_suelo")
+surface_material_override/0 = SubResource("StandardMaterial3D_suelo")
+
+[node name="Colision" type="CollisionShape3D" parent="Suelo"]
+position = Vector3(0, -0.5, 0)
+shape = SubResource("BoxShape3D_suelo")
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["jugador"]]
+collision_layer = 2
+collision_mask = 1
+floor_snap_length = 0.3
+script = ExtResource("2_player")
+ruta_rig = NodePath("../CameraRig")
+
+[node name="Colision" type="CollisionShape3D" parent="Player"]
+position = Vector3(0, 0.85, 0)
+shape = SubResource("CapsuleShape3D_heroe")
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Player"]
+position = Vector3(0, 0.85, 0)
+mesh = SubResource("CapsuleMesh_heroe")
+surface_material_override/0 = SubResource("StandardMaterial3D_heroe")
+
+[node name="DamageFlash" type="Node" parent="Player"]
+script = ExtResource("9_flash")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("3_rig")
+ruta_objetivo = NodePath("../Player")
+
+[node name="Pitch" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig/Pitch"]
+collision_mask = 1
+spring_length = 7.0
+margin = 0.3
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/Pitch/SpringArm3D"]
+current = true
+fov = 65.0
+
+[node name="Goblin" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(6, 0, -6)
+arquetipo_id = "goblin"
+
+[node name="Lobo" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(-8, 0, 4)
+arquetipo_id = "lobo"
+
+[node name="Ogro" parent="." instance=ExtResource("5_enemigo")]
+position = Vector3(0, 0, -14)
+arquetipo_id = "ogro"
+
+[node name="IndicadorSeleccion" type="Node3D" parent="."]
+script = ExtResource("10_indicador")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")
+
+[node name="BarraSkills" type="CanvasLayer" parent="."]
+script = ExtResource("6_barra")
+
+[node name="BotonAtacar" type="CanvasLayer" parent="."]
+script = ExtResource("11_boton")
+
+[node name="PanelInventario" type="CanvasLayer" parent="."]
+script = ExtResource("7_panel_inv")
+
+[node name="PanelEquipo" type="CanvasLayer" parent="."]
+script = ExtResource("8_panel_eq")
+
+[node name="MarcaNorte" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1, -10)
+mesh = SubResource("BoxMesh_marca")
+surface_material_override/0 = SubResource("StandardMaterial3D_marca")
+
+[node name="MarcaSur" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1, 10)
+mesh = SubResource("BoxMesh_marca")
+surface_material_override/0 = SubResource("StandardMaterial3D_marca")
+
+[node name="MarcaEste" type="MeshInstance3D" parent="."]
+position = Vector3(10, 1, 0)
+mesh = SubResource("BoxMesh_marca")
+surface_material_override/0 = SubResource("StandardMaterial3D_marca")
+
+[node name="MarcaOeste" type="MeshInstance3D" parent="."]
+position = Vector3(-10, 1, 0)
+mesh = SubResource("BoxMesh_marca")
+surface_material_override/0 = SubResource("StandardMaterial3D_marca")

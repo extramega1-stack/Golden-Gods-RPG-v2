@@ -1,0 +1,1 @@
+{"nota":"NPCs de ejemplo de la fase 5.1. REGLA DURA: los NPCs no son combatibles (no se pueden atacar; sí seleccionar). Campos: id, nombre, color [r,g,b], posicion [x,y,z].","npcs":[{"color":[0.35,0.55,0.95],"id":"ilya","nombre":"Mariscala Ilya Voss","posicion":[5.0,0.0,5.0]},{"color":[0.9,0.65,0.3],"id":"bram","nombre":"Herrero Bram","posicion":[-5.0,0.0,5.0]}],"version":1}

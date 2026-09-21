@@ -15,6 +15,9 @@ extends Entity
 
 signal intencion_atacar(objetivo: Entity)
 signal oro_cambiado(oro: int)
+## Fase 5.1: cambió la entidad seleccionada (clic simple). null = deselección.
+## La escuchan el indicador 3D y la UI futura; la emite solo Player.
+signal seleccion_cambiada(entidad: Entity)
 
 ## --- Game feel: todos los tunables en un solo sitio ---
 const ACEL_TASA: float = 9.0      ## Qué tan rápido arranca (mayor = más inmediato).
@@ -25,6 +28,9 @@ const VEL_GIRO: float = 12.0      ## Qué tan rápido rota el cuerpo al moverse.
 const GRAVEDAD: float = 24.0      ## Gravedad propia (mundo sin físicas raras).
 const ALCANCE_RAYO: float = 1000.0 ## Alcance del raycast clic→mundo.
 const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
+## Fase 5.1: el botón de atacar, sin selección útil, engancha al combatible
+## vivo más cercano dentro de este radio (luego lo persigue hasta el rango).
+const RADIO_AUTOATAQUE: float = 8.0
 
 ## Ruta al CameraRig en la escena (se asigna en el .tscn; sin esto el WASD
 ## usa yaw 0 y el clic no tiene cámara para proyectar).
@@ -32,8 +38,12 @@ const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
 
 ## La intención del frame actual (la UI futura y los tests pueden leerla).
 var intent: Intent
-## Objetivo de ataque (doble clic sobre un enemigo). null = sin objetivo.
+## Objetivo de ataque (doble clic / botón de atacar). null = sin objetivo.
 var objetivo_ataque: Entity = null
+## Fase 5.1 — entidad seleccionada (clic simple en mob o NPC; también se
+## selecciona con doble clic). Los NPCs SÍ se pueden seleccionar, pero
+## NUNCA son objetivo de ataque. Clic en suelo vacío o ESC deselecciona.
+var seleccion: Entity = null
 ## Oro del héroe.
 var oro: int = 0
 ## Sistemas de la fase 5 (se crean en _ready; nunca son null en juego).
@@ -45,6 +55,11 @@ var _rig: CameraRig = null
 var _tiene_destino: bool = false
 var _destino: Vector3 = Vector3.ZERO
 var _cd_ataque: float = 0.0
+## Fase 5.1 — lanzamiento pendiente: skill dañina cuyo objetivo estaba fuera
+## de rango. El jugador se acerca y la lanza al llegar; se cancela si el
+## objetivo muere o deja de ser el foco (muerte/deselección/WASD).
+var _pend_skill: String = ""
+var _pend_objetivo: Entity = null
 
 
 func _ready() -> void:
@@ -68,15 +83,22 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("habilidad_1"):
-		_lanzar_skill(0)
+		lanzar_skill(0)
 	elif event.is_action_pressed("habilidad_2"):
-		_lanzar_skill(1)
+		lanzar_skill(1)
 	elif event.is_action_pressed("habilidad_3"):
-		_lanzar_skill(2)
+		lanzar_skill(2)
 	elif event.is_action_pressed("habilidad_4"):
-		_lanzar_skill(3)
+		lanzar_skill(3)
 	elif event.is_action_pressed("habilidad_5"):
-		_lanzar_skill(4)
+		lanzar_skill(4)
+	elif event.is_action_pressed("atacar"):
+		# Fase 5.1: tecla reasignable (Input Map, acción "atacar").
+		solicitar_ataque()
+	elif event.is_action_pressed("cancelar_seleccion"):
+		# Fase 5.1: ESC deselecciona (el lanzamiento pendiente se cancela
+		# solo en el siguiente frame, porque su objetivo deja de ser el foco).
+		deseleccionar()
 	elif event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if not mb.pressed:
@@ -89,35 +111,142 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## Habilidades 1-5: lanza el skill i-ésimo del hotbar con objetivo inteligente.
-## Sin animaciones todavía: el efecto lo aplica SkillSystem.
-func _lanzar_skill(i: int) -> void:
+## Fase 5.1: si es dañina y el objetivo está fuera de rango, NO se lanza
+## todavía: queda "pendiente" y el jugador se acerca hasta el rango para
+## lanzarla (se cancela si el objetivo muere o se deselecciona). Las
+## curaciones se aplican al lanzador sin moverse. Pública para tests.
+func lanzar_skill(i: int) -> void:
 	if skills == null:
 		return
 	var ids: Array[String] = SkillDB.lista()
 	if i < 0 or i >= ids.size():
 		return
-	skills.lanzar(ids[i], self, _objetivo_skill(ids[i]))
+	var id: String = ids[i]
+	var sk: Dictionary = SkillDB.obtener(id)
+	var efecto: Dictionary = sk.get("efecto", {})
+	var es_dano: bool = str(efecto.get("tipo", "")) == "dano"
+	var obj: Entity = _objetivo_skill(id)
+	if es_dano and obj != null and obj.esta_vivo():
+		var rango: float = float(sk.get("rango", 0.0))
+		if _dist_a(obj) > rango:
+			_pend_skill = id
+			_pend_objetivo = obj
+			# El objetivo pendiente se vuelve foco de combate: así la regla
+			# de cancelación (muerte / deselección / WASD) vale igual para
+			# el caso "sin selección" (fallback al más cercano).
+			if obj != seleccion and obj != objetivo_ataque:
+				objetivo_ataque = obj
+				intent.objetivo = obj
+			_tiene_destino = true
+			_destino = obj.global_position
+			return
+	skills.lanzar(id, self, obj)
+
+
+## ¿Hay un lanzamiento pendiente de resolverse? (tests + UI futura).
+func tiene_lanzamiento_pendiente() -> bool:
+	return _pend_skill != "" and _pend_objetivo != null
+
+
+## Fase 5.1 — selecciona una entidad (mob o NPC). Idempotente: seleccionar
+## dos veces lo mismo no re-emite. Los muertos no se pueden seleccionar.
+func seleccionar(e: Entity) -> void:
+	if e == null or not e.esta_vivo():
+		return
+	if e == seleccion:
+		return
+	seleccion = e
+	seleccion_cambiada.emit(e)
+
+
+## Fase 5.1 — quita la selección (clic en suelo vacío, ESC). Idempotente.
+func deseleccionar() -> void:
+	if seleccion == null:
+		return
+	seleccion = null
+	seleccion_cambiada.emit(null)
+
+
+## Fase 5.1 — el foco de combate: la selección si es un combatible vivo;
+## si no, el objetivo de ataque si sigue vivo. Los NPCs nunca son foco.
+func _foco_combate() -> Entity:
+	if seleccion != null and seleccion.esta_vivo() and seleccion.combatible:
+		return seleccion
+	if objetivo_ataque != null and objetivo_ataque.esta_vivo() and objetivo_ataque.combatible:
+		return objetivo_ataque
+	return null
+
+
+## Distancia plana a una entidad; INF si es null.
+func _dist_a(e: Entity) -> float:
+	if e == null:
+		return INF
+	var d: Vector3 = e.global_position - global_position
+	d.y = 0.0
+	return d.length()
+
+
+## Fase 5.1 — intención de ataque desde el botón del HUD o la tecla
+## "atacar": ataca al foco (selección > objetivo actual); sin foco y SIN
+## selección, engancha al combatible vivo más cercano dentro de
+## RADIO_AUTOATAQUE. Si hay una selección no atacable (NPC), no hace nada:
+## el fallback solo aplica cuando no hay selección.
+## La UI solo emite la intención; el Player la consume aquí.
+func solicitar_ataque() -> void:
+	if not esta_vivo():
+		return
+	var foco: Entity = _foco_combate()
+	if foco == null:
+		if seleccion != null:
+			return
+		var arbol: SceneTree = get_tree()
+		if arbol == null:
+			return
+		var cerca: Entity = SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
+		if cerca == null or _dist_a(cerca) > RADIO_AUTOATAQUE:
+			return
+		seleccionar(cerca)
+		foco = cerca
+	objetivo_ataque = foco
+	intent.objetivo = foco
+	intent.quiere_atacar = true
+	_tiene_destino = true
+	_destino = foco.global_position
+	intencion_atacar.emit(foco)
 
 
 ## Objetivo para un skill: las curaciones van al lanzador (null, el sistema
-## las aplica sobre sí mismo); el daño usa el objetivo de ataque si sigue
-## vivo, y si no, el enemigo vivo más cercano.
+## las aplica sobre sí mismo); el daño usa el foco de combate (selección
+## combatible > objetivo de ataque) y, si no hay foco, el combatible vivo
+## más cercano. Los NPCs nunca son objetivo de daño.
 func _objetivo_skill(skill_id: String) -> Entity:
 	var sk: Dictionary = SkillDB.obtener(skill_id)
 	var efecto: Dictionary = sk.get("efecto", {})
 	if str(efecto.get("tipo", "")) == "curar":
 		return null
-	if objetivo_ataque != null and objetivo_ataque.esta_vivo():
-		return objetivo_ataque
+	var foco: Entity = _foco_combate()
+	if foco != null:
+		return foco
 	var arbol: SceneTree = get_tree()
 	if arbol == null:
 		return null
 	return SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
 
 
-## Doble clic: si el rayo pega en un enemigo vivo, se vuelve el objetivo de
-## ataque (se persigue y se pega al llegar al rango). Si pega en el suelo,
-## se comporta como una orden de mover (comportamiento del legado).
+## ¿Este collider puede ser objetivo de ataque? Solo Enemy vivo y
+## combatible. Testeable sin cámara (el raycast real vive en
+## _intentar_fijar_objetivo).
+func _es_objetivo_atacable(col: Object) -> Enemy:
+	if col is Enemy:
+		var en: Enemy = col as Enemy
+		if en.esta_vivo() and en.combatible:
+			return en
+	return null
+
+
+## Doble clic: el doble clic también selecciona; solo los enemigos
+## combatibles se vuelven objetivo de ataque (REGLA DURA: NPCs nunca).
+## Si pega en el suelo, se comporta como una orden de mover (legado).
 func _intentar_fijar_objetivo(pantalla: Vector2) -> void:
 	intent.quiere_atacar = true
 	var cam: Camera3D = get_viewport().get_camera_3d()
@@ -134,18 +263,20 @@ func _intentar_fijar_objetivo(pantalla: Vector2) -> void:
 	if hit.is_empty():
 		objetivo_ataque = null
 		_tiene_destino = false
+		deseleccionar()
 		intencion_atacar.emit(null)
 		return
 	var col: Object = hit.get("collider")
-	if col is Enemy:
-		var en: Enemy = col as Enemy
-		if en.esta_vivo():
-			objetivo_ataque = en
-			intent.objetivo = en
-			_tiene_destino = true
-			_destino = en.global_position
-			intencion_atacar.emit(en)
-			return
+	if col is Entity and (col as Entity).esta_vivo():
+		seleccionar(col as Entity)
+	var en: Enemy = _es_objetivo_atacable(col)
+	if en != null:
+		objetivo_ataque = en
+		intent.objetivo = en
+		_tiene_destino = true
+		_destino = en.global_position
+		intencion_atacar.emit(en)
+		return
 	objetivo_ataque = null
 	_orden_mover_a(pantalla)
 	intencion_atacar.emit(null)
@@ -153,6 +284,8 @@ func _intentar_fijar_objetivo(pantalla: Vector2) -> void:
 
 ## Clic izquierdo: proyecta el cursor al mundo y guarda el destino.
 ## Una orden de mover cancela el objetivo de ataque (control manual).
+## Fase 5.1: si el rayo pega en una entidad viva la selecciona; si pega
+## en suelo vacío (o no pega en nada), deselecciona.
 func _orden_mover_a(pantalla: Vector2) -> void:
 	objetivo_ataque = null
 	var cam: Camera3D = get_viewport().get_camera_3d()
@@ -167,7 +300,13 @@ func _orden_mover_a(pantalla: Vector2) -> void:
 	consulta.exclude = excluir
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(consulta)
 	if hit.is_empty():
+		deseleccionar()
 		return
+	var col: Object = hit.get("collider")
+	if col is Entity and (col as Entity).esta_vivo():
+		seleccionar(col as Entity)
+	else:
+		deseleccionar()
 	var punto: Vector3 = hit["position"]
 	_destino = punto
 	_tiene_destino = true
@@ -179,7 +318,11 @@ func _physics_process(delta: float) -> void:
 	if skills != null:
 		skills.tick(delta)
 	_cd_ataque = maxf(_cd_ataque - delta, 0.0)
+	# Fase 5.1: la selección muerta se limpia sola (el indicador se oculta).
+	if seleccion != null and not seleccion.esta_vivo():
+		deseleccionar()
 	_construir_intent()
+	_actualizar_lanzamiento_pendiente()
 	_consumir_intent(delta)
 	_actualizar_ataque(delta)
 
@@ -197,6 +340,32 @@ func _construir_intent() -> void:
 		objetivo_ataque = null
 	intent.tiene_destino = _tiene_destino
 	intent.destino = _destino
+
+
+## Fase 5.1 — resuelve el lanzamiento pendiente: si el objetivo murió o
+## dejó de ser el foco (deselección, WASD, ESC), se cancela; si ya está en
+## rango se lanza; si no, se actualiza el destino para acercarse (reusa la
+## persecución de _consumir_intent). Las curaciones nunca llegan aquí.
+func _actualizar_lanzamiento_pendiente() -> void:
+	if _pend_skill == "":
+		return
+	var obj: Entity = _pend_objetivo
+	var valido: bool = obj != null and obj.esta_vivo() and obj.combatible \
+		and (obj == seleccion or obj == objetivo_ataque)
+	if not valido:
+		_pend_skill = ""
+		_pend_objetivo = null
+		return
+	var sk: Dictionary = SkillDB.obtener(_pend_skill)
+	var rango: float = float(sk.get("rango", 0.0))
+	if _dist_a(obj) <= rango:
+		var id: String = _pend_skill
+		_pend_skill = ""
+		_pend_objetivo = null
+		skills.lanzar(id, self, obj)
+	else:
+		_destino = obj.global_position
+		_tiene_destino = true
 
 
 ## Si hay objetivo de ataque: lo persigue hasta el rango; en rango se queda

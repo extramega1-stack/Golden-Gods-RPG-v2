@@ -24,8 +24,9 @@ func cooldown_restante(skill_id: String) -> float:
 
 
 ## "" si se puede lanzar; si no, el motivo:
-## "desconocida" | "objetivo" | "rango" | "mana" | "cooldown".
+## "desconocida" | "objetivo" | "no_combatible" | "rango" | "mana" | "cooldown".
 ## La curación no chequea objetivo ni rango (se aplica al lanzador).
+## REGLA DURA (fase 5.1): las skills dañinas sobre NPCs se ignoran siempre.
 func puede_lanzar(skill_id: String, lanzador: Entity, objetivo: Entity) -> String:
 	if not SkillDB.existe(skill_id):
 		return "desconocida"
@@ -35,6 +36,8 @@ func puede_lanzar(skill_id: String, lanzador: Entity, objetivo: Entity) -> Strin
 	if es_dano:
 		if objetivo == null or not objetivo.esta_vivo():
 			return "objetivo"
+		if not objetivo.combatible:
+			return "no_combatible"
 		var rango: float = float(skill.get("rango", 0.0))
 		if _dist_plana(lanzador, objetivo) > rango:
 			return "rango"
@@ -72,8 +75,9 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity) -> bool:
 	return true
 
 
-## El Entity vivo más cercano al lanzador (distancia plana, ignora y).
-## null si no hay ningún candidato vivo.
+## El Entity vivo y combatible más cercano al lanzador (distancia plana,
+## ignora y). Los NPCs (no combatibles) nunca son candidatos. null si no
+## hay ningún candidato vivo.
 static func mas_cercano(lanzador: Entity, candidatos: Array) -> Entity:
 	var mejor: Entity = null
 	var mejor_d: float = INF
@@ -82,6 +86,8 @@ static func mas_cercano(lanzador: Entity, candidatos: Array) -> Entity:
 			continue
 		var e: Entity = c
 		if not e.esta_vivo():
+			continue
+		if not e.combatible:
 			continue
 		var d: float = _dist_plana(lanzador, e)
 		if d < mejor_d:
