@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9 y 9.1
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10 y 11
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -115,6 +115,21 @@ camina al cadáver (9.3); la orden de mover lo cancela; `deseleccionar()`
 suelta el foco de combate completo (objetivo + orden de movimiento);
 la curación no fija objetivo ni mueve.
 
+La fase 11 añade `test_fase11.gd` (56 asserts): héroe y presentación —
+`ClaseDB` carga `data/clases.json` (4 ids en orden, solo "guerrero"
+jugable, stats base 45/10/0/0, colores que parsean a Color con default
+dorado), `validar_nombre` ("" / "   " / 17 caracteres → error; "Ilya" /
+"A" / 16 caracteres → válido), identidad del `Player` (`_ready` aplica la
+clase guerrero desde datos; `fijar_identidad` emite `identidad_cambiada`;
+`aplicar_clase` pone stats y llena vida/maná; id desconocido no toca nada),
+`DatosSesion` (`nueva_partida`/`pedir_continuar`/`limpiar`/`aplicar_a` con
+Player real y con `continuar=true` sin tocar nada), save con nombre/clase
+(round-trip restaura ambos; dict viejo sin esas claves carga con
+"Héroe"/"guerrero"), `PantallaTitulo.puede_continuar` (ruta inyectada),
+`RetratoHeroe` (pinta nombre/nivel/inicial; `die()` → modulate gris;
+`refrescar()` con vivo restaura; `identidad_cambiada` re-lee) y regresión
+del HUD (conectar/refrescar con el retrato integrado no revientan).
+
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
 # (regenera el caché de clases; sin esto los tests no resuelven los tipos):
@@ -138,6 +153,7 @@ la curación no fija objetivo ni mueve.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_detalle_mision.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase10.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_respawn.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase11.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -150,6 +166,15 @@ la curación no fija objetivo ni mueve.
 
 # Smoke test de la escena demo de la fase 9 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase9_demo.tscn --quit-after 300
+
+# Smoke test de la pantalla de título (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/titulo/pantalla_titulo.tscn --quit-after 300
+
+# Smoke test de la creación de personaje (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/creacion/creacion_personaje.tscn --quit-after 300
+
+# Smoke test de la escena demo de la fase 11 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase11_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.

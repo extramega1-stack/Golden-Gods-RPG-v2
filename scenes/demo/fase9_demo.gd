@@ -121,27 +121,39 @@ func _unhandled_input(event: InputEvent) -> void:
 			print("[Fase9] partida guardada")
 			get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("cargar_partida"):
-		# Fase 9.2: el progreso restaurado no es "recién completado": se
-		# suprimen los banners durante la carga (los estados se
-		# re-sincronizan igual para no duplicarlos después).
-		_suprimir_banners = true
-		var cargo: bool = _guardado.cargar()
-		_suprimir_banners = false
-		if cargo:
-			# La cámara persigue con damping; al cargar se coloca de golpe
-			# para no "deslizar" desde la posición vieja.
-			_rig.global_position = _jugador.global_position
-			# Cargar reemplaza las instancias de Inventario/Equipo: los
-			# paneles se reconectan a las nuevas y el HUD se refresca.
-			# (El QuestLog se restaura en sitio: no hay que reconectar
-			# señales, pero el panel se refresca por si estaba abierto.)
-			_panel_inv.conectar(_jugador)
-			_panel_eq.conectar(_jugador)
-			_panel_tienda.conectar(_jugador)
-			_panel_misiones.conectar(_jugador, _misiones)
-			_hud.refrescar()
-			print("[Fase9] partida cargada")
+		# Fase 11: el cuerpo del branch vive en `_cargar_partida_guardada`
+		# (lo reusa la demo hija para el flujo "Continuar" del título).
+		if _cargar_partida_guardada():
 			get_viewport().set_input_as_handled()
+
+
+## Fase 11 — carga de partida extraída del branch `cargar_partida` de
+## `_unhandled_input` (mismo comportamiento, sin duplicar lógica): la usa
+## el F10 y la demo hija (`fase11_demo.gd`) al arrancar con
+## `DatosSesion.continuar`.
+## Suprime los banners durante la carga (fase 9.2: el progreso restaurado
+## no es "recién completado"); recoloca la cámara de golpe (el damping la
+## haría "deslizar" desde la posición vieja); reconecta los paneles a las
+## instancias nuevas de Inventario/Equipo y refresca el HUD.
+func _cargar_partida_guardada() -> bool:
+	_suprimir_banners = true
+	var cargo: bool = _guardado.cargar()
+	_suprimir_banners = false
+	if cargo:
+		# La cámara persigue con damping; al cargar se coloca de golpe
+		# para no "deslizar" desde la posición vieja.
+		_rig.global_position = _jugador.global_position
+		# Cargar reemplaza las instancias de Inventario/Equipo: los
+		# paneles se reconectan a las nuevas y el HUD se refresca.
+		# (El QuestLog se restaura en sitio: no hay que reconectar
+		# señales, pero el panel se refresca por si estaba abierto.)
+		_panel_inv.conectar(_jugador)
+		_panel_eq.conectar(_jugador)
+		_panel_tienda.conectar(_jugador)
+		_panel_misiones.conectar(_jugador, _misiones)
+		_hud.refrescar()
+		print("[Fase9] partida cargada")
+	return cargo
 
 
 ## Fase 9.1/9.2 — la señal `cambiada` del QuestLog: detecta las

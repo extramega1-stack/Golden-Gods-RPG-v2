@@ -23,6 +23,8 @@ const DETALLE_MISION: int = 28
 const VENTANA_DIALOGO: int = 81
 ## Fase 7: panel de tienda (rango 80–89 = tiendas/diálogos).
 const PANEL_TIENDA: int = 82
+## Fase 11: pantalla de título (rango 90–99 = modales críticos).
+const TITULO: int = 90
 ## Fase 8.1: alto (px) reservado sobre el borde inferior del viewport para
 ## la barra de skills. La VentanaDialogo lo usa como tope inferior + aire
 ## para crecer hacia arriba sin solaparla ni salirse de la pantalla.

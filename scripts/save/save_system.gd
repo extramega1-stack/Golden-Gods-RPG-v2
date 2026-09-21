@@ -39,6 +39,9 @@ func guardar() -> bool:
 		"jugador": {
 			"entidad": jugador.to_dict(),
 			"oro": jugador.oro,
+			# Fase 11: identidad del héroe (nombre + clase).
+			"nombre": jugador.nombre,
+			"clase_id": jugador.clase_id,
 			"inventario": jugador.inventario.to_dict() if jugador.inventario != null else {},
 			"equipo": jugador.equipo.to_dict() if jugador.equipo != null else {},
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
@@ -95,6 +98,12 @@ func _enemigos_a_datos() -> Array:
 
 func _cargar_jugador(dj: Dictionary) -> void:
 	jugador.restaurar(dj.get("entidad", {}))
+	# Fase 11: identidad del héroe. Las partidas viejas (sin
+	# "nombre"/"clase_id") cargan con los defaults, tolerante como siempre.
+	# Los stats NO se re-aplican: ya vienen del dict de entidad restaurado.
+	jugador.nombre = str(dj.get("nombre", "Héroe"))
+	jugador.clase_id = str(dj.get("clase_id", "guerrero"))
+	jugador.identidad_cambiada.emit()
 	jugador.oro = maxi(0, int(dj.get("oro", 0)))
 	jugador.oro_cambiado.emit(jugador.oro)
 	_cargar_inventario(dj)

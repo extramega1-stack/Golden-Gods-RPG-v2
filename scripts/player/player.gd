@@ -29,6 +29,10 @@ signal seleccion_cambiada(entidad: Entity)
 ## La emite solo Player; la demo abre la VentanaDialogo (la UI no toca
 ## al Player ni a sus stats).
 signal hablar_con(npc: NPC)
+## Fase 11: cambió la identidad del héroe (nombre y/o clase visible en la
+## UI). La emiten `fijar_identidad` y la carga del save; la escuchan el
+## retrato del HUD y la UI futura (solo lectura).
+signal identidad_cambiada
 
 ## --- Game feel: todos los tunables en un solo sitio ---
 const ACEL_TASA: float = 9.0      ## Qué tan rápido arranca (mayor = más inmediato).
@@ -75,6 +79,11 @@ var objetivo_ataque: Entity = null
 var seleccion: Entity = null
 ## Oro del héroe.
 var oro: int = 0
+## Fase 11 — identidad del héroe: nombre visible + clase (id de ClaseDB).
+## La UI solo la LEE (señal `identidad_cambiada`); la escriben
+## `fijar_identidad` (creación de personaje) y la carga del save.
+var nombre: String = "Héroe"
+var clase_id: String = "guerrero"
 ## Sistemas de la fase 5 (se crean en _ready; nunca son null en juego).
 var inventario: Inventario = null
 var equipo: Equipo = null
@@ -99,15 +108,14 @@ var _pend_npc: NPC = null
 
 func _ready() -> void:
 	intent = Intent.new()
-	# Stats de prueba para la demo (fase 4): ataque = 5 + 45*2 + 10*0.5 = 100.
-	# Solo si el bloque viene por defecto (sin stats explícitos): no pisar
-	# los stats que alguien pasó al constructor (tests, save/load).
+	# Fase 11: los stats de demo (45/10 → ataque 100, como antes) ahora
+	# vienen de DATOS (ClaseDB, clase "guerrero"): mismo resultado numérico,
+	# única vía de datos. Solo si el bloque viene por defecto (sin stats
+	# explícitos): no pisa los stats que alguien pasó al constructor
+	# (tests, save/load).
 	if stats.fuerza == 0.0 and stats.agilidad == 0.0 \
 			and stats.destreza == 0.0 and stats.inteligencia == 0.0:
-		stats.fuerza = 45.0
-		stats.agilidad = 10.0
-		stats.recalc()
-		vida_actual = stats.vida_max
+		aplicar_clase("guerrero")
 	if ruta_rig != NodePath(""):
 		_rig = get_node_or_null(ruta_rig) as CameraRig
 	# Sistemas de la fase 5 (después de lo existente: no dependen del rig).
@@ -642,6 +650,32 @@ func ejecutar_ataque() -> void:
 func ganar_oro(cantidad: int) -> void:
 	oro = maxi(0, oro + cantidad)
 	oro_cambiado.emit(oro)
+
+
+## Fase 11 — identidad del héroe (nombre + clase visible en la UI).
+## Asigna y emite `identidad_cambiada` para que el retrato y la UI futura
+## se actualicen (solo lectura). No toca stats.
+func fijar_identidad(p_nombre: String, p_clase_id: String) -> void:
+	nombre = p_nombre
+	clase_id = p_clase_id
+	identidad_cambiada.emit()
+
+
+## Fase 11 — aplica los atributos base de una clase desde datos (ClaseDB):
+## pone los 4 atributos, recalcula derivados y llena vida/maná.
+## Idempotente y tolerante: un id desconocido no toca nada ni revienta.
+## NO emite `identidad_cambiada` (son stats, no identidad).
+func aplicar_clase(id: String) -> void:
+	if not ClaseDB.existe(id):
+		return
+	var base: Dictionary = ClaseDB.stats_base(id)
+	stats.fuerza = float(base.get("fuerza", 0.0))
+	stats.agilidad = float(base.get("agilidad", 0.0))
+	stats.destreza = float(base.get("destreza", 0.0))
+	stats.inteligencia = float(base.get("inteligencia", 0.0))
+	stats.recalc()
+	vida_actual = stats.vida_max
+	mana_actual = stats.mana_max
 
 
 ## Descuenta oro (lo usa la tienda, fase 7). Retorna false SIN TOCAR NADA

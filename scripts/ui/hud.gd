@@ -1,6 +1,7 @@
 class_name HUD
 extends CanvasLayer
 ## HUD mínimo de la fase 4: barras de vida/maná/XP + nivel + oro.
+## Fase 11: + retrato del héroe (emblema + nombre + nivel) arriba-izquierda.
 ##
 ## REGLA DURA (directriz de Juan Diego): la UI solo LEE el StatBlock y las
 ## señales del Player; nunca escribe stats ni llama a take_damage/gain_xp.
@@ -15,6 +16,8 @@ var _barra_mana: ProgressBar = null
 var _barra_xp: ProgressBar = null
 var _etiqueta_nivel: Label = null
 var _etiqueta_oro: Label = null
+## Fase 11: retrato del héroe (emblema + nombre + nivel), arriba-izquierda.
+var _retrato: RetratoHeroe = null
 
 
 func _ready() -> void:
@@ -22,6 +25,12 @@ func _ready() -> void:
 
 
 func _construir() -> void:
+	# Fase 11: el retrato va en (16, 12); la caja de Nv/Oro baja debajo
+	# para no solaparse (el oro se conserva).
+	_retrato = RetratoHeroe.new()
+	_retrato.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_retrato.position = Vector2(16, 12)
+	add_child(_retrato)
 	var caja_inf: VBoxContainer = VBoxContainer.new()
 	caja_inf.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	caja_inf.position = Vector2(16, -96)
@@ -47,7 +56,8 @@ func _construir() -> void:
 
 	var caja_sup: VBoxContainer = VBoxContainer.new()
 	caja_sup.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	caja_sup.position = Vector2(16, 12)
+	# Fase 11: debajo del retrato (que ocupa (16,12)–(~200,76)).
+	caja_sup.position = Vector2(16, 92)
 	caja_sup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caja_sup.add_theme_constant_override("separation", 2)
 	add_child(caja_sup)
@@ -93,6 +103,7 @@ func conectar(j: Player) -> void:
 	j.xp_cambiada.connect(_al_xp)
 	j.subio_nivel.connect(_al_nivel)
 	j.oro_cambiado.connect(_al_oro)
+	_retrato.conectar(j)
 	_conectado = true
 	refrescar()
 
@@ -101,6 +112,7 @@ func conectar(j: Player) -> void:
 func refrescar() -> void:
 	if _jugador == null:
 		return
+	_retrato.refrescar()
 	_al_vida(_jugador.vida_actual, _jugador.stats.vida_max)
 	_al_mana(_jugador.mana_actual, _jugador.stats.mana_max)
 	_al_xp(_jugador.xp_actual, Formulas.xp_for_level(_jugador.nivel + 1))
