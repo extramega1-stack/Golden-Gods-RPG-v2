@@ -678,4 +678,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.5 — Fase 9.2 (E respeta el radio de interacción, banner dorado de misión completada, "?" dorado de entrega pendiente con prioridad sobre el "!", marcador del NPC generalizado a `fijar_marcador(tipo)`; 798 tests en verde).*
+*Fin del documento maestro v2.6 — Fase 9.3 (pedido de Juan Diego: al morir un mob no queda seleccionado y el jugador nunca camina a su cadáver; `_actualizar_lanzamiento_pendiente` cancela la orden de acercarse al morir el objetivo o al matarlo el casteo; clic en cadáver deselecciona sin moverse; blindaje `esta_vivo()` en `solicitar_ataque`; 818 tests en verde).*

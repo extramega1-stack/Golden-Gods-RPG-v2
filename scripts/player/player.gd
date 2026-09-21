@@ -261,6 +261,11 @@ func solicitar_ataque() -> void:
 	if not esta_vivo():
 		return
 	var foco: Entity = _foco_combate()
+	# Fase 9.3 — blindaje explícito: un muerto nunca es objetivo válido
+	# (ni fija objetivo ni ordena caminar hacia él). `_foco_combate` y
+	# `mas_cercano` ya lo garantizan; esto lo hace imposible por construcción.
+	if foco != null and not foco.esta_vivo():
+		foco = null
 	if foco == null:
 		if seleccion != null:
 			return
@@ -332,14 +337,26 @@ func _rayo_clic(pantalla: Vector2) -> Dictionary:
 func _clic_izquierdo(pantalla: Vector2) -> void:
 	var hit: Dictionary = _rayo_clic(pantalla)
 	if hit.is_empty():
-		objetivo_ataque = null
-		deseleccionar()
+		_clic_en_vacio()
 		return
 	var col: Object = hit.get("collider")
-	if col is Entity and (col as Entity).esta_vivo():
-		_aplicar_clic(col as Entity, _resolver_clic_entidad(col as Entity))
+	if col is Entity:
+		var ent: Entity = col as Entity
+		if ent.esta_vivo():
+			_aplicar_clic(ent, _resolver_clic_entidad(ent))
+			return
+		# Fase 9.3: un cadáver no es objetivo ni es suelo: deselecciona sin
+		# ordenar moverse (pedido de Juan Diego: no caminar a los muertos).
+		_clic_en_vacio()
 		return
 	_orden_mover_punto(hit["position"])
+
+
+## Fase 9.3 — clic que no ordena nada: quita el objetivo de ataque y
+## deselecciona, sin fijar destino (clic en el vacío o sobre un cadáver).
+func _clic_en_vacio() -> void:
+	objetivo_ataque = null
+	deseleccionar()
 
 
 ## Fase 6.2 — decisión "entidad clicada → acción", PURA y testeable sin
@@ -441,8 +458,14 @@ func _actualizar_lanzamiento_pendiente() -> void:
 	var valido: bool = obj != null and obj.esta_vivo() and obj.combatible \
 		and (obj == seleccion or obj == objetivo_ataque)
 	if not valido:
+		# Fase 9.3: el objetivo murió o dejó de ser el foco: se cancela el
+		# pendiente Y la orden de acercarse (si no, el jugador camina al
+		# cadáver: pedido de Juan Diego). Si hay un objetivo de ataque vivo,
+		# la persecución retoma la marcha más abajo en este mismo frame.
 		_pend_skill = ""
 		_pend_objetivo = null
+		_tiene_destino = false
+		intent.tiene_destino = false
 		return
 	var sk: Dictionary = SkillDB.obtener(_pend_skill)
 	var rango: float = float(sk.get("rango", 0.0))
@@ -451,6 +474,11 @@ func _actualizar_lanzamiento_pendiente() -> void:
 		_pend_skill = ""
 		_pend_objetivo = null
 		skills.lanzar(id, self, obj)
+		# Fase 9.3: si el casteo lo mató, la orden de acercarse muere con él
+		# (no caminar al cadáver). Si sobrevivió, el combate no cambia.
+		if not obj.esta_vivo():
+			_tiene_destino = false
+			intent.tiene_destino = false
 	else:
 		_destino = obj.global_position
 		_tiene_destino = true
