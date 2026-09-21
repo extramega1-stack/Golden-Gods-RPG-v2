@@ -147,6 +147,8 @@ func _t_player_base() -> void:
 	p._ready()  # fuera del árbol: _ready no corre solo; se invoca a mano.
 	_check(p.esta_vivo(), "player: nace vivo")
 	_check(p.intent != null, "player: intent construido en _ready")
-	_check(absf(p.stats.vel_mov - 6.0) < 0.001, "player: vel base 6.0",
+	_check(absf(p.stats.vel_mov - 6.5) < 0.001, "player: vel demo 6.5",
 		"salió " + str(p.stats.vel_mov))
+	_check(absf(p.stats.ataque - 100.0) < 0.001, "player: ataque demo 100",
+		"salió " + str(p.stats.ataque))
 	_check(p is Entity, "player: es una Entity")

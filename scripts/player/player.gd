@@ -47,6 +47,15 @@ var _cd_ataque: float = 0.0
 
 func _ready() -> void:
 	intent = Intent.new()
+	# Stats de prueba para la demo (fase 4): ataque = 5 + 45*2 + 10*0.5 = 100.
+	# Solo si el bloque viene por defecto (sin stats explícitos): no pisar
+	# los stats que alguien pasó al constructor (tests, save/load).
+	if stats.fuerza == 0.0 and stats.agilidad == 0.0 \
+			and stats.destreza == 0.0 and stats.inteligencia == 0.0:
+		stats.fuerza = 45.0
+		stats.agilidad = 10.0
+		stats.recalc()
+		vida_actual = stats.vida_max
 	if ruta_rig != NodePath(""):
 		_rig = get_node_or_null(ruta_rig) as CameraRig
 
