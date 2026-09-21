@@ -34,7 +34,8 @@
       "oro_min": 5,
       "radio_aggro": 12.0,
       "rango_ataque": 2.2,
-      "xp": 40
+      "xp": 40,
+      "respawn_seg": 15
     },
     "lobo": {
       "agilidad": 12.0,
@@ -63,7 +64,8 @@
       "oro_min": 0,
       "radio_aggro": 14.0,
       "rango_ataque": 2.0,
-      "xp": 65
+      "xp": 65,
+      "respawn_seg": 20
     },
     "ogro": {
       "agilidad": 4.0,
@@ -99,7 +101,8 @@
       "oro_min": 20,
       "radio_aggro": 10.0,
       "rango_ataque": 2.6,
-      "xp": 120
+      "xp": 120,
+      "respawn_seg": 30
     }
   },
   "nota": "Arquetipos de enemigos de la fase 4. Data-driven: un enemigo nuevo = editar este archivo, no código.",

@@ -57,3 +57,10 @@ static func ids() -> Array[String]:
 	for k in _cache:
 		resultado.append(str(k))
 	return resultado
+
+
+## Lore de una misión (fase 9): 1–3 líneas de texto narrativo desde
+## `data/quests.json`. Mismo patrón que el resto de campos: "" si la
+## misión no existe o no declara lore.
+static func lore(quest_id: String) -> String:
+	return str(obtener(quest_id).get("lore", ""))

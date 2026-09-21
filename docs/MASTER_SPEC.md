@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 2.2 — Fase 8.1 hotfix (2026-09-21)
+**Versión del documento:** 2.3 — Fase 9 (2026-09-21)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,46 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 8 terminada — Misiones (quests data-driven):
+**Estado:** Fase 9 terminada — Detalle de misión + respawn de mobs:
+- **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
+  canon Liberty) en cada misión de `data/quests.json` — *Goblins fuera*
+  (Ilya: los titanes se agitan, goblins rondando Piedraceniza, la defensa
+  de Liberty), *Colmillos para la forja* (Bram: lobos de los riscos, acero
+  para la defensa), *Un mensaje urgente* (Sira: heridos de Piedraceniza,
+  urgencia); `QuestDB.lore()` (mismo patrón que el resto de campos). En
+  `PanelMisiones` (J) el nombre de cada misión en curso es un **botón**
+  clicable (con pinta de etiqueta) que abre la sub-ventana
+  `VentanaDetalleMision` (capa `UiLayers.DETALLE_MISION` = 28,
+  PANEL_MISIONES + 1, rango 20–69): nombre, **lore** (autowrap, con aire),
+  objetivos con progreso ("Goblins derrotados: 3/5" vía
+  `QuestLog.progreso_texto`) y recompensas (oro, XP, items con cantidad
+  vía ItemDB). Arranca oculta (lección 11) y no se come clics inactiva;
+  cierra con ESC (consumido en `_input` antes que el panel), clic fuera
+  (velo propio) o el botón "Cerrar". La UI solo lee.
+- **Respawn de mobs:** `respawn_seg` por arquetipo en `data/enemies.json`
+  (goblin 15 s, lobo 20 s, ogro 30 s); si falta, default
+  `SpawnerMobs.RESPAWN_DEFAULT_SEG` = **20 s** (constante con nombre, no
+  magia). Nuevo `scripts/mundo/spawner_mobs.gd` (`class_name SpawnerMobs
+  extends Node`): `vigilar(e)` guarda el punto de origen y conecta la señal
+  `murio`; al morir programa la reaparición tras `respawn_seg` en su punto
+  de origen con pequeña variación aleatoria (`randf_range`, lección 12);
+  al cumplirse el timer reinstancia el enemigo con el mismo arquetipo vía
+  una factory `Callable(arquetipo_id, posicion) -> Enemy` inyectada por la
+  demo (el spawner NO conoce rutas de escenas), auto-vigila al reaparecido
+  y emite `reaparecido(nuevo)` para que la demo conecte sus señales
+  (botín, muerte, lista del guardado). El timer es testeable headless con
+  `avanzar(dt)` (tiempo simulado; `_process` lo usa con tiempo real). El
+  respawn es **runtime**: el save guarda los enemigos vivos como siempre
+  (los muertos pendientes de respawn simplemente no están en la lista; el
+  timer no se persiste). Los NPCs nunca respawnean: el spawner solo acepta
+  `Enemy` (los NPCs no mueren).
+- Escena demo `scenes/demo/fase9_demo.tscn` (principal del proyecto):
+  5 goblins + lobo + ogro; el jugador puede matar los 5 goblins de la
+  misión aunque los mate a todos (respawnean). F9 guarda / F10 carga.
+- `tests/test_detalle_mision.gd` (42 asserts) + `tests/test_respawn.gd`
+  (34 asserts); regresión total 708 en verde.
+
+**Fase 8.1 terminada — Hotfix layout responsivo del diálogo** (bug de
 - **`data/quests.json`** + `QuestDB` (mismo patrón que NpcDB/TiendaDB): 3
   misiones coherentes con el canon Liberty — *Goblins fuera* (Ilya: matar 5
   goblins; 150 oro, 120 XP, 2 pociones de vida), *Colmillos para la forja*
@@ -515,6 +554,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 7 | **Tienda / economía básica** ✅: `data/tiendas.json` + `TiendaDB` (data-driven, mismo patrón que NpcDB/ItemDB; NPCs vendedores con `"tienda_id"` en `data/npcs.json`; nuevo NPC Alquimista Sira, diálogo coherente con el canon Liberty) · `Tienda` (RefCounted, lógica pura SIN UI: `comprar`/`vender` con códigos de resultado, stock finito que se agota, `gastar_oro` como única vía para restar oro; vender rechaza lo equipado con "equipado"; precios data-driven —`precio_compra` explícito, `precio_venta` explícito o default `precio_compra/2`—) · `PanelTienda` (capa 82; arranca oculto, UI solo lee, stock/mochila/oro, ESC cierra) · "Comerciar" en la `VentanaDialogo` solo con NPC vendedor (señal `comerciar_solicitado`) · **save v4** tolerante (bloque `"tiendas"`; las v3 cargan con stock completo) | Loop jugable: hablar con Bram/Sira → comerciar → comprar/vender con oro → agotar stock → guardar (F9) / cargar (F10) con stock restaurado |
 | 8 | **Misiones** ✅: `data/quests.json` + `QuestDB` (data-driven, mismo patrón que NpcDB/TiendaDB; 3 misiones del canon Liberty: Goblins fuera / Colmillos para la forja / Un mensaje urgente) · `QuestLog` (RefCounted, lógica pura SIN UI: estados disponible→activa→lista→entregada, señal `cambiada`; aceptar con códigos, registrar_muerte, sincronizar_recoleccion idempotente, registrar_dialogo, oferta_para_npc, entregar —consume lo recolectado y da oro/XP/items por las APIs del Player—, progreso_texto, to_dict/from_dict versionados) · botón de misión en la `VentanaDialogo` (`mostrar_mision`; la señal `mision_solicitada` no cierra el diálogo; sin oferta no hay botón —fase 6/7 intactas) · `PanelMisiones` (capa 27; arranca oculto; J alterna con la acción `abrir_misiones`, ESC cierra; en curso con progreso "x/y" y "¡Lista para entregar!", completadas aparte; toast integrado 2.5 s) · **save v5** tolerante (bloque `"misiones"` restaurado en sitio; las v4 cargan con QuestLog vacío) | Loop jugable: hablar con Ilya → aceptar → matar 5 goblins → entregar (+150 oro, +120 XP) · llevar colmillos a Bram → espada de hierro · mensaje de Sira a Ilya · panel J con progreso en vivo · guardar (F9) / cargar (F10) con misiones restauradas |
 | 8.1 | **Hotfix layout responsivo del diálogo** ✅: `VentanaDialogo` anclado abajo-centro con `grow_vertical = GROW_DIRECTION_BEGIN` (el panel crece hacia arriba) + borde inferior en `-(ZONA_INFERIOR_RESERVADA + 16) = -116` px (por encima de la barra de skills); `UiLayers.ZONA_INFERIOR_RESERVADA = 100` compartida con `barra_skills.gd`; se eliminó el hack `panel.position -= Vector2(260, 220)` · `tests/test_ui_layout.gd` (36 asserts: panel dentro del viewport, sin solapar la barra, capas 81 > 12, HUD dentro del viewport, en 3440×1440 y 1920×1080) | Bug de Juan Diego en 21:9: el panel se cortaba por abajo y la barra tapaba el texto — ahora el diálogo completo se ve en 16:9 y 21:9 |
+| 9 | **Detalle de misión + respawn de mobs** ✅: campo `lore` (canon Liberty) en `data/quests.json` + `QuestDB.lore()`; en `PanelMisiones` (J) cada misión en curso es un botón que abre la sub-ventana `VentanaDetalleMision` (capa 28: nombre, lore con autowrap, objetivos "x/y", recompensas oro/XP/items; arranca oculta, cierra con ESC/clic fuera/"Cerrar"; UI solo lee) · `respawn_seg` por arquetipo en `data/enemies.json` (goblin 15 s, lobo 20 s, ogro 30 s; default 20 s) + `SpawnerMobs` (`vigilar`/`avanzar(dt)` testeable/`reaparecido`; factory inyectada; respawn runtime —el timer no se guarda; NPCs no respawnean) | Loop jugable: pulsar una misión en J → leer su lore y progreso → matar 5 goblins (respawnean si los matas a todos) → entregar · guardar (F9) / cargar (F10) sin timers persistidos |
 | 9+ | **Sistemas, uno por uno, por señales** (equipo/paper doll, talentos, profesiones…; catálogo en §6) | Cada sistema jugable al integrarse |
 
 Reglas de la rebuild:
@@ -556,4 +596,4 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v2.2 — Fase 8.1 (hotfix: diálogo responsivo que crece hacia arriba, ZONA_INFERIOR_RESERVADA=100 compartida, test_ui_layout.gd 36 asserts en 3440×1440 y 1920×1080; 632 tests en verde).*
+*Fin del documento maestro v2.3 — Fase 9 (detalle de misión con lores del canon Liberty + respawn data-driven de mobs; 708 tests en verde).*

@@ -23,11 +23,20 @@ var _toast_layer: CanvasLayer = null
 var _toast_label: Label = null
 var _toast_tween: Tween = null
 
+## Fase 9: sub-ventana de detalle de misión (capa UiLayers.DETALLE_MISION).
+## Es hija de este panel: su _input corre antes que el del panel, así que
+## ESC la cierra primero (además del guard explícito en _input).
+var _detalle: VentanaDetalleMision = null
+
 
 func _ready() -> void:
 	layer = UiLayers.PANEL_MISIONES
 	_construir()
 	_construir_toast()
+	# Fase 9: la sub-ventana de detalle vive como hija (capa 28 > 27).
+	_detalle = VentanaDetalleMision.new()
+	_detalle.name = "DetalleMision"
+	add_child(_detalle)
 	# Lección 11: oculto desde el arranque.
 	visible = false
 
@@ -166,6 +175,8 @@ func alternar() -> void:
 
 
 func cerrar_panel() -> void:
+	if _detalle != null:
+		_detalle.cerrar_detalle()
 	visible = false
 
 
@@ -223,12 +234,28 @@ func _reconstruir() -> void:
 
 func _agregar_activa(qid: String, est: String) -> void:
 	var datos: Dictionary = QuestDB.obtener(qid)
-	var nombre: Label = Label.new()
-	nombre.text = str(datos.get("nombre", qid))
-	nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	nombre.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
-	nombre.add_theme_font_size_override("font_size", 17)
-	_lista_activas.add_child(nombre)
+	# Fase 9: el nombre es un botón (con pinta de etiqueta) que abre la
+	# sub-ventana de detalle de la misión.
+	var boton: Button = Button.new()
+	boton.name = "Detalle_" + qid
+	boton.text = str(datos.get("nombre", qid))
+	boton.tooltip_text = "Ver detalle"
+	boton.focus_mode = Control.FOCUS_NONE
+	boton.mouse_filter = Control.MOUSE_FILTER_STOP
+	boton.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	boton.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	boton.add_theme_color_override("font_color", Color(1.0, 0.85, 0.45))
+	boton.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.68))
+	boton.add_theme_color_override("font_pressed_color", Color(0.9, 0.75, 0.4))
+	boton.add_theme_font_size_override("font_size", 17)
+	var plano: StyleBoxEmpty = StyleBoxEmpty.new()
+	boton.add_theme_stylebox_override("normal", plano)
+	boton.add_theme_stylebox_override("hover", plano)
+	boton.add_theme_stylebox_override("pressed", plano)
+	boton.add_theme_stylebox_override("focus", plano)
+	boton.add_theme_stylebox_override("disabled", plano)
+	boton.pressed.connect(_abrir_detalle.bind(qid))
+	_lista_activas.add_child(boton)
 	for linea in _misiones.progreso_texto(qid).split("\n"):
 		var prog: Label = Label.new()
 		prog.text = "  " + linea
@@ -243,6 +270,12 @@ func _agregar_activa(qid: String, est: String) -> void:
 		lista.add_theme_color_override("font_color", Color(0.55, 1.0, 0.55))
 		lista.add_theme_font_size_override("font_size", 15)
 		_lista_activas.add_child(lista)
+
+
+## Fase 9: abre la sub-ventana con el detalle de la misión.
+func _abrir_detalle(qid: String) -> void:
+	if _detalle != null and _misiones != null:
+		_detalle.mostrar(qid, _misiones)
 
 
 func _agregar_entregada(qid: String) -> void:
@@ -263,9 +296,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 ## _input corre antes que el _unhandled_input del Player: el panel
-## consume ESC (cerrar) antes de que llegue al juego.
+## consume ESC (cerrar) antes de que llegue al juego. Si la sub-ventana
+## de detalle está abierta, ella consume ESC primero (fase 9).
 func _input(event: InputEvent) -> void:
 	if not esta_abierta():
+		return
+	if _detalle != null and _detalle.esta_abierta():
 		return
 	if event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()

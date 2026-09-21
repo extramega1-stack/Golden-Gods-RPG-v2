@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8 y 8.1
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1 y 9
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -73,6 +73,21 @@ diálogo en 3440×1440 (21:9, con Bram —el texto de misión más largo) y
 solapa la barra de skills, su borde inferior queda por encima de la
 barra, capas diálogo(81) > barra(12), todas las barras del HUD dentro
 del viewport y la descripción de la misión sin encimarse con los botones.
+La fase 9 añade `test_detalle_mision.gd` (42 asserts): `QuestDB.lore()`
+para las 3 misiones (lores del canon Liberty), `VentanaDetalleMision`
+(arranca oculta; `mostrar` abre con nombre/lore/objetivos "x/y"/
+recompensas con oro, XP e items con cantidad; misión desconocida o log
+null no abren ni revientan; ESC, clic fuera y `cerrar_detalle` la
+cierran) y su integración en `PanelMisiones` (el nombre de cada misión en
+curso es un botón que abre el detalle; ESC con el detalle abierto no
+cierra el panel; cerrar el panel cierra el detalle). Y
+`test_respawn.gd` (34 asserts): `SpawnerMobs` (la muerte programa el
+respawn tras `respawn_seg`; no reaparece antes de tiempo; el reaparecido
+tiene el mismo arquetipo, está vivo y cerca del origen; default 20 s si
+falta el campo o es ≤ 0; varios pendientes a la vez; el reaparecido se
+auto-vigila; `vigilar` 2 veces no duplica; sin factory no revienta; la
+señal `reaparecido` se emite) y que el save no persiste timers (el JSON
+no guarda "respawn"/"pendiente"; vivos/muertos cargan como siempre).
 
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
@@ -94,6 +109,8 @@ del viewport y la descripción de la misión sin encimarse con los botones.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_tienda.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_quests.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_ui_layout.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_detalle_mision.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_respawn.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -103,6 +120,9 @@ del viewport y la descripción de la misión sin encimarse con los botones.
 
 # Smoke test de la escena demo de la fase 8 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase8_demo.tscn --quit-after 300
+
+# Smoke test de la escena demo de la fase 9 (300 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase9_demo.tscn --quit-after 300
 ```
 
 - Exit code **0** = todo verde.
