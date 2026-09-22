@@ -130,6 +130,45 @@ Player real y con `continuar=true` sin tocar nada), save con nombre/clase
 `refrescar()` con vivo restaura; `identidad_cambiada` re-lee) y regresión
 del HUD (conectar/refrescar con el retrato integrado no revientan).
 
+La fase 12 (regiones) añade `test_fase12_regiones.gd` (52 asserts):
+`RegionDB` carga `data/regiones.json` (10 regiones, ids únicos en orden,
+10 campos, tintes "#rrggbb", bandas 1–5 … 55–70; `cargar()` idempotente),
+cobertura total y sin solapes por muestreo (625 puntos del mapa, esquinas
+incluidas; intervalos semiabiertos, el borde 18432 incluido), Piedraceniza
+contiene al (0,0), `region_en` en bordes compartidos y fuera del mapa → {},
+`por_id` existente/desconocido, `VigiaRegion` (emite `descubierta` una sola
+vez por región por sesión, `region_actual`, sin jugador/db no revienta,
+`reiniciar_descubrimientos`) y `BannerRegion` (arranca oculto,
+`mouse_filter` IGNORE en él y sus hijos, `mostrar()` con texto correcto,
+fundido de entrada/salida y auto-ocultado ~3.5 s, reutilizable).
+
+La fase 12 (terreno) añade `test_fase12_terreno.gd` (215 asserts):
+`Terreno` lee `data/terreno.bin` (289×289 alturas + colores), escala real
+(TAMANO 36864, PASO 128, X0/Z0 −18432), `altura_en()` bilineal con clamp en
+bordes, `dentro()`, 36 chunks 6×6 con 2 LODs (`visibility_range` 0–900 y
+900–30000), colisión en capa 1, y `Entity._pegar_al_terreno()` (con
+`terreno == null` no cambia nada).
+
+La fase 12 (spawns) añade `test_fase12_spawns.gd` (14 asserts):
+`data/spawns.json` trae 1121 entradas {arquetipo, x, z, nivel} del legado
+(gx=x, gz=4096−y; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro;
+zona segura de 40 m en la aldea), todas dentro del terreno y con
+arquetipos válidos; `tools/generar_spawns.py` es determinista.
+
+La fase 12 (ciclo) añade `test_fase12_ciclo.gd` (35 asserts):
+`data/ciclo.json` (día de 720 s, hora inicial 9.0), `CicloDia.avanzar()`
+proporcional a `duracion_dia_seg` con wrap 0–24, sol alto al mediodía
+(`oscuridad()≈0`) y apagado a medianoche (`oscuridad()≈1`, la Luna releva),
+señales `amanecer`/`anochecer` al cruzar 6h/18h, `fijar_hora` con wrap, y
+`Antorcha` (factor 1.0 sin ciclo; 0.3 de día → 1.0 de noche con ciclo;
+flicker dentro de banda).
+
+La fase 12 (integración) añade `test_fase12_integracion.gd` (18 asserts):
+cada spawn cae en una región, la aldea (0,0) está en Piedraceniza, la
+escala es la real (36864), la demo fase12 referencia Terreno/CicloDia/
+VigiaRegion/BannerRegion/Antorchas (sin enemigos fijos: los da
+spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
+
 ```bash
 # Solo la primera vez tras clonar, o cuando agregues scripts con `class_name`
 # (regenera el caché de clases; sin esto los tests no resuelven los tipos):
@@ -154,6 +193,11 @@ del HUD (conectar/refrescar con el retrato integrado no revientan).
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase10.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_respawn.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase11.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_regiones.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_terreno.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_spawns.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_ciclo.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_integracion.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -175,6 +219,10 @@ del HUD (conectar/refrescar con el retrato integrado no revientan).
 
 # Smoke test de la escena demo de la fase 11 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase11_demo.tscn --quit-after 300
+
+# Smoke test de la escena demo de la fase 12 (mundo abierto: terreno 36.864 u,
+# 1121 creeps, ciclo día/noche; 400 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase12_demo.tscn --quit-after 400
 ```
 
 - Exit code **0** = todo verde.

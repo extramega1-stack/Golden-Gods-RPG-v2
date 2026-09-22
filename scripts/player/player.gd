@@ -458,6 +458,8 @@ func _physics_process(delta: float) -> void:
 	_actualizar_interaccion_pendiente()
 	_consumir_intent(delta)
 	_actualizar_ataque(delta)
+	# Fase 12: el héroe camina pegado al terreno del mundo abierto.
+	_pegar_al_terreno()
 
 
 ## Paso 1: input → Intent (datos). Sin mover nada todavía.

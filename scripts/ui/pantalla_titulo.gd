@@ -14,7 +14,7 @@ extends Node3D
 ## hay partida guardada. ESC (ui_cancel) = salir.
 
 const ESCENA_CREACION: String = "res://scenes/creacion/creacion_personaje.tscn"
-const ESCENA_JUEGO: String = "res://scenes/demo/fase11_demo.tscn"
+const ESCENA_JUEGO: String = "res://scenes/demo/fase12_demo.tscn" # Fase 12: mundo abierto
 const RADIO_ORBITA: float = 15.0
 const ALTURA_ORBITA: float = 6.5
 const VEL_ORBITA: float = 0.10

@@ -121,6 +121,8 @@ func _physics_process(delta: float) -> void:
 	_cd = maxf(_cd - delta, 0.0)
 	_actualizar_estado()
 	_actuar(delta)
+	# Fase 12: los creeps caminan pegados al terreno del mundo abierto.
+	_pegar_al_terreno()
 
 
 ## Distancia plana al objetivo; INF si no hay objetivo válido.

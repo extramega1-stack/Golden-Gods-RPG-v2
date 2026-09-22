@@ -49,6 +49,20 @@ var mana_actual: float = 0.0
 var nivel: int = 1
 var xp_actual: int = 0
 
+## Fase 12: terreno opcional para pegar la Y al suelo (mundo abierto).
+## Lo asigna la demo; si es null el comportamiento no cambia (y = 0).
+var terreno: Terreno = null
+
+
+## Pega la posición Y a la altura del terreno. Llamar al final del
+## _physics_process de cada entidad móvil (Player, Enemy).
+func _pegar_al_terreno() -> void:
+	if terreno == null:
+		return
+	var gp: Vector3 = global_position
+	gp.y = terreno.altura_en(gp.x, gp.z)
+	global_position = gp
+
 var _muerto: bool = false
 ## Capas de colisión originales (die() las apaga; restaurar() las devuelve
 ## si se carga un estado vivo sobre una entidad que había muerto en la sesión).
