@@ -122,13 +122,19 @@ func conteo_registros() -> int:
 
 
 func conteo_instanciados() -> int:
-	var n: int = 0
+	return mobs_vivos().size()
+
+
+## Nodos Enemy vivos e instanciados ahora mismo (lo lee el minimapa y la
+## brújula de la fase 13 para dibujar/marcar mobs cercanos).
+func mobs_vivos() -> Array:
+	var vivos: Array = []
 	for r in _registros:
 		var rd: Dictionary = r
 		var nodo: Enemy = rd["nodo"] as Enemy
 		if nodo != null and is_instance_valid(nodo):
-			n += 1
-	return n
+			vivos.append(nodo)
+	return vivos
 
 
 func _process(delta: float) -> void:

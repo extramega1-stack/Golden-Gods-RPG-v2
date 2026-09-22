@@ -16,6 +16,22 @@ extends RefCounted
 
 signal cambiada()
 
+## Misión en curso para la brújula de la fase 13: devuelve
+## {"quest": <datos de QuestDB>, "estado": "lista"|"activa"} o {} si no hay.
+## Prioridad: primero una "lista" (pendiente de entrega), si no la primera
+## "activa". Lógica pura, solo lee.
+func mision_activa() -> Dictionary:
+	var primera_activa: String = ""
+	for qid in _estados.keys():
+		var est: String = str(_estados[qid])
+		if est == "lista":
+			return {"quest": QuestDB.obtener(str(qid)), "estado": "lista"}
+		if est == "activa" and primera_activa == "":
+			primera_activa = str(qid)
+	if primera_activa != "":
+		return {"quest": QuestDB.obtener(primera_activa), "estado": "activa"}
+	return {}
+
 ## Versión del bloque "misiones" del guardado (save v5).
 const SAVE_VERSION: int = 1
 

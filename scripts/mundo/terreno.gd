@@ -113,6 +113,16 @@ func altura_en(x: float, z: float) -> float:
 	return lerpf(a, b, tz)
 
 
+## Color del terreno en (x, z): muestra el vertice mas cercano del bin
+## (para el minimapa de la fase 13; no interpola, es solo orientacion).
+func color_en(x: float, z: float) -> Color:
+	if _colores.is_empty():
+		return Color(0.1, 0.1, 0.12)
+	var fx: float = clampf((x - X0) / PASO, 0.0, float(LADO - 1))
+	var fz: float = clampf((z - Z0) / PASO, 0.0, float(LADO - 1))
+	return _colores[int(round(fz)) * LADO + int(round(fx))]
+
+
 ## ¿El punto (x, z) esta dentro del mundo caminable?
 func dentro(x: float, z: float) -> bool:
 	return x >= X0 and x <= X0 + TAMANO and z >= Z0 and z <= Z0 + TAMANO

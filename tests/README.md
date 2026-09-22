@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12 y 12.1
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12, 12.1 y 13
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -198,6 +198,9 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_spawns.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_ciclo.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_integracion.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_streaming.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase13_minimapa.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase13_brujula.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -239,3 +242,5 @@ proximidad, y round-trip completo del save (no re-emite botín al cargar,
 enemigos muertos quedan muertos).
 
 La fase 12.1 añade `test_streaming.gd` (26 asserts): `StreamingMobs` instancia solo los registros dentro de `radio_alta` y libera más allá de `radio_baja` (histéresis sin churn en la banda intermedia); la puerta de reaparición del `SpawnerMobs` veta reaparecer lejos (el pendiente se reprograma, no se pierde) y al acercarse el mob reaparece re-asociado a su registro; `Enemy.intervalo_cerebro(dist)` devuelve 1/3/6 por bandas; el tinte por arquetipo comparte material entre mobs del mismo color.
+
+La fase 13 añade `test_fase13_minimapa.gd` (31 asserts): `mundo_a_mapa`/`mapa_a_mundo` son redondas (5 puntos + esquinas exactas), el fade baja a 0.35 tras 4 s quieto y vuelve a 1.0 al moverse, Alt+clic crea un ping de 5 s que expira solo (sin ordenar mover), clic normal llama `ordenar_mover_a` con el punto del mundo, `Terreno.color_en` no revienta sin bin y la etiqueta muestra la región actual (vacía fuera del mapa). Y `test_fase13_brujula.gd` (33 asserts): `offset_para` centra el N con yaw 0, pone E a la derecha y O a la izquierda, hace wrap en ±PI y es idéntico con +TAU; `offset_marcador` deja intacto lo visible y pega al borde lo de detrás; `resolver_objetivo` devuelve null sin misión, el goblin vivo más cercano para matar, el NPC de origen si la misión está lista, el NPC objetivo para hablar y el origen para recolectar (null si el NPC no existe); `QuestLog.cambiada` refresca el marcador (aceptar → mob, completar → NPC, entregar → apagado); `configurar` con todo null no revienta.

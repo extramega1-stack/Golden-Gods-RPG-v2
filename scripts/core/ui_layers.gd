@@ -11,6 +11,10 @@ extends RefCounted
 
 const HUD: int = 10
 const BARRA_SKILLS: int = 12
+## Fase 13: minimapa estilo WC3 (rango 10–19 = HUD persistente).
+const MINIMAPA: int = 11
+## Fase 13: brújula superior (rango 10–19 = HUD persistente).
+const BRUJULA: int = 14
 ## (13 reservado: fue BOTON_ATACAR, retirado en fase 6.1 por pedido de
 ## Juan Diego; el rebind de tecla vuelve con la barra de acciones.)
 const PANEL_INVENTARIO: int = 25

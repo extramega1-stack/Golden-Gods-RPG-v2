@@ -28,6 +28,7 @@ func _ready() -> void:
 	super._ready()
 	_terreno = $Terreno as Terreno
 	_ciclo = $CicloDia as CicloDia
+	_instalar_orientacion()
 	# Pegar al terreno: héroe, NPCs y pickups cercanos a la aldea.
 	_jugador.terreno = _terreno
 	_jugador._pegar_al_terreno()
@@ -135,6 +136,21 @@ func _puerta_respawn(_arquetipo: String, origen: Vector3) -> bool:
 	var d: Vector3 = origen - _jugador.global_position
 	d.y = 0.0
 	return d.length() <= ra
+
+
+## Fase 13: minimapa estilo WC3 + brújula. Cuelgan del HUD (CanvasLayer):
+## solo leen datos/señales (jugador, terreno, regiones, streaming, misiones).
+func _instalar_orientacion() -> void:
+	if _hud == null:
+		return
+	var mm: Minimapa = Minimapa.new()
+	_hud.add_child(mm)
+	mm.configurar(_jugador, _terreno, _rig, _region_db, _streaming)
+	mm.fijar_npcs(_lista_npcs)
+	var br: Brujula = Brujula.new()
+	_hud.add_child(br)
+	br.configurar(_rig, _jugador, _misiones, _streaming)
+	br.fijar_npcs(_lista_npcs)
 
 
 ## Fase 12.1: el reaparecido del spawner también va pegado al terreno.

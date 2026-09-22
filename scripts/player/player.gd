@@ -444,6 +444,11 @@ func _orden_mover_punto(punto: Vector3) -> void:
 	_tiene_destino = true
 
 
+## Orden pública de moverse a un punto (la usa el minimapa de la fase 13).
+func ordenar_mover_a(punto: Vector3) -> void:
+	_orden_mover_punto(punto)
+
+
 func _physics_process(delta: float) -> void:
 	if not esta_vivo():
 		return

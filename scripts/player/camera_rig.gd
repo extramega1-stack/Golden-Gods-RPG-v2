@@ -62,6 +62,11 @@ func _process(delta: float) -> void:
 	_brazo.spring_length = lerpf(_brazo.spring_length, _dist_obj, tz)
 
 
+## Yaw actual de la cámara (radianes). Lo lee la brújula de la fase 13.
+func yaw() -> float:
+	return rotation.y
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
