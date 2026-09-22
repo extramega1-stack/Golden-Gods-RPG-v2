@@ -24,6 +24,8 @@ const PANEL_MISIONES: int = 27
 ## Fase 9: sub-ventana de detalle de misión (= PANEL_MISIONES + 1, rango
 ## 20–69). Se abre al pulsar una misión en curso en el PanelMisiones.
 const DETALLE_MISION: int = 28
+## Fase 16: panel de viaje rápido (rango 20–69 = paneles de sistemas).
+const PANEL_VIAJE: int = 29
 const VENTANA_DIALOGO: int = 81
 ## Fase 7: panel de tienda (rango 80–89 = tiendas/diálogos).
 const PANEL_TIENDA: int = 82

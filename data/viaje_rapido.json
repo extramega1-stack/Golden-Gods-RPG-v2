@@ -1,0 +1,549 @@
+{
+  "_nota": "Viaje rápido fase 16 (decisión de Juan Diego: costo de oro + límites de niveles). NPCs portero (data/npcs.json: rol 'Portero', campo viaje_id) abren el PanelViaje con el origen.",
+  "version": 1,
+  "criterio": "costo_oro = redondeo5(base(nivel_min_destino) + 10 * distancia_km entre plazas). base por nivel_min del destino: {1:25, 4:60, 10:120, 12:140, 22:220, 26:280, 30:340, 36:440}. nivel_min del destino = nivel_min de su región (data/regiones.json). Criterio de Juan Diego: más lejos y banda de nivel mayor => más caro y más nivel. Plaza de cada ciudad = punto de aparición del jugador (data/ciudad_*.json: aparicion_jugador + centro regional de fase14).",
+  "ciudades": {
+    "moon_town": {
+      "nombre": "Moon Town",
+      "plaza": [
+        0.0,
+        45.0
+      ],
+      "region_id": "moon_town",
+      "nivel_min": 1,
+      "nivel_max": 5
+    },
+    "desert": {
+      "nombre": "Desert Town",
+      "plaza": [
+        9966.0,
+        45.0
+      ],
+      "region_id": "tierras_francas",
+      "nivel_min": 4,
+      "nivel_max": 12
+    },
+    "fire": {
+      "nombre": "Fire Town",
+      "plaza": [
+        -9966.0,
+        45.0
+      ],
+      "region_id": "ceniza_forja",
+      "nivel_min": 10,
+      "nivel_max": 18
+    },
+    "north": {
+      "nombre": "North Town",
+      "plaza": [
+        0.0,
+        -5313.0
+      ],
+      "region_id": "tierras_trueno",
+      "nivel_min": 12,
+      "nivel_max": 20
+    },
+    "mystic": {
+      "nombre": "Mystic Town",
+      "plaza": [
+        0.0,
+        10011.0
+      ],
+      "region_id": "bosque_hondo",
+      "nivel_min": 12,
+      "nivel_max": 20
+    },
+    "shadow": {
+      "nombre": "Shadow Town",
+      "plaza": [
+        9966.0,
+        -9921.0
+      ],
+      "region_id": "umbral_ladon",
+      "nivel_min": 22,
+      "nivel_max": 32
+    },
+    "rage": {
+      "nombre": "Rage Town",
+      "plaza": [
+        -9966.0,
+        -9921.0
+      ],
+      "region_id": "abismo_lloroso",
+      "nivel_min": 26,
+      "nivel_max": 36
+    },
+    "fury": {
+      "nombre": "Fury Town",
+      "plaza": [
+        -9966.0,
+        10011.0
+      ],
+      "region_id": "costa_lamento",
+      "nivel_min": 30,
+      "nivel_max": 44
+    },
+    "golden": {
+      "nombre": "Golden Town",
+      "plaza": [
+        9966.0,
+        10011.0
+      ],
+      "region_id": "corona_quebrada",
+      "nivel_min": 36,
+      "nivel_max": 52
+    }
+  },
+  "matriz": {
+    "moon_town": [
+      {
+        "destino_id": "desert",
+        "costo_oro": 160,
+        "nivel_min": 4,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 220,
+        "nivel_min": 10,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 195,
+        "nivel_min": 12,
+        "_dist_u": 5358
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 240,
+        "nivel_min": 12,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 360,
+        "nivel_min": 22,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 420,
+        "nivel_min": 26,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 480,
+        "nivel_min": 30,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 580,
+        "nivel_min": 36,
+        "_dist_u": 14094
+      }
+    ],
+    "desert": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 125,
+        "nivel_min": 1,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 320,
+        "nivel_min": 10,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 255,
+        "nivel_min": 12,
+        "_dist_u": 11315
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 280,
+        "nivel_min": 12,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 320,
+        "nivel_min": 22,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 505,
+        "nivel_min": 26,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 565,
+        "nivel_min": 30,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 540,
+        "nivel_min": 36,
+        "_dist_u": 9966
+      }
+    ],
+    "fire": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 125,
+        "nivel_min": 1,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 260,
+        "nivel_min": 4,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 255,
+        "nivel_min": 12,
+        "_dist_u": 11315
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 280,
+        "nivel_min": 12,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 445,
+        "nivel_min": 22,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 380,
+        "nivel_min": 26,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 440,
+        "nivel_min": 30,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 665,
+        "nivel_min": 36,
+        "_dist_u": 22285
+      }
+    ],
+    "north": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 80,
+        "nivel_min": 1,
+        "_dist_u": 5358
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 175,
+        "nivel_min": 4,
+        "_dist_u": 11315
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 235,
+        "nivel_min": 10,
+        "_dist_u": 11315
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 295,
+        "nivel_min": 12,
+        "_dist_u": 15324
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 330,
+        "nivel_min": 22,
+        "_dist_u": 10980
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 390,
+        "nivel_min": 26,
+        "_dist_u": 10980
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 525,
+        "nivel_min": 30,
+        "_dist_u": 18280
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 625,
+        "nivel_min": 36,
+        "_dist_u": 18280
+      }
+    ],
+    "mystic": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 125,
+        "nivel_min": 1,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 200,
+        "nivel_min": 4,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 260,
+        "nivel_min": 10,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 295,
+        "nivel_min": 12,
+        "_dist_u": 15324
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 445,
+        "nivel_min": 22,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 505,
+        "nivel_min": 26,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 440,
+        "nivel_min": 30,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 540,
+        "nivel_min": 36,
+        "_dist_u": 9966
+      }
+    ],
+    "shadow": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 165,
+        "nivel_min": 1,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 160,
+        "nivel_min": 4,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 345,
+        "nivel_min": 10,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 250,
+        "nivel_min": 12,
+        "_dist_u": 10980
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 365,
+        "nivel_min": 12,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 480,
+        "nivel_min": 26,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 620,
+        "nivel_min": 30,
+        "_dist_u": 28188
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 640,
+        "nivel_min": 36,
+        "_dist_u": 19932
+      }
+    ],
+    "rage": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 165,
+        "nivel_min": 1,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 285,
+        "nivel_min": 4,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 220,
+        "nivel_min": 10,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 250,
+        "nivel_min": 12,
+        "_dist_u": 10980
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 365,
+        "nivel_min": 12,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 420,
+        "nivel_min": 22,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 540,
+        "nivel_min": 30,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 720,
+        "nivel_min": 36,
+        "_dist_u": 28188
+      }
+    ],
+    "fury": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 165,
+        "nivel_min": 1,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 285,
+        "nivel_min": 4,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 220,
+        "nivel_min": 10,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 325,
+        "nivel_min": 12,
+        "_dist_u": 18280
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 240,
+        "nivel_min": 12,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 500,
+        "nivel_min": 22,
+        "_dist_u": 28188
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 480,
+        "nivel_min": 26,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "golden",
+        "costo_oro": 640,
+        "nivel_min": 36,
+        "_dist_u": 19932
+      }
+    ],
+    "golden": [
+      {
+        "destino_id": "moon_town",
+        "costo_oro": 165,
+        "nivel_min": 1,
+        "_dist_u": 14094
+      },
+      {
+        "destino_id": "desert",
+        "costo_oro": 160,
+        "nivel_min": 4,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "fire",
+        "costo_oro": 345,
+        "nivel_min": 10,
+        "_dist_u": 22285
+      },
+      {
+        "destino_id": "north",
+        "costo_oro": 325,
+        "nivel_min": 12,
+        "_dist_u": 18280
+      },
+      {
+        "destino_id": "mystic",
+        "costo_oro": 240,
+        "nivel_min": 12,
+        "_dist_u": 9966
+      },
+      {
+        "destino_id": "shadow",
+        "costo_oro": 420,
+        "nivel_min": 22,
+        "_dist_u": 19932
+      },
+      {
+        "destino_id": "rage",
+        "costo_oro": 560,
+        "nivel_min": 26,
+        "_dist_u": 28188
+      },
+      {
+        "destino_id": "fury",
+        "costo_oro": 540,
+        "nivel_min": 30,
+        "_dist_u": 19932
+      }
+    ]
+  }
+}

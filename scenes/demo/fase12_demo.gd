@@ -59,6 +59,13 @@ func _ready() -> void:
 			var p: Vector3 = ant.position
 			p.y = _terreno.altura_en(p.x, p.z)
 			ant.position = p
+	# Fase 16: clima (lluvia + niebla) — sigue al jugador, atenúa el ciclo
+	# día/noche y modula la niebla de su Environment. Solo lee ciclo/jugador.
+	var clima := Clima.new()
+	clima.name = "Clima"
+	clima.ciclo = _ciclo
+	clima.jugador = _jugador
+	add_child(clima)
 
 
 ## Fase 12.1: lee data/spawns.json y lo carga como REGISTROS en el

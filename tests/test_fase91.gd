@@ -140,8 +140,8 @@ func _t_marcador_demo() -> void:
 	root.add_child(demo)
 	_basura.append(demo)
 	var npcs: Array = demo.get("_lista_npcs")
-	# Fase 15: 11 NPCs (ilya/bram/sira con misiones + 8 ambientales sin).
-	_check(npcs.size() == 11, "la demo crea 11 NPCs", "hay %d" % npcs.size())
+	# Fase 16: 20 NPCs (ilya/bram/sira con misiones + 8 ambientales sin + 9 porteros).
+	_check(npcs.size() == 20, "la demo crea 20 NPCs", "hay %d" % npcs.size())
 	var por_id: Dictionary = {}
 	for x in npcs:
 		var q: NPC = x as NPC

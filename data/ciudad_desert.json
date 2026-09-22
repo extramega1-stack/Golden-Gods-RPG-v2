@@ -157,6 +157,11 @@
       "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
       "x": -135.2,
       "z": 154.6
+    },
+    "portero_desert": {
+      "nota": "portero de viaje rápido (fase 16)",
+      "x": 30.0,
+      "z": -15.0
     }
   }
 }

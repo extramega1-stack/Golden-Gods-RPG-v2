@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scenes/demo/fase14_demo.gd" id="1_demo"]
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="2_player"]
@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://scripts/mundo/vigia_region.gd" id="17_vigia"]
 [ext_resource type="Script" path="res://scripts/ui/banner_region.gd" id="18_banner"]
 [ext_resource type="Script" path="res://scripts/mundo/antorcha.gd" id="19_antorcha"]
+[ext_resource type="Script" path="res://scripts/ui/panel_viaje.gd" id="20_viaje"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_heroe"]
 radius = 0.4
@@ -93,6 +94,9 @@ script = ExtResource("13_tienda")
 
 [node name="PanelMisiones" type="CanvasLayer" parent="."]
 script = ExtResource("14_misiones")
+
+[node name="PanelViaje" type="CanvasLayer" parent="."]
+script = ExtResource("20_viaje")
 
 [node name="PanelInventario" type="CanvasLayer" parent="."]
 script = ExtResource("7_panel_inv")

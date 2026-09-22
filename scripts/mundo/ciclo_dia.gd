@@ -30,6 +30,15 @@ const UMBRAL_ANOCHECER: float = 18.0
 ## en tests para acelerar el ciclo).
 var duracion_dia_seg: float = 720.0
 
+## Fase 16 (clima) — API pública para `Clima` (scripts/mundo/clima.gd).
+## `factor_clima`: 1.0 = despejado; <1 atenúa sol y luna (la lluvia lo baja
+## hacia `atenuacion_sol_min` de data/clima.json). `gris_tormenta`: 0-1,
+## tiñe el cielo de gris tormenta. Los fija Clima cada frame; el ciclo los
+## aplica en _actualizar_sol/_actualizar_luna/_actualizar_cielo. No cambian
+## el look diurno por defecto (1.0 y 0.0 = idéntico a antes).
+var factor_clima: float = 1.0
+var gris_tormenta: float = 0.0
+
 var _hora: float = 9.0
 var _sol: DirectionalLight3D = null
 var _luna: DirectionalLight3D = null
@@ -133,6 +142,13 @@ func fijar_hora(h: float) -> void:
 	_actualizar_visuales()
 
 
+## Fase 16 (clima): devuelve el Environment propio (el WorldEnvironment
+## "Cielo") para que `Clima` module la niebla (fog) sin duplicar nodos.
+## Puede ser null si el nodo aún no pasó por _ready.
+func ambiente() -> Environment:
+	return _env
+
+
 ## Seno de la elevación solar: 0 en 6h y 18h, 1 al mediodía, negativo de
 ## noche (amanecer ≈6h, anochecer ≈18h).
 func _elevacion_sol() -> float:
@@ -179,7 +195,8 @@ func _actualizar_sol(elev: float, dia: float) -> void:
 		return
 	# Energía diurna plena 1.25 (no rompe el look actual); el sol bajo
 	# pierde algo de fuerza y se vuelve cálido.
-	_sol.light_energy = 1.25 * dia
+	# Fase 16: factor_clima atenúa por lluvia (1.0 = sin cambio).
+	_sol.light_energy = 1.25 * dia * factor_clima
 	var calidez: float = clampf(1.0 - dia * 2.5, 0.0, 1.0)
 	_sol.light_color = Color(1.0, 0.98, 0.95).lerp(Color(1.0, 0.62, 0.32), calidez)
 	# Este→cenit→oeste: de día el arco cubre 6h–18h.
@@ -193,7 +210,8 @@ func _actualizar_sol(elev: float, dia: float) -> void:
 
 func _actualizar_luna(osc: float) -> void:
 	# Relevo nocturno: tenue y azulada, apagada de día.
-	_luna.light_energy = 0.22 * osc
+	# Fase 16: factor_clima atenúa por lluvia (1.0 = sin cambio).
+	_luna.light_energy = 0.22 * osc * factor_clima
 
 
 func _actualizar_cielo(elev: float, osc: float) -> void:
@@ -202,14 +220,22 @@ func _actualizar_cielo(elev: float, osc: float) -> void:
 	var hor_dia: Color = Color(0.72, 0.83, 0.94)
 	var top_noche: Color = Color(0.012, 0.020, 0.060)
 	var hor_noche: Color = Color(0.045, 0.075, 0.150)
-	_cielo_mat.sky_top_color = top_dia.lerp(top_noche, osc)
-	_cielo_mat.ground_bottom_color = top_dia.lerp(top_noche, osc)
-	# Horizonte: dorado en amanecer/anochecer (sol cerca del horizonte).
+	var top: Color = top_dia.lerp(top_noche, osc)
 	var hor: Color = hor_dia.lerp(hor_noche, osc)
+	# Horizonte: dorado en amanecer/anochecer (sol cerca del horizonte).
 	var cerca_horizonte: float = clampf(1.0 - absf(elev) * 4.0, 0.0, 1.0)
 	hor = hor.lerp(Color(1.0, 0.55, 0.26), cerca_horizonte * (1.0 - osc) * 0.85)
+	# Fase 16: la tormenta agrisa el cielo (suave y reversible; 0 = sin cambio).
+	var g: float = clampf(gris_tormenta, 0.0, 1.0)
+	if g > 0.0:
+		var gris: Color = Color(0.36, 0.40, 0.45)
+		top = top.lerp(gris, g * 0.8)
+		hor = hor.lerp(gris, g * 0.85)
+	_cielo_mat.sky_top_color = top
+	_cielo_mat.ground_bottom_color = top
 	_cielo_mat.sky_horizon_color = hor
 	_cielo_mat.ground_horizon_color = hor
 	# Ambiente: moderado de día, frío y bajo de noche.
+	# Fase 16: la lluvia también baja un poco el ambiente (vía factor_clima).
 	_env.ambient_light_color = Color(0.55, 0.60, 0.70).lerp(Color(0.14, 0.19, 0.34), osc)
-	_env.ambient_light_energy = lerpf(0.55, 0.30, osc)
+	_env.ambient_light_energy = lerpf(0.55, 0.30, osc) * lerpf(1.0, 0.7, 1.0 - factor_clima)

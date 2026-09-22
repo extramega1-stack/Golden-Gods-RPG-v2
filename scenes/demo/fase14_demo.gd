@@ -39,15 +39,19 @@ const _SECUNDARIAS: Array = [
 
 ## Fase 15: a que ciudad secundaria pertenece cada NPC ambiental
 ## (indice en _ciudades_sec / _SECUNDARIAS). Ilya/Bram/Sira van a Moon Town.
+## Fase 16: los 9 porteros de viaje rápido van a su ciudad (el de Moon Town
+## cae a Moon Town por defecto, igual que Ilya/Bram/Sira).
 const _NPC_CIUDAD_SEC: Dictionary = {
 	"yasmina": 0, "durnan": 1, "sella": 2, "elthar": 3,
 	"vex": 4, "karg": 5, "maris": 6, "aurelio": 7,
+	"portero_desert": 0, "portero_fire": 1, "portero_north": 2,
+	"portero_mystic": 3, "portero_shadow": 4, "portero_rage": 5,
+	"portero_fury": 6, "portero_golden": 7,
 }
 
-## TEMPORAL — Fase 14.1: portales de inspección para Juan Diego.
-## QUITAR cuando lo pida: borrar data/portales_temp.json,
-## scripts/mundo/portal_temporal.gd y este bloque.
-var _portales_temp: Array = []
+## Fase 16: lógica del viaje rápido (sin UI; la UI solo lee).
+var _viaje: ViajeRapido = null
+@onready var _panel_viaje: PanelViaje = $PanelViaje
 
 
 func _ready() -> void:
@@ -74,89 +78,56 @@ func _ready() -> void:
 	super._ready()
 	# Jugador y NPCs a sus puntos data-driven de Moon Town.
 	_colocar_en_ciudad()
-	_instalar_portales_temp()  # TEMPORAL 14.1
+	# Fase 16: viaje rápido — "Viajar" en el diálogo del portero abre el
+	# PanelViaje con la ciudad del portero como origen.
+	_viaje = ViajeRapido.new()
+	_viaje.cargar_datos()
+	_dialogo.viaje_solicitado.connect(_al_viaje_dialogo)
+	_panel_viaje.viaje_solicitado.connect(_al_destino_viaje)
 
 
-## TEMPORAL 14.1 — E cerca de un portal: teletransporta (salvo que haya un
-## NPC seleccionado: E sigue siendo para hablar). El Player no consume el
-## evento, así que este _unhandled_input también lo ve.
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("interactuar"):
-		_usar_portal_temp_cercano()
+## Fase 16 — "Viajar" en el diálogo de un portero: abre el PanelViaje con
+## el origen = ciudad del portero (campo `viaje_id` de data/npcs.json).
+func _al_viaje_dialogo(npc: NPC) -> void:
+	var origen: String = ViajeRapido.viaje_id_de_npc(npc.npc_id)
+	if origen == "" or _panel_viaje == null:
+		return
+	_panel_viaje.mostrar(origen, _jugador)
 
 
-## TEMPORAL 14.1 — instala los portales de inspección. Devuelve cuántos
-## puso (0 si el JSON falta o está roto: no revienta la demo).
-func _instalar_portales_temp(ruta: String = PortalTemporal.RUTA_DESTINOS) -> int:
-	var destinos: Array = PortalTemporal.cargar_destinos(ruta)
-	if destinos.is_empty():
-		return 0
-	var luna: Dictionary = {}
-	var otros: Array = []
-	for d in destinos:
-		var dd: Dictionary = d
-		if str(dd.get("id", "")) == "moon_town":
-			luna = dd
-		else:
-			otros.append(dd)
-	# Círculo en la plaza de Moon Town (r=55: fuera del alcance accidental
-	# del punto de aparición del jugador).
-	var n: int = 0
-	var total: int = maxi(1, otros.size())
-	for i in range(otros.size()):
-		var dd2: Dictionary = otros[i]
-		var ang: float = TAU * float(i) / float(total)
-		_crear_portal_temp(dd2, 55.0 * sin(ang), 55.0 * cos(ang))
-		n += 1
-	# Un portal de vuelta a Moon Town en cada destino lejano.
-	if not luna.is_empty():
-		for d in otros:
-			var dd3: Dictionary = d
-			_crear_portal_temp(luna, float(dd3.get("x", 0.0)) + 12.0,
-				float(dd3.get("z", 0.0)))
-			n += 1
-	print("[Fase14.1 TEMPORAL] %d portales instalados" % n)
-	return n
+## Fase 16 — destino elegido en el PanelViaje: valida, cobra y teletransporta.
+func _al_destino_viaje(destino_id: String) -> void:
+	if _viaje == null or _jugador == null or _panel_viaje == null:
+		return
+	var origen: String = _panel_viaje.origen_actual()
+	var res: Dictionary = _viaje.viajar(_jugador, origen, destino_id)
+	if not bool(res.get("ok", false)):
+		# Pudo cambiar algo entre abrir el panel y pulsar (p. ej. entró en
+		# combate): se informa sin cerrar.
+		_panel_viaje.informar(ViajeRapido.texto_motivo(res))
+		return
+	_panel_viaje.cerrar_panel()
+	var plaza: Vector2 = res.get("plaza", Vector2.ZERO)
+	_teletransportar_viaje(plaza, str(res.get("destino", "")), int(res.get("costo", 0)))
 
 
-## TEMPORAL 14.1 — crea un portal en (x, z) sobre el terreno.
-func _crear_portal_temp(dest: Dictionary, x: float, z: float) -> void:
-	var portal := PortalTemporal.new()
-	portal.name = "PortalTemp_%s" % str(dest.get("id", "?"))
-	portal.configurar(dest)
-	var y: float = 40.0
+## Fase 16 — teletransporte del viaje rápido: deselecciona, fija la
+## posición en la plaza sobre el terreno y pega la cámara (como el F10).
+func _teletransportar_viaje(plaza: Vector2, destino_id: String, costo: int) -> void:
+	if _jugador == null:
+		return
+	var y: float = 0.0
 	if _terreno != null:
-		y = _terreno.altura_en(x, z)
-	portal.position = Vector3(x, y, z)
-	add_child(portal)
-	_portales_temp.append(portal)
-
-
-## TEMPORAL 14.1 — si hay un portal a ≤ RADIO_USO, teletransporta.
-## Devuelve true si se usó un portal.
-func _usar_portal_temp_cercano() -> bool:
-	if _jugador == null or not _jugador.esta_vivo():
-		return false
-	if _jugador.seleccion is NPC:
-		return false
-	var portal: PortalTemporal = PortalTemporal.portal_cercano(
-		_portales_temp, _jugador.global_position)
-	if portal == null:
-		return false
-	_teletransportar_portal(portal)
-	return true
-
-
-## TEMPORAL 14.1 — mueve al jugador al destino del portal (sobre el
-## terreno), limpia órdenes pendientes y pega la cámara (como el F10).
-func _teletransportar_portal(portal: PortalTemporal) -> void:
-	var punto: Vector3 = portal.punto_destino(_terreno)
+		y = _terreno.altura_en(plaza.x, plaza.y)
 	_jugador.deseleccionar()
-	_jugador.global_position = punto
+	_jugador.global_position = Vector3(plaza.x, y, plaza.y)
 	_jugador._pegar_al_terreno()
 	if _rig != null:
 		_rig.global_position = _jugador.global_position
-	print("[Fase14.1 TEMPORAL] teletransporte a %s" % str(portal.destino.get("nombre", "?")))
+	var nombre: String = _viaje.nombre_ciudad(destino_id) if _viaje != null else destino_id
+	if _panel_misiones != null:
+		_panel_misiones.toast("Viaje a %s (-%d oro)" % [nombre, costo])
+	print("[Fase16] viaje rápido a %s (-%d oro)" % [nombre, costo])
 
 
 ## Recoloca al jugador y a los NPCs en los puntos de la ciudad.

@@ -22,6 +22,9 @@ signal comerciar_solicitado(npc: NPC)
 ## "Entregar misión"). NO cierra el diálogo: la demo acepta/entrega y
 ## refresca el botón.
 signal mision_solicitada(npc: NPC)
+## Fase 16: el jugador pulsó "Viajar" con un NPC portero (la demo abre el
+## PanelViaje; el diálogo se cierra solo).
+signal viaje_solicitado(npc: NPC)
 
 var _npc: NPC = null
 var _lineas: Array[String] = []
@@ -38,6 +41,9 @@ var _boton_comerciar: Button = null
 ## refresca con mostrar_mision() según oferta_para_npc).
 var _boton_mision: Button = null
 var _desc_mision: Label = null
+## Fase 16: "Viajar" solo si el NPC actual es portero (viaje_id en
+## data/npcs.json; sin viaje_id no hay botón ni flujo).
+var _boton_viajar: Button = null
 
 
 func _ready() -> void:
@@ -147,6 +153,15 @@ func _construir() -> void:
 	fila.add_child(_boton_mision)
 	_boton_mision.visible = false
 
+	# Fase 16: "Viajar" solo si el NPC es portero (se muestra en mostrar()).
+	_boton_viajar = Button.new()
+	_boton_viajar.text = "Viajar"
+	_boton_viajar.focus_mode = Control.FOCUS_NONE
+	_boton_viajar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton_viajar.pressed.connect(_al_viajar)
+	fila.add_child(_boton_viajar)
+	_boton_viajar.visible = false
+
 
 ## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
 func mostrar(npc: NPC) -> void:
@@ -159,6 +174,8 @@ func mostrar(npc: NPC) -> void:
 		_lineas.append("…")
 	# Fase 7: botón "Comerciar" solo para NPCs vendedores.
 	_boton_comerciar.visible = TiendaDB.tienda_de_npc(npc.npc_id) != ""
+	# Fase 16: botón "Viajar" solo para NPCs portero.
+	_boton_viajar.visible = ViajeRapido.viaje_id_de_npc(npc.npc_id) != ""
 	# Fase 8: la misión se refresca desde fuera (la demo llama
 	# mostrar_mision()); aquí se oculta para no arrastrar estado viejo.
 	_boton_mision.visible = false
@@ -225,6 +242,12 @@ func tiene_comerciar() -> bool:
 	return _boton_comerciar != null and _boton_comerciar.visible
 
 
+## Fase 16: true si el botón "Viajar" está visible (el NPC actual es
+## portero). Sin viaje_id no hay botón.
+func tiene_viajar() -> bool:
+	return _boton_viajar != null and _boton_viajar.visible
+
+
 ## Fase 8: true si el botón de misión está visible (hay oferta disponible
 ## o lista para entregar para el NPC actual).
 func tiene_mision() -> bool:
@@ -268,6 +291,16 @@ func _al_comerciar() -> void:
 		return
 	var n: NPC = _npc
 	comerciar_solicitado.emit(n)
+	cerrar()
+
+
+## Fase 16: pulsar "Viajar" emite la señal y cierra el diálogo (la demo
+## abre el PanelViaje con la ciudad del portero).
+func _al_viajar() -> void:
+	if not esta_abierta() or _npc == null:
+		return
+	var n: NPC = _npc
+	viaje_solicitado.emit(n)
 	cerrar()
 
 

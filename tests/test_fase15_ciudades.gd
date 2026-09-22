@@ -17,9 +17,7 @@ extends SceneTree
 ##     colisiones; el NPC ambiental en su punto, dentro del disco r=700 y
 ##     fuera de colisiones.
 ## (f) Alturas: ninguna estructura supera 28 u; plaza y calles libres.
-## (g) `data/portales_temp.json`: los 10 destinos dentro del mundo y sobre
-##     terreno valido; los 9 de ciudades coinciden con su punto de aparicion.
-## (h) Regresion Moon Town: se construye igual que en la fase 14
+## (g) Regresion Moon Town: se construye igual que en la fase 14
 ##     (18 edificios, monumento luna, 4 puertas, antorchas reales).
 ##
 ## Cómo correrlos (un solo comando):
@@ -40,12 +38,6 @@ const CIUDADES: Array = [
 	["fury", "res://data/ciudad_fury.json", Vector2(-9966, 9966), "tormenta", "maris", "Fury Town"],
 	["golden", "res://data/ciudad_golden.json", Vector2(9966, 9966), "sol_dorado", "aurelio", "Golden Town"],
 ]
-## portal id -> indice en CIUDADES (-1 = sin ciudad: Montaña Oscura).
-const PORTAL_CIUDAD: Dictionary = {
-	"moon_town": -2, "desert_town": 0, "fire_town": 1, "north_town": 2,
-	"mystic_town": 3, "shadow_town": 4, "rage_town": 5, "fury_town": 6,
-	"golden_town": 7, "montana_oscura": -1,
-}
 
 var _ok: int = 0
 var _fallos: int = 0
@@ -77,7 +69,6 @@ func _process(_delta: float) -> bool:
 		_t_monumento(ciudad, spec)
 		_t_spawn_npc(ciudad, spec)
 		_t_alturas_calles(ciudad, spec)
-	_t_portales()
 	_t_moon_regression()
 	print("[TEST] pasados=%d fallos=%d" % [_ok, _fallos])
 	for n in _basura:
@@ -357,38 +348,6 @@ func _t_alturas_calles(ciudad: CiudadLuna, spec: Array) -> void:
 				bloqueos += 1
 	_check(bloqueos == 0, "calles: %s plaza y calles libres" % cid,
 		str(bloqueos))
-
-
-# -------------------------------------------------------------- portales ---
-
-func _t_portales() -> void:
-	var texto: String = FileAccess.get_file_as_string("res://data/portales_temp.json")
-	var parsed: Variant = JSON.parse_string(texto)
-	_check(parsed is Dictionary, "portales: JSON parsea")
-	if not (parsed is Dictionary):
-		return
-	var destinos: Array = (parsed as Dictionary).get("destinos", [])
-	_check(destinos.size() == 10, "portales: 10 destinos", str(destinos.size()))
-	var vistos: Dictionary = {}
-	for d in destinos:
-		if not (d is Dictionary):
-			continue
-		var dd: Dictionary = d
-		var pid: String = str(dd.get("id", ""))
-		vistos[pid] = true
-		var x: float = float(dd.get("x", 0.0))
-		var z: float = float(dd.get("z", 0.0))
-		_check(_terreno.dentro(x, z), "portal: %s dentro del mundo" % pid,
-			"(%f, %f)" % [x, z])
-		var h: float = _terreno.altura_en(x, z)
-		_check(is_finite(h), "portal: %s sobre terreno valido" % pid, str(h))
-		# Los destinos de ciudad coinciden con su punto de aparicion.
-		if PORTAL_CIUDAD.has(pid) and int(PORTAL_CIUDAD[pid]) >= 0:
-			var ciudad: CiudadLuna = _ciudades[int(PORTAL_CIUDAD[pid])]
-			var sp: Vector3 = ciudad.punto_aparicion_jugador()
-			_check(is_equal_approx(x, sp.x) and is_equal_approx(z, sp.z),
-				"portal: %s en la plaza de su ciudad" % pid)
-	_check(vistos.size() == 10, "portales: ids unicos", str(vistos.size()))
 
 
 # ------------------------------------------------- regresion Moon Town ---

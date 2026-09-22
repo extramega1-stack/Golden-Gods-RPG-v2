@@ -168,6 +168,11 @@
       "nota": "tienda",
       "x": -178.0,
       "z": -25.0
+    },
+    "portero_moon_town": {
+      "nota": "portero de viaje rápido (fase 16)",
+      "x": 30.0,
+      "z": -15.0
     }
   },
   "plaza_radio": 60.0,
