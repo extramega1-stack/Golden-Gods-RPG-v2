@@ -1,0 +1,1 @@
+{"_nota":"Fase 12.1 — streaming de mobs: solo se instancian como nodos los spawns dentro de radio_alta (m); se liberan más allá de radio_baja (histéresis: la banda intermedia no hace churn). intervalo_seg: cada cuánto se reevalúa.","intervalo_seg":0.25,"radio_alta":600.0,"radio_baja":800.0}

@@ -6,8 +6,10 @@ extends "res://scenes/demo/fase11_demo.gd"
 ## - `Terreno` (heightmap del legado 1:1, 36.864 u, chunks con LOD): el
 ##   jugador, los NPCs y los creeps caminan pegados a él (`Entity.terreno`).
 ## - Spawns distribuidos desde `data/spawns.json` (1121 creeps del legado
-##   mapeados a goblin/lobo/ogro por nivel): se instancian con la factory
-##   existente y entran al SpawnerMobs como siempre (respawn intacto).
+##   mapeados a goblin/lobo/ogro por nivel): viven como DATOS en
+##   `StreamingMobs` (fase 12.1) y solo se instancian como nodos los
+##   cercanos al jugador (radio data-driven con histéresis); el respawn de
+##   la fase 9 sigue funcionando y no reaparece mobs lejos (puerta).
 ## - `CicloDia` (día/noche data-driven) + antorchas en la aldea.
 ## - `RegionDB` + `VigiaRegion` + `BannerRegion`: al cruzar a una región
 ##   nueva aparece el banner "Has descubierto: X".
@@ -18,6 +20,8 @@ const SPAWNS_JSON: String = "res://data/spawns.json"
 var _terreno: Terreno = null
 var _ciclo: CicloDia = null
 var _region_db: RegionDB = null
+## Fase 12.1: streaming de mobs (los 1121 spawns como datos).
+var _streaming: StreamingMobs = null
 
 
 func _ready() -> void:
@@ -33,8 +37,9 @@ func _ready() -> void:
 			continue
 		npc.terreno = _terreno
 		npc._pegar_al_terreno()
-	# Los creeps del mundo: instanciar, configurar, conectar y vigilar.
-	_instanciar_spawns()
+	# Fase 12.1: los creeps del mundo viven como datos en el streaming;
+	# solo se instancian como nodos los cercanos al jugador.
+	_iniciar_streaming()
 	# Regiones: el vigía observa al jugador y el banner anuncia descubrimientos.
 	_region_db = RegionDB.new()
 	if not _region_db.cargar():
@@ -55,9 +60,11 @@ func _ready() -> void:
 			ant.position = p
 
 
-## Lee data/spawns.json e instancia cada creep con la factory de la fase 9
-## (misma configuración, mismas señales, mismo respawn).
-func _instanciar_spawns() -> void:
+## Fase 12.1: lee data/spawns.json y lo carga como REGISTROS en el
+## streaming (no se instancia ningún nodo aquí). El streaming instancia
+## solo los cercanos al jugador, con histéresis; el respawn de la fase 9
+## sigue programando sus timers pero la puerta veta reaparecer lejos.
+func _iniciar_streaming() -> void:
 	var texto: String = FileAccess.get_file_as_string(SPAWNS_JSON)
 	if texto.is_empty():
 		push_warning("[Fase12] no se pudo leer " + SPAWNS_JSON)
@@ -66,8 +73,7 @@ func _instanciar_spawns() -> void:
 	if not (crudo is Array):
 		push_warning("[Fase12] JSON inválido en " + SPAWNS_JSON)
 		return
-	var t0: int = Time.get_ticks_msec()
-	var n: int = 0
+	var registros: Array = []
 	for s in (crudo as Array):
 		if not (s is Dictionary):
 			continue
@@ -76,19 +82,67 @@ func _instanciar_spawns() -> void:
 		if not _arquetipos.has(arq_id):
 			push_warning("[Fase12] arquetipo desconocido en spawns: '%s'" % arq_id)
 			continue
-		var pos := Vector3(float(sd.get("x", 0.0)), 0.0, float(sd.get("z", 0.0)))
-		var e: Enemy = _crear_enemigo(arq_id, pos)
-		if e == null:
-			continue
-		e.configurar(_arquetipos[arq_id])
-		e.botin_generado.connect(_al_botin_generado)
-		e.murio.connect(_al_morir_enemigo.bind(e))
-		e.terreno = _terreno
-		e._pegar_al_terreno()
-		_lista_enemigos.append(e)
-		_spawner.vigilar(e)
-		n += 1
-	print("[Fase12] %d creeps instanciados en %d ms" % [n, Time.get_ticks_msec() - t0])
+		registros.append({
+			"arquetipo": arq_id,
+			"origen": Vector3(float(sd.get("x", 0.0)), 0.0, float(sd.get("z", 0.0))),
+		})
+	_streaming = StreamingMobs.new()
+	_streaming.name = "StreamingMobs"
+	_streaming.configurar(registros)
+	# La factory es la de la fase 9 (crea + configura con el arquetipo).
+	_streaming.fijar_factory(_crear_enemigo)
+	_streaming.fijar_jugador(_jugador)
+	_streaming.fijar_spawner(_spawner)
+	_streaming.mob_instanciado.connect(_al_mob_instanciado)
+	_streaming.mob_liberado.connect(_al_mob_liberado)
+	_spawner.puerta_reaparicion = _puerta_respawn
+	# Los reaparecidos también caminan pegados al terreno (la factory de
+	# la fase 9 no lo pone; antes del streaming tampoco lo tenían).
+	_spawner.reaparecido.connect(_al_reaparecer_terreno)
+	add_child(_streaming)
+	_streaming.actualizar()
+	print("[Fase12] streaming: %d registros, %d instanciados cerca"
+			% [_streaming.conteo_registros(), _streaming.conteo_instanciados()])
+
+
+## Fase 12.1: el streaming instanció un mob cercano: la misma configuración,
+## señales y vigilancia que la fase 12 original por nodo.
+func _al_mob_instanciado(e: Enemy) -> void:
+	if e == null:
+		return
+	e.botin_generado.connect(_al_botin_generado)
+	e.murio.connect(_al_morir_enemigo.bind(e))
+	e.terreno = _terreno
+	e._pegar_al_terreno()
+	_lista_enemigos.append(e)
+	_spawner.vigilar(e)
+
+
+## Fase 12.1: el jugador se alejó y el nodo se libera. El registro, su
+## posición de origen y su respawn pendiente sobreviven en datos; el save
+## guarda la lista viva como siempre (los liberados no están en ella,
+## igual que los muertos pendientes de respawn).
+func _al_mob_liberado(e: Enemy) -> void:
+	_lista_enemigos.erase(e)
+
+
+## Fase 12.1: puerta del respawn — no reaparecer mobs lejos del jugador
+## (el pendiente se reintenta al acercarse).
+func _puerta_respawn(_arquetipo: String, origen: Vector3) -> bool:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return true
+	var ra: float = _streaming.radio_alta() if _streaming != null else 600.0
+	var d: Vector3 = origen - _jugador.global_position
+	d.y = 0.0
+	return d.length() <= ra
+
+
+## Fase 12.1: el reaparecido del spawner también va pegado al terreno.
+func _al_reaparecer_terreno(nuevo: Enemy) -> void:
+	if nuevo == null or not is_instance_valid(nuevo) or _terreno == null:
+		return
+	nuevo.terreno = _terreno
+	nuevo._pegar_al_terreno()
 
 
 ## Antorchas colocadas en la escena (grupo propio para no mezclar con NPCs).

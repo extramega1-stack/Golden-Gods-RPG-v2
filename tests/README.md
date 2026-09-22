@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10 y 11
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12 y 12.1
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -237,3 +237,5 @@ de guardado (`to_dict`/`from_dict`), transiciones de la IA del enemigo
 oro que nunca baja de 0, determinismo del botín por semilla, pickups por
 proximidad, y round-trip completo del save (no re-emite botín al cargar,
 enemigos muertos quedan muertos).
+
+La fase 12.1 añade `test_streaming.gd` (26 asserts): `StreamingMobs` instancia solo los registros dentro de `radio_alta` y libera más allá de `radio_baja` (histéresis sin churn en la banda intermedia); la puerta de reaparición del `SpawnerMobs` veta reaparecer lejos (el pendiente se reprograma, no se pierde) y al acercarse el mob reaparece re-asociado a su registro; `Enemy.intervalo_cerebro(dist)` devuelve 1/3/6 por bandas; el tinte por arquetipo comparte material entre mobs del mismo color.

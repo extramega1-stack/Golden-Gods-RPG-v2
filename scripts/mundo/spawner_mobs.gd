@@ -25,6 +25,16 @@ signal reaparecido(nuevo: Enemy)
 const RESPAWN_DEFAULT_SEG: float = 20.0
 ## Variación aleatoria (m) alrededor del punto de origen al reaparecer.
 const RADIO_VARIACION: float = 2.0
+## Fase 12.1: si la puerta de reaparición niega, el pendiente se reprograma
+## y se reintenta tras estos segundos (no se pierde el respawn).
+const REINTENTO_PUERTA_SEG: float = 5.0
+
+## Fase 12.1 — puerta opcional de reaparición:
+## `Callable(arquetipo: String, origen: Vector3) -> bool`.
+## El streaming de mobs la usa para vetar reapariciones lejos del jugador
+## (el mob reaparece cuando te acercas, no antes). Sin puerta (invalida),
+## el comportamiento es el de siempre: reaparecer al cumplirse el timer.
+var puerta_reaparicion: Callable = Callable()
 
 var _arquetipos: Dictionary = {}
 var _factory: Callable = Callable()
@@ -55,6 +65,17 @@ func vigilar(e: Enemy) -> void:
 	_origenes[e.get_instance_id()] = e.global_position
 	if not e.murio.is_connected(_al_morir):
 		e.murio.connect(_al_morir.bind(e))
+
+
+## Fase 12.1: deja de vigilar un enemigo sin matarlo (el streaming lo usa
+## al liberar un mob lejano: su respawn pendiente, si lo hay, sigue
+## programado con su propio origen).
+func olvidar(e: Enemy) -> void:
+	if e == null:
+		return
+	_origenes.erase(e.get_instance_id())
+	if e.murio.is_connected(_al_morir):
+		e.murio.disconnect(_al_morir)
 
 
 func _process(delta: float) -> void:
@@ -97,6 +118,14 @@ func _reaparecer(p: Dictionary) -> void:
 	if not _factory.is_valid():
 		push_warning("[SpawnerMobs] sin factory: no se puede reaparecer '%s'" % str(p.get("arquetipo", "")))
 		return
+	# Fase 12.1: la puerta puede vetar la reaparición (mob lejos del
+	# jugador); el pendiente NO se pierde: se reprograma el reintento.
+	if puerta_reaparicion.is_valid():
+		var ok: Variant = puerta_reaparicion.call(str(p.get("arquetipo", "")), p["origen"])
+		if not bool(ok):
+			p["tiempo"] = REINTENTO_PUERTA_SEG
+			_pendientes.append(p)
+			return
 	var origen: Vector3 = p["origen"]
 	# randf_range, no randf(a, b) (lección 12).
 	var pos: Vector3 = origen + Vector3(

@@ -41,6 +41,13 @@ var rng: RandomNumberGenerator = null
 
 var _tabla_loot: Dictionary = {}
 var _cd: float = 0.0
+## Fase 12.1: reparto del tick de IA (0..7, lo fija el streaming al
+## instanciar) + contador de frames para escalonar el cerebro.
+var reparto: int = 0
+var _frame_ia: int = 0
+## Fase 12.1: materiales compartidos por color de arquetipo (antes cada
+## mob creaba su StandardMaterial3D propio: 1121 materiales únicos).
+static var _mats_cache: Dictionary = {}
 
 
 func _init(p_stats: StatBlock = null) -> void:
@@ -87,7 +94,8 @@ func configurar(arquetipo: Dictionary) -> void:
 	_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
 
 
-## Color del cuerpo según el arquetipo (material propio por instancia).
+## Color del cuerpo según el arquetipo (material COMPARTIDO por color:
+## fase 12.1 — antes cada mob creaba su StandardMaterial3D propio).
 func _tintar(c: Variant) -> void:
 	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
 	if cuerpo == null:
@@ -96,10 +104,13 @@ func _tintar(c: Variant) -> void:
 	var r: float = float(col[0]) if col.size() > 0 else 0.8
 	var g: float = float(col[1]) if col.size() > 1 else 0.25
 	var b: float = float(col[2]) if col.size() > 2 else 0.25
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color(r, g, b)
-	mat.roughness = 0.7
-	cuerpo.material_override = mat
+	var clave: String = "%d,%d,%d" % [int(r * 255.0), int(g * 255.0), int(b * 255.0)]
+	if not _mats_cache.has(clave):
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.albedo_color = Color(r, g, b)
+		mat.roughness = 0.7
+		_mats_cache[clave] = mat
+	cuerpo.material_override = _mats_cache[clave]
 
 
 func ocultar_cuerpo() -> void:
@@ -119,10 +130,26 @@ func _physics_process(delta: float) -> void:
 		estado = Estado.MUERTO
 		return
 	_cd = maxf(_cd - delta, 0.0)
-	_actualizar_estado()
+	# Fase 12.1: el cerebro no piensa cada frame. Cerca del objetivo piensa
+	# siempre; lejos se reparte (el `reparto` lo fija el streaming al
+	# instanciar para que no piensen todos en el mismo frame).
+	_frame_ia += 1
+	var dist_cerebro: float = _distancia_objetivo()
+	if (_frame_ia + reparto) % intervalo_cerebro(dist_cerebro) == 0:
+		_actualizar_estado()
 	_actuar(delta)
 	# Fase 12: los creeps caminan pegados al terreno del mundo abierto.
 	_pegar_al_terreno()
+
+
+## Fase 12.1: cada cuántos frames de física piensa el cerebro según la
+## distancia plana al objetivo. Pura y testeable (INF = sin objetivo).
+static func intervalo_cerebro(dist: float) -> int:
+	if dist < 60.0:
+		return 1
+	if dist < 250.0:
+		return 3
+	return 6
 
 
 ## Distancia plana al objetivo; INF si no hay objetivo válido.
