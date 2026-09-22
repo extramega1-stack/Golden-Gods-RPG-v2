@@ -27,6 +27,9 @@ const RUTA_DATOS: String = "res://data/viaje_rapido.json"
 ## mientras esté en true, todos los viajes son GRATIS (el JSON conserva
 ## los costos reales). Al quitarlo, volver a `false`.
 const GRATIS_TEMPORAL: bool = true
+## TEMPORAL — quitar junto con GRATIS_TEMPORAL: sin requisito de nivel
+## (el JSON conserva los niveles reales). Al quitarlo, volver a `false`.
+const SIN_NIVEL_TEMPORAL: bool = true
 
 var _datos: Dictionary = {}
 var _ciudades: Dictionary = {}
@@ -111,11 +114,15 @@ func destinos_desde(origen_id: String) -> Array:
 		var costo_final: int = int(fd.get("costo_oro", 0))
 		if GRATIS_TEMPORAL:
 			costo_final = 0
+		# TEMPORAL (SIN_NIVEL_TEMPORAL): nivel 1 mientras se valida.
+		var nmin_final: int = int(fd.get("nivel_min", 1))
+		if SIN_NIVEL_TEMPORAL:
+			nmin_final = 1
 		resultado.append({
 			"destino_id": did,
 			"nombre": nombre_ciudad(did),
 			"costo_oro": costo_final,
-			"nivel_min": int(fd.get("nivel_min", 1)),
+			"nivel_min": nmin_final,
 		})
 	return resultado
 
@@ -141,6 +148,9 @@ func evaluar(jugador: Player, origen_id: String, destino_id: String) -> Dictiona
 	var nmin: int = nivel_min_ciudad(destino_id)
 	if nmin < 0:
 		return eval_base
+	# TEMPORAL (SIN_NIVEL_TEMPORAL): el nivel efectivo es 1 mientras se valida.
+	if SIN_NIVEL_TEMPORAL:
+		nmin = 1
 	eval_base["costo"] = costo_viaje
 	eval_base["nivel_min"] = nmin
 	if jugador == null:
@@ -149,7 +159,8 @@ func evaluar(jugador: Player, origen_id: String, destino_id: String) -> Dictiona
 	if jugador.objetivo_ataque != null:
 		eval_base["motivo"] = "en_combate"
 		return eval_base
-	if jugador.nivel < nmin:
+	# TEMPORAL (SIN_NIVEL_TEMPORAL): sin requisito de nivel mientras se valida.
+	if not SIN_NIVEL_TEMPORAL and jugador.nivel < nmin:
 		eval_base["motivo"] = "sin_nivel"
 		return eval_base
 	if jugador.oro < costo_viaje:

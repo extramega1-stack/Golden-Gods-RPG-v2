@@ -141,7 +141,9 @@ func _t_json() -> void:
 			else:
 				_check(int(dd.get("costo_oro", 0)) > 0,
 					"json: costo>0 %s->%s" % [o, did])
-			_check(int(dd.get("nivel_min", 0)) == int(nmin[did]),
+			# TEMPORAL (SIN_NIVEL_TEMPORAL): nivel_min efectivo = 1.
+			var nmin_esperado: int = 1 if VJ.SIN_NIVEL_TEMPORAL else int(nmin[did])
+			_check(int(dd.get("nivel_min", 0)) == nmin_esperado,
 				"json: nivel_min coherente %s->%s" % [o, did])
 	# Coherencia del criterio: más lejos / banda mayor => más caro.
 	# TEMPORAL: con GRATIS_TEMPORAL ambos son 0.
@@ -173,13 +175,20 @@ func _t_evaluar() -> void:
 	_check(str(ev.get("motivo", "")) == "destino_desconocido",
 		"evaluar: origen desconocido")
 	# Sin nivel (nivel 1 no entra a golden: Nv. 36).
+	# TEMPORAL: con SIN_NIVEL_TEMPORAL no hay requisito de nivel.
 	var novato: Player = _player(1, 99999)
 	ev = v.evaluar(novato, "moon_town", "golden")
-	_check(not bool(ev.get("ok", true)) and str(ev.get("motivo", "")) == "sin_nivel",
-		"evaluar: sin_nivel bloquea")
-	_check(int(ev.get("nivel_min", 0)) == 36, "evaluar: nivel_min golden = 36")
-	_check(VJ.texto_motivo(ev) == "Requiere nivel 36",
-		"evaluar: texto 'Requiere nivel 36'")
+	if VJ.SIN_NIVEL_TEMPORAL:
+		_check(bool(ev.get("ok", false)),
+			"evaluar: SIN_NIVEL_TEMPORAL: nivel 1 entra a golden")
+		_check(int(ev.get("nivel_min", 0)) == 1,
+			"evaluar: SIN_NIVEL_TEMPORAL: nivel_min efectivo = 1")
+	else:
+		_check(not bool(ev.get("ok", true)) and str(ev.get("motivo", "")) == "sin_nivel",
+			"evaluar: sin_nivel bloquea")
+		_check(int(ev.get("nivel_min", 0)) == 36, "evaluar: nivel_min golden = 36")
+		_check(VJ.texto_motivo(ev) == "Requiere nivel 36",
+			"evaluar: texto 'Requiere nivel 36'")
 	# Sin oro (nivel 10 sí puede ir a desert: Nv. 4, 160 oro).
 	# TEMPORAL: con GRATIS_TEMPORAL el viaje es gratis y no bloquea por oro.
 	var pelado: Player = _player(10, 0)
@@ -197,9 +206,14 @@ func _t_evaluar() -> void:
 		_check(VJ.texto_motivo(ev) == "Te faltan %d de oro" % v.costo("moon_town", "desert"),
 			"evaluar: texto 'Te faltan X de oro'")
 	# El nivel se revisa antes que el oro (nivel 1, oro 0 -> sin_nivel).
+	# TEMPORAL: con ambas flags en true, el viaje es libre.
 	ev = v.evaluar(_player(1, 0), "moon_town", "desert")
-	_check(str(ev.get("motivo", "")) == "sin_nivel",
-		"evaluar: sin_nivel tiene prioridad sobre sin_oro")
+	if VJ.SIN_NIVEL_TEMPORAL and VJ.GRATIS_TEMPORAL:
+		_check(bool(ev.get("ok", false)),
+			"evaluar: TEMPORAL: nivel 1 sin oro viaja")
+	else:
+		_check(str(ev.get("motivo", "")) == "sin_nivel",
+			"evaluar: sin_nivel tiene prioridad sobre sin_oro")
 	# En combate (objetivo_ataque != null).
 	var guerrero: Player = _player(60, 99999)
 	var dummy: Entity = ENT.new()
@@ -285,7 +299,8 @@ func _t_viaje_id_npc() -> void:
 func _t_panel_logica() -> void:
 	var pv: PanelViaje = PV.new()
 	_basura.append(pv)
-	# Jugador pobre de nivel 1: todo bloqueado, motivos exactos.
+	# Jugador pobre de nivel 1: con SIN_NIVEL_TEMPORAL todo desbloqueado;
+	# si no, bloqueado por nivel con motivos exactos.
 	var novato: Player = _player(1, 0)
 	var filas: Array = pv.info_filas("moon_town", novato)
 	_check(filas.size() == 8, "panel: 8 destinos en info_filas")
@@ -294,14 +309,18 @@ func _t_panel_logica() -> void:
 		var fd: Dictionary = f
 		por_id[str(fd.get("destino_id", ""))] = fd
 	var desert: Dictionary = por_id.get("desert", {})
-	_check(not bool(desert.get("ok", true)), "panel: desert bloqueado (Nv.1)")
-	_check(str(desert.get("motivo", "")) == "sin_nivel",
-		"panel: motivo sin_nivel en desert")
-	_check(str(desert.get("motivo_texto", "")) == "Requiere nivel 4",
-		"panel: texto 'Requiere nivel 4'")
-	var golden: Dictionary = por_id.get("golden", {})
-	_check(str(golden.get("motivo_texto", "")) == "Requiere nivel 36",
-		"panel: texto 'Requiere nivel 36'")
+	if VJ.SIN_NIVEL_TEMPORAL:
+		_check(bool(desert.get("ok", false)),
+			"panel: SIN_NIVEL_TEMPORAL: desert desbloqueado (Nv.1)")
+	else:
+		_check(not bool(desert.get("ok", true)), "panel: desert bloqueado (Nv.1)")
+		_check(str(desert.get("motivo", "")) == "sin_nivel",
+			"panel: motivo sin_nivel en desert")
+		_check(str(desert.get("motivo_texto", "")) == "Requiere nivel 4",
+			"panel: texto 'Requiere nivel 4'")
+		var golden: Dictionary = por_id.get("golden", {})
+		_check(str(golden.get("motivo_texto", "")) == "Requiere nivel 36",
+			"panel: texto 'Requiere nivel 36'")
 	# Nivel 10 sin oro: con GRATIS_TEMPORAL desert está desbloqueado;
 	# si no, bloqueado por oro con el texto exacto.
 	var pelado: Player = _player(10, 0)
