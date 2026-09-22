@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generador determinista de spawns para el REWORK 2026 (Fase 14) — Golden Gods RPG.
+"""Generador determinista de spawns para el REWORK 2026 (Fase 15) — Golden Gods RPG.
 
 Reemplaza el port de fase 12 (1121 creeps del legado WC3) por spawns generados
 de forma determinista sobre las 10 regiones de data/regiones.json.
@@ -19,10 +19,15 @@ estable y monotona: un nivel mas alto nunca mapea a un tier inferior. El
 DISTRIBUCION (semilla fija SEMILLA = 20260922, random.Random determinista):
   - Moon Town: 24 spawns de nivel 1-5 en el anillo 800 < r < 1450 (fuera del
     disco de la ciudad donde el worker de ciudad construye, dentro de la
-    region). La zona segura de 40 m alrededor de (0, 0) queda blindada.
+    region).
   - Las otras 9 regiones: 1097 spawns repartidos por area (resto mayor),
     posicion uniforme dentro del rectangulo con margen de 8 u, nivel
     uniforme entero dentro de la banda [nivel_min, nivel_max] de su region.
+
+ZONAS SEGURAS (fase 15): ningun spawn a menos de 40 m del centro de ninguna
+de las 9 ciudades (Moon Town + 8 secundarias de data/portales_temp.json).
+Se remuestrea con el mismo rng hasta salir de la zona segura: el total
+sigue siendo exactamente 1121.
 
 Determinista y re-ejecutable: dos corridas -> mismo SHA-256.
 
@@ -46,9 +51,23 @@ REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
 SEMILLA = 20260922
 TOTAL = 1121
 SPAWNS_MOON = 24            # en el anillo 800 < r < 1450 de Moon Town
-RADIO_SEGURO = 40.0         # m alrededor de (0, 0): zona segura
+RADIO_SEGURO = 40.0         # m alrededor del centro de cada ciudad
 R_CIUDAD = 800.0            # disco de la ciudad (lo construye otro worker)
 MARGEN = 8.0                # margen dentro de cada rectangulo de region
+
+# Centros de las 9 ciudades con zona segura (fase 15). Los 8 secundarios
+# son los destinos de data/portales_temp.json (fase 14.1).
+CIUDADES = [
+    (0.0, 0.0),
+    (9966.0, 0.0),
+    (-9966.0, 0.0),
+    (0.0, -5358.0),
+    (0.0, 9966.0),
+    (9966.0, -9966.0),
+    (-9966.0, -9966.0),
+    (-9966.0, 9966.0),
+    (9966.0, 9966.0),
+]
 
 
 def arquetipo_de(nivel: int) -> str:
@@ -58,6 +77,11 @@ def arquetipo_de(nivel: int) -> str:
     if nivel <= 200:
         return "lobo"
     return "ogro"
+
+
+def _en_zona_segura(x: float, z: float) -> bool:
+    """True si (x, z) cae a menos de RADIO_SEGURO del centro de alguna ciudad."""
+    return any(math.hypot(x - cx, z - cz) < RADIO_SEGURO for cx, cz in CIUDADES)
 
 
 def main() -> int:
@@ -87,12 +111,14 @@ def main() -> int:
     # 1) Moon Town: anillo fuera del disco de la ciudad, niveles 1-5.
     nmin, nmax = int(moon["nivel_min"]), int(moon["nivel_max"])
     for _ in range(SPAWNS_MOON):
-        ang = rng.random() * 2.0 * math.pi
-        r = R_CIUDAD + rng.random() * (1450.0 - R_CIUDAD)
-        x = r * math.cos(ang)
-        z = r * math.sin(ang)
+        while True:  # remuestreo hasta salir de las 9 zonas seguras
+            ang = rng.random() * 2.0 * math.pi
+            r = R_CIUDAD + rng.random() * (1450.0 - R_CIUDAD)
+            x = r * math.cos(ang)
+            z = r * math.sin(ang)
+            if not _en_zona_segura(x, z):
+                break
         nivel = rng.randint(nmin, nmax)
-        assert math.hypot(x, z) >= RADIO_SEGURO
         spawns.append({
             "arquetipo": arquetipo_de(nivel),
             "x": round(x, 3),
@@ -104,12 +130,11 @@ def main() -> int:
     for r, n_spawns in zip(resto, asignados):
         nmin, nmax = int(r["nivel_min"]), int(r["nivel_max"])
         for _ in range(n_spawns):
-            x = r["x0"] + MARGEN + rng.random() * (r["x1"] - r["x0"] - 2 * MARGEN)
-            z = r["z0"] + MARGEN + rng.random() * (r["z1"] - r["z0"] - 2 * MARGEN)
-            if math.hypot(x, z) < RADIO_SEGURO:
-                # Blindaje de la zona segura (en la practica solo podria
-                # pasar en Moon Town, que ya se genera en anillo).
-                continue
+            while True:  # remuestreo hasta salir de las 9 zonas seguras
+                x = r["x0"] + MARGEN + rng.random() * (r["x1"] - r["x0"] - 2 * MARGEN)
+                z = r["z0"] + MARGEN + rng.random() * (r["z1"] - r["z0"] - 2 * MARGEN)
+                if not _en_zona_segura(x, z):
+                    break
             nivel = rng.randint(nmin, nmax)
             spawns.append({
                 "arquetipo": arquetipo_de(nivel),

@@ -140,14 +140,20 @@ func _t_marcador_demo() -> void:
 	root.add_child(demo)
 	_basura.append(demo)
 	var npcs: Array = demo.get("_lista_npcs")
-	_check(npcs.size() == 3, "la demo crea 3 NPCs", "hay %d" % npcs.size())
+	# Fase 15: 11 NPCs (ilya/bram/sira con misiones + 8 ambientales sin).
+	_check(npcs.size() == 11, "la demo crea 11 NPCs", "hay %d" % npcs.size())
 	var por_id: Dictionary = {}
 	for x in npcs:
 		var q: NPC = x as NPC
 		por_id[q.npc_id] = q
-	for k in por_id.keys():
+	for k in ["ilya", "bram", "sira"]:
+		_check(por_id.has(k), "demo: npc con mision %s" % k)
 		_check((por_id[k] as NPC).marcador_visible(),
 			"al arrancar hay misión disponible: '!' visible (%s)" % str(k), "")
+	for k in ["yasmina", "durnan", "sella", "elthar", "vex", "karg", "maris", "aurelio"]:
+		_check(por_id.has(k), "demo: npc ambiental %s" % k)
+		_check(not (por_id[k] as NPC).marcador_visible(),
+			"el ambiental %s no tiene mision: sin '!'" % k)
 	var log: QuestLog = demo.get("_misiones")
 	_check(log.aceptar("goblins_fuera") == "ok", "aceptar goblins_fuera → ok", "")
 	_check(not (por_id["ilya"] as NPC).marcador_visible(),

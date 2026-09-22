@@ -1,0 +1,162 @@
+{
+  "_nota": "La ciudad que brillara cuando Liberty triunfe, en la Corona Quebrada (fase 15). Marmol y dorado, el sol dorado en la plaza. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/sol_dorado, templo/dorado, salon_clases/aureo, tienda/dorada, cuartel/marmol, forja/solar, casa/dorada_a, casa/dorada_b.",
+  "_paleta": {
+    "muros": "#e8dcc0",
+    "techos": "#c9a227",
+    "dorado": "#ffd75a",
+    "acentos": "#8a6d1f",
+    "detalle": "#fff2c9"
+  },
+  "_region": "golden",
+  "nombre": "Golden Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "sol_dorado",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "templo",
+      "variante": "dorado",
+      "x": 199.4,
+      "z": 93.0,
+      "rot": 1.13439,
+      "escala": 1.1
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "aureo",
+      "x": 69.0,
+      "z": 209.2,
+      "rot": -0.08725,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "dorada",
+      "x": -187.9,
+      "z": 68.4,
+      "rot": -1.22168,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "marmol",
+      "x": -162.6,
+      "z": -162.6,
+      "rot": -2.35619,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "solar",
+      "x": 77.0,
+      "z": -211.4,
+      "rot": 2.79229,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_a",
+      "x": 246.6,
+      "z": 352.2,
+      "rot": 0.61084,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_b",
+      "x": -225.0,
+      "z": 389.7,
+      "rot": -0.52361,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_a",
+      "x": -423.4,
+      "z": -37.0,
+      "rot": -1.65796,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_b",
+      "x": -152.2,
+      "z": -418.2,
+      "rot": -2.79255,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_a",
+      "x": 279.6,
+      "z": -333.2,
+      "rot": 2.44344,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "dorada_b",
+      "x": 448.3,
+      "z": 39.2,
+      "rot": 1.48358,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "aurelio": {
+      "_nombre": "Aurelio",
+      "_dialogo": "Sacerdote del templo: predica que la luz de Liberty no necesita dioses para brillar.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": 161.4,
+      "z": 133.0
+    }
+  }
+}

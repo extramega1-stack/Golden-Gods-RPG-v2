@@ -1,0 +1,162 @@
+{
+  "_nota": "Ciudad de forjas eternas en Ceniza y Forja (fase 15). Piedra volcanica oscura, braseros encendidos en cada esquina, el volcan en la plaza. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/volcan, forja/volcanica, templo/llama, cuartel/ceniza, tienda/carbon, salon_clases/piedra, casa/volcan_a, casa/volcan_b.",
+  "_paleta": {
+    "muros": "#3a3230",
+    "techos": "#241f1e",
+    "braseros": "#ff7a1a",
+    "acentos": "#c23b1a",
+    "detalle": "#8c2f14"
+  },
+  "_region": "fire",
+  "nombre": "Fire Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "volcan",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "volcanica",
+      "x": 61.0,
+      "z": 220.0,
+      "rot": 0.0,
+      "escala": 1.15
+    },
+    {
+      "tipo": "templo",
+      "variante": "llama",
+      "x": -187.9,
+      "z": 68.4,
+      "rot": -1.22168,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "ceniza",
+      "x": -147.8,
+      "z": -176.2,
+      "rot": -2.44363,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "carbon",
+      "x": 105.0,
+      "z": -181.9,
+      "rot": 2.61808,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "piedra",
+      "x": 225.5,
+      "z": 82.1,
+      "rot": 1.22163,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_a",
+      "x": 246.6,
+      "z": 352.2,
+      "rot": 0.61084,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_b",
+      "x": -153.9,
+      "z": 422.9,
+      "rot": -0.34902,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_a",
+      "x": -410.5,
+      "z": 110.0,
+      "rot": -1.30898,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_b",
+      "x": -364.5,
+      "z": -255.2,
+      "rot": -2.18161,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_a",
+      "x": 36.0,
+      "z": -435.0,
+      "rot": -3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "volcan_b",
+      "x": 372.7,
+      "z": -261.0,
+      "rot": 2.18172,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "durnan": {
+      "_nombre": "Durnan",
+      "_dialogo": "Herrero: dice que el metal de la Forja solo cede ante quien no teme quemarse.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": -20.0,
+      "z": 244.0
+    }
+  }
+}

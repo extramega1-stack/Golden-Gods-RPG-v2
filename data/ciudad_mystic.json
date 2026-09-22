@@ -1,0 +1,162 @@
+{
+  "_nota": "Claro arcano en el Bosque Hondo (fase 15). Piedra con runas, cristales flotantes, el gran cristal en la plaza. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/cristal, salon_clases/arcana, templo/arcano, tienda/runas, cuartel/arcano, forja/runica, casa/mistica_a, casa/mistica_b.",
+  "_paleta": {
+    "muros": "#5a4a72",
+    "techos": "#3a2f52",
+    "cristales": "#7ae0ff",
+    "acentos": "#b48cff",
+    "detalle": "#2a2140"
+  },
+  "_region": "mystic",
+  "nombre": "Mystic Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "cristal",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "arcana",
+      "x": 190.5,
+      "z": 110.0,
+      "rot": 1.04714,
+      "escala": 1.1
+    },
+    {
+      "tipo": "templo",
+      "variante": "arcano",
+      "x": -34.7,
+      "z": 197.0,
+      "rot": -0.17435,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "runas",
+      "x": -202.8,
+      "z": 54.4,
+      "rot": -1.30872,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "arcano",
+      "x": -151.1,
+      "z": -180.0,
+      "rot": -2.44326,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "runica",
+      "x": 95.1,
+      "z": -203.9,
+      "rot": 2.70518,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_a",
+      "x": 215.0,
+      "z": 372.4,
+      "rot": 0.52359,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_b",
+      "x": -258.1,
+      "z": 368.6,
+      "rot": -0.61087,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_a",
+      "x": -418.5,
+      "z": -73.8,
+      "rot": -1.74535,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_b",
+      "x": -115.2,
+      "z": -429.8,
+      "rot": -2.87972,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_a",
+      "x": 307.6,
+      "z": -307.6,
+      "rot": 2.35619,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "mistica_b",
+      "x": 450.0,
+      "z": 38.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "elthar": {
+      "_nombre": "Elthar",
+      "_dialogo": "Erudito del salon: susurra que el Culto del Velo escucha entre los arboles.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": 150.5,
+      "z": 148.0
+    }
+  }
+}

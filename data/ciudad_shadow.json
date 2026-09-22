@@ -1,0 +1,162 @@
+{
+  "_nota": "Bastion sombrio en el Umbral de Ladon (fase 15). Piedra sombria, estandartes oscuros, el pilar de sombra en la plaza. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/sombra, cuartel/sombrio, templo/velo, tienda/umbral, forja/sombra, salon_clases/piedra, casa/sombria_a, casa/sombria_b.",
+  "_paleta": {
+    "muros": "#2e2a38",
+    "techos": "#1c1a24",
+    "estandartes": "#5a1a2e",
+    "acentos": "#7a2a4a",
+    "detalle": "#0f0e14"
+  },
+  "_region": "shadow",
+  "nombre": "Shadow Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "sombra",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "sombrio",
+      "x": 75.2,
+      "z": 206.7,
+      "rot": 0.34893,
+      "escala": 1.1
+    },
+    {
+      "tipo": "templo",
+      "variante": "velo",
+      "x": -141.4,
+      "z": 141.4,
+      "rot": -0.7854,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "umbral",
+      "x": -197.3,
+      "z": -71.8,
+      "rot": -1.91981,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "sombra",
+      "x": 48.0,
+      "z": -229.1,
+      "rot": -3.05452,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "piedra",
+      "x": 207.8,
+      "z": -120.0,
+      "rot": 2.09449,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_a",
+      "x": 389.7,
+      "z": 181.7,
+      "rot": 1.13451,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_b",
+      "x": 38.0,
+      "z": 450.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_a",
+      "x": -385.2,
+      "z": 179.6,
+      "rot": -1.13451,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_b",
+      "x": -340.9,
+      "z": -286.0,
+      "rot": -2.26884,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_a",
+      "x": 75.5,
+      "z": -428.4,
+      "rot": 2.96715,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "sombria_b",
+      "x": 427.6,
+      "z": -155.6,
+      "rot": 1.91979,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "vex": {
+      "_nombre": "Vex",
+      "_dialogo": "Exploradora: jura haber visto telaranas gruesas como sogas en las quebradas del noreste.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": -119.4,
+      "z": 163.4
+    }
+  }
+}

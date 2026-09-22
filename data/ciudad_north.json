@@ -1,0 +1,162 @@
+{
+  "_nota": "Vigia del norte en las Tierras del Trueno (fase 15). Madera y piedra nortena, tejados con nieve, el pico en la plaza. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/pico_norte, salon_clases/norte, cuartel/norte, tienda/pieles, templo/nieve, forja/hollin, casa/nortena_a, casa/nortena_b.",
+  "_paleta": {
+    "muros": "#8a6f52",
+    "techos": "#e8ecf2",
+    "piedra": "#6b6f75",
+    "acentos": "#3f5a6e",
+    "detalle": "#c9d4de"
+  },
+  "_region": "north",
+  "nombre": "North Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "pico_norte",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "norte",
+      "x": 155.6,
+      "z": 155.6,
+      "rot": 0.7854,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "norte",
+      "x": -78.7,
+      "z": 216.1,
+      "rot": -0.34925,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "pieles",
+      "x": -199.2,
+      "z": 45.0,
+      "rot": -1.48367,
+      "escala": 1.0
+    },
+    {
+      "tipo": "templo",
+      "variante": "nieve",
+      "x": -105.0,
+      "z": -181.9,
+      "rot": -2.61808,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "hollin",
+      "x": 137.7,
+      "z": -196.6,
+      "rot": 2.53059,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_a",
+      "x": 415.3,
+      "z": 111.3,
+      "rot": 1.30895,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_b",
+      "x": 78.1,
+      "z": 443.2,
+      "rot": 0.17443,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_a",
+      "x": -348.1,
+      "z": 243.8,
+      "rot": -0.95982,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_b",
+      "x": -418.2,
+      "z": -152.2,
+      "rot": -1.91984,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_a",
+      "x": -75.5,
+      "z": -428.4,
+      "rot": -2.96715,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "nortena_b",
+      "x": 348.6,
+      "z": -292.5,
+      "rot": 2.26891,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "sella": {
+      "_nombre": "Sella",
+      "_dialogo": "Cazadora: advierte que los gigantes de montana bajan cuando ruge el trueno.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": -179.2,
+      "z": -6.6
+    }
+  }
+}

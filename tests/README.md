@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12, 12.1, 13 y 14
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12, 12.1, 13, 14, 14.1 y 15
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -207,6 +207,7 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_terreno.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_integracion.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_portales_temp.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase15_ciudades.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -240,6 +241,10 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 # Smoke test del streaming fuera de la ciudad (teletransporta al jugador a
 # (1019.4, -701), activa el streaming de mobs y corre 500 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/smoke_fase14_streaming.gd
+
+# Smoke test de las 8 ciudades secundarias (instancia la demo real, visita las
+# 8 plazas con teletransporte, verifica 11 NPCs y streaming sano, 0 errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/smoke_fase15_ciudades.gd
 ```
 
 - Exit code **0** = todo verde.
@@ -266,3 +271,5 @@ La fase 14 (terreno del rework) añade `test_fase14_terreno.gd` (34 asserts): `d
 La fase 14 (integración) añade `test_fase14_integracion.gd` (36 asserts): `fase14_demo` hereda de `fase12_demo`, crea `CiudadLuna` con el terreno asignado ANTES del add_child, usa `punto_aparicion_jugador()`/`yaw_aparicion()`/`npc_spawn()` y conserva el flujo fase 12 (`super._ready()`); el título abre `fase14_demo.tscn`; `data/npcs.json` habla de "Moon Town" (sin "Piedraceniza", solo texto); el spawn del jugador cae sobre el terreno, en la región `moon_town` y fuera de colisiones; `npc_spawn()` devuelve los puntos data-driven de ilya/bram/sira; el minimapa sigue leyendo `Terreno.color_en` del terreno nuevo (STANDBY: sin pulir, solo no romper).
 
 La fase 14.1 (TEMPORAL) añade `test_portales_temp.gd` (47 asserts): `data/portales_temp.json` trae >= 10 destinos con {id, nombre, x, z} (ids únicos, todos dentro del mundo, moon_town + 8 ciudades futuras + Montaña Oscura); `PortalTemporal` construye el visual al configurar (Label3D con el nombre del destino, billboard activado, etiqueta arriba; sin destino no construye); `jugador_distancia`/`portal_cercano` son puros (el más cercano dentro del radio gana, fuera no hay portal); `punto_destino(terreno)` cae en (x, z) sobre el terreno + margen; con ruta inexistente `cargar_destinos` devuelve vacío sin reventar (aislamiento: quitar los archivos temporales no rompe la demo).
+
+La fase 15 añade `test_fase15_ciudades.gd` (282 asserts): los 8 `data/ciudad_{desert,fire,north,mystic,shadow,rage,fury,golden}.json` cargan (nombre, 16 edificios, monumento con su variante, 4 puertas, 1 NPC ambiental, `aparicion_jugador`, `_paleta`; ruta inexistente → false); cada ciudad se construye con `centro` asignado y `luces_reales = false` como la demo (emite `ciudad_lista`; 16 nodos raíz; muralla con ≥ 40 tramos y 4 puertas); monumento distintivo por ciudad verificado en su subárbol (oasis→agua, volcan→FalsaAntorcha en el cráter, pico_norte→nieve, cristal→cristal_arcano sin nieve ni cilindros de 4 lados, sombra→cilindros de 4 lados, trofeo_guerra→hueso, tormenta→2 anillos TorusMesh, sol_dorado→disco r=4.5 con `is_equal_approx` —las dimensiones de CylinderMesh son float32); colisiones: StaticBody3D en capa 1 con BoxShape3D en cada edificio y 0 OmniLight3D en las secundarias (≥ 40 FalsaAntorcha); `punto_aparicion_jugador()` en suelo válido (|y − altura_en| ≤ 1.0), en la plaza (≤ 60 u del centro) y fuera de colisiones; el NPC ambiental en su punto data-driven, dentro del disco r=700 y fuera de colisiones; ninguna estructura supera 28 u; plaza y calles (muestreo cada 20 u) libres de colisiones; los 10 destinos de `portales_temp.json` dentro del mundo y sobre terreno válido, y los 9 de ciudades coinciden con su `punto_aparicion_jugador()`; regresión Moon Town con el código generalizado (18 edificios, luna creciente CSG verbatim, 4 puertas, ≥ 35 Antorcha reales, sin `_paleta`). Además `test_fase91.gd` (64 asserts) se actualizó a los 11 NPCs de la demo (el "!" solo aparece en ilya/bram/sira; los 8 ambientales no tienen misión y no lo muestran) y `test_respawn.gd` corrigió su umbral flaky (la variación es ±RADIO_VARIACION por eje: el máximo real es √2×RADIO_VARIACION, no RADIO+0.05).

@@ -1,0 +1,162 @@
+{
+  "_nota": "Avanzada comercial de las Tierras Francas (fase 15). Adobe y arenisca, toldos de colores en el mercado, oasis central. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/oasis, tienda/toldos, forja/fragua_sol, templo/arena, cuartel/arena, casa/desierto_a, casa/desierto_b.",
+  "_paleta": {
+    "muros": "#d9b98a",
+    "techos": "#b07a4a",
+    "toldos": "#a33327",
+    "acentos": "#7a5c3e",
+    "detalle": "#e8d5a8"
+  },
+  "_region": "desert",
+  "nombre": "Desert Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "oasis",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "toldos",
+      "x": -153.2,
+      "z": 128.6,
+      "rot": -0.87247,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "fragua_sol",
+      "x": -216.1,
+      "z": -78.7,
+      "rot": -1.92005,
+      "escala": 1.0
+    },
+    {
+      "tipo": "templo",
+      "variante": "arena",
+      "x": -71.8,
+      "z": -197.3,
+      "rot": -2.79258,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "arena",
+      "x": 120.0,
+      "z": -207.8,
+      "rot": 2.6179,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_a",
+      "x": 394.7,
+      "z": 143.6,
+      "rot": 1.22186,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_b",
+      "x": 153.9,
+      "z": 422.9,
+      "rot": 0.34902,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_a",
+      "x": -215.0,
+      "z": 372.4,
+      "rot": -0.52359,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_b",
+      "x": -453.0,
+      "z": 79.9,
+      "rot": -1.39621,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_a",
+      "x": -337.1,
+      "z": -282.8,
+      "rot": -2.26882,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_b",
+      "x": 72.9,
+      "z": -413.6,
+      "rot": 2.96713,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "desierto_a",
+      "x": 389.7,
+      "z": -225.0,
+      "rot": 2.09441,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "yasmina": {
+      "_nombre": "Yasmina",
+      "_dialogo": "Mercadera del bazar: cuenta que las caravanas del este traen especias y rumores de guerra.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": -135.2,
+      "z": 154.6
+    }
+  }
+}

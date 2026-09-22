@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generador determinista del terreno del REWORK 2026 (Fase 14) — Golden Gods RPG.
+"""Generador determinista del terreno del REWORK 2026 (Fase 15) — Golden Gods RPG.
 
 Reemplaza el heightmap porteado del legado (fase 12) por un terreno nuevo con
 relieve y biomas con identidad propia (nada copiado de Blizzard). Formato de
@@ -24,21 +24,33 @@ DISENO (x = este, z = sur; el norte es z negativo):
   - Bosques (sur y noroeste): parches de verde oscuro sobre la pradera.
   - Colinas rocosas al oeste (Ceniza y Forja) y al noreste (Umbral de Ladon).
 
-DISCO DE LA CIUDAD (fijo para el worker de ciudad, que construye en paralelo):
-  - Centro (0, 0), radio 800 u, aplanado a H_CIUDAD = 40.0 u (constante en
-    todo el disco; anillo de mezcla suave 800..1050 u).
-  - H = 40.0 esta por encima de cualquier punto bajo del mapa (min 2.0 u).
+DISCOS DE CIUDAD (fijos para el worker de ciudades, que construye en paralelo):
+  - Moon Town: centro (0, 0), radio 800 u, aplanado a H_CIUDAD = 40.0 u
+    (constante en todo el disco; anillo de mezcla suave nominal 800..1050 u).
+    H = 40.0 esta por encima de cualquier punto bajo del mapa (min 2.0 u).
+  - 8 ciudades secundarias (fase 15): centros = destinos de
+    data/portales_temp.json, radio 700 u, anillo de mezcla suave nominal
+    700..950 u. La altura de cada disco es la altura NATURAL del terreno en
+    su centro (muestreada antes de aplanar), para no crear acantilados con
+    el bioma (ej. North Town queda a ~213 u, en las estribaciones).
+  - El aplanado exacto se extiende una celda (128 u) mas alla del radio
+    contratado para que la interpolacion bilineal tambien sea H exacta en
+    todo r <= radio contratado.
+  - Ningun disco se solapa con otro (distancias verificadas en el reporte):
+    el orden de aplicacion no afecta al resultado.
 
 Determinista y re-ejecutable: semilla fija SEMILLA = 20260922, sin azar del
 sistema (hash entero de coordenadas). Dos corridas -> mismo SHA-256.
+El mundo fuera de los discos de ciudad es BYTE-IDENTICO al de la fase 14.
 
 Uso:
     python3 tools/generar_terreno_rework.py
-Escribe data/terreno.bin (guarda antes el viejo como data/terreno_fase12.bak).
+Escribe data/terreno.bin (guarda antes el viejo como data/terreno_fase14.bak).
 """
 from __future__ import annotations
 
 import hashlib
+import math
 import os
 import struct
 import sys
@@ -46,7 +58,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROYECTO = os.path.dirname(HERE)
 DESTINO = os.path.join(PROYECTO, "data", "terreno.bin")
-RESPALDO = os.path.join(PROYECTO, "data", "terreno_fase12.bak")
+RESPALDO = os.path.join(PROYECTO, "data", "terreno_fase14.bak")
 
 # --- Constantes del mundo (deben coincidir con scripts/mundo/terreno.gd) ---
 SEMILLA = 20260922
@@ -56,13 +68,29 @@ X0 = -18432.0
 Z0 = -18432.0
 TAMANO = 36864.0
 
-# --- Disco de la ciudad (contrato con el worker de ciudad) ---
+# --- Disco de Moon Town (contrato con el worker de ciudad, fase 14) ---
 H_CIUDAD = 40.0      # altura aplanada del disco de Moon Town
 R_CIUDAD = 800.0     # radio del disco perfectamente plano (contrato)
 # El aplanado exacto se extiende una celda (128 u) mas alla para que la
 # interpolacion bilineal tambien sea H en todo r <= R_CIUDAD.
 R_PLANO = 928.0      # hasta aqui h == H_CIUDAD exacto
 R_MEZCLA = 1050.0    # hasta aqui la mezcla suave con el terreno natural
+
+# --- Discos de las 8 ciudades secundarias (fase 15) ---
+R_CIUDAD2 = 700.0    # radio del disco perfectamente plano (contrato)
+R_PLANO2 = 828.0     # = 700 + 128: aplanado exacto (misma razon que R_PLANO)
+R_MEZCLA2 = 950.0    # hasta aqui la mezcla suave con el terreno natural
+# Centros = destinos de data/portales_temp.json (fase 14.1).
+CENTROS_CIUDAD = [
+    ("desert",  9966.0,     0.0),
+    ("fire",   -9966.0,     0.0),
+    ("north",      0.0, -5358.0),
+    ("mystic",     0.0,  9966.0),
+    ("shadow",  9966.0, -9966.0),
+    ("rage",   -9966.0, -9966.0),
+    ("fury",   -9966.0,  9966.0),
+    ("golden",  9966.0,  9966.0),
+]
 
 MASCARA64 = 0xFFFFFFFFFFFFFFFF
 
@@ -154,7 +182,7 @@ _S_COLOR2 = SEMILLA + 7
 
 
 def _altura_natural(x: float, z: float) -> float:
-    """Altura del terreno sin el disco de la ciudad. Minimo global 2.0 u."""
+    """Altura del terreno sin discos de ciudad. Minimo global 2.0 u."""
     # 1) Llanuras centrales: base ~38 u con ondulacion suave +-14.
     base = 38.0 + 28.0 * (_fbm(x, z, 1.0 / 3500.0, 4, _S_BASE) - 0.5)
 
@@ -186,15 +214,34 @@ def _altura_natural(x: float, z: float) -> float:
     return max(h, 2.0)
 
 
+# Alturas de los discos secundarios: natural en el centro, muestreadas una
+# sola vez (deterministas: misma semilla, mismo resultado en cada corrida).
+DISCOS2 = [(cid, cx, cz, _altura_natural(cx, cz))
+           for cid, cx, cz in CENTROS_CIUDAD]
+
+
 def _altura(x: float, z: float) -> float:
-    """Altura final: natural + disco de Moon Town aplanado a H_CIUDAD."""
+    """Altura final: natural + 9 discos de ciudad aplanados."""
     h = _altura_natural(x, z)
+    # Moon Town (fase 14): debe quedar BYTE-IDENTICO; este bloque no cambia.
     r = (x * x + z * z) ** 0.5
     if r < R_PLANO:
         h = H_CIUDAD
     elif r < R_MEZCLA:
         t = _banda(r, R_PLANO, R_MEZCLA)  # 0 en el borde plano, 1 fuera
         h = _mezcla(H_CIUDAD, h, t)
+    # 8 ciudades secundarias (fase 15). Los discos no se solapan entre si ni
+    # con el de Moon Town, asi que el orden no importa y fuera de ellos h no
+    # cambia (byte-identico a fase 14).
+    for _cid, cx, cz, h_disco in DISCOS2:
+        dx = x - cx
+        dz = z - cz
+        r2 = (dx * dx + dz * dz) ** 0.5
+        if r2 < R_PLANO2:
+            h = h_disco
+        elif r2 < R_MEZCLA2:
+            t = _banda(r2, R_PLANO2, R_MEZCLA2)
+            h = _mezcla(h_disco, h, t)
     return h
 
 
@@ -269,7 +316,17 @@ def _color(x: float, z: float, h: float) -> tuple:
 def main() -> int:
     if os.path.exists(DESTINO) and not os.path.exists(RESPALDO):
         os.replace(DESTINO, RESPALDO)
-        print(f"[TERRENO] respaldo del bin fase 12 -> {RESPALDO}")
+        print(f"[TERRENO] respaldo del bin fase 14 -> {RESPALDO}")
+
+    # Sanidad: ningun disco se solapa con otro (asi el orden no importa y
+    # fuera de los discos el mundo es byte-identico a la fase 14).
+    discos_todos = [("moon_town", 0.0, 0.0, R_MEZCLA)] + \
+        [(cid, cx, cz, R_MEZCLA2) for cid, cx, cz, _h in DISCOS2]
+    for i in range(len(discos_todos)):
+        for j in range(i + 1, len(discos_todos)):
+            a, b = discos_todos[i], discos_todos[j]
+            d = math.hypot(a[1] - b[1], a[2] - b[2])
+            assert d > a[3] + b[3], f"discos solapados: {a[0]} y {b[0]}"
 
     n = LADO * LADO
     alturas = [0.0] * n
@@ -277,8 +334,11 @@ def main() -> int:
 
     h_min = float("inf")
     h_max = float("-inf")
-    h_disco_min = float("inf")
-    h_disco_max = float("-inf")
+    # Planitud por disco: [id, cx, cz, radio_contrato, altura_esperada, min, max].
+    planitud = [["moon_town", 0.0, 0.0, R_CIUDAD, H_CIUDAD,
+                 float("inf"), float("-inf")]]
+    planitud += [[cid, cx, cz, R_CIUDAD2, h_d, float("inf"), float("-inf")]
+                 for cid, cx, cz, h_d in DISCOS2]
 
     for iz in range(LADO):
         z = Z0 + iz * PASO
@@ -296,11 +356,13 @@ def main() -> int:
                 h_min = h
             if h > h_max:
                 h_max = h
-            if x * x + z * z < R_CIUDAD * R_CIUDAD:
-                if h < h_disco_min:
-                    h_disco_min = h
-                if h > h_disco_max:
-                    h_disco_max = h
+            for p in planitud:
+                dd = math.hypot(x - p[1], z - p[2])
+                if dd < p[3]:
+                    if h < p[5]:
+                        p[5] = h
+                    if h > p[6]:
+                        p[6] = h
 
     with open(DESTINO, "wb") as f:
         f.write(struct.pack("<II", LADO, LADO))
@@ -311,11 +373,13 @@ def main() -> int:
 
     sha = hashlib.sha256(open(DESTINO, "rb").read()).hexdigest()
     print(f"[TERRENO] escrito {DESTINO} sha256={sha}")
-    print(f"[TERRENO] alturas: min={h_min:.2f} max={h_max:.2f} "
-          f"(H_CIUDAD={H_CIUDAD})")
-    print(f"[TERRENO] disco ciudad r<{R_CIUDAD:.0f}: min={h_disco_min:.4f} "
-          f"max={h_disco_max:.4f}")
-    assert h_disco_min == h_disco_max == H_CIUDAD, "el disco no quedo plano"
+    print(f"[TERRENO] alturas: min={h_min:.2f} max={h_max:.2f}")
+    print("[TERRENO] discos:")
+    for p in planitud:
+        cid, cx, cz, radio, h_esp, mn, mx = p
+        print(f"[TERRENO]   {cid:10s} centro=({cx:7.0f},{cz:7.0f}) "
+              f"r<{radio:.0f}: H={h_esp:8.3f} min={mn:.4f} max={mx:.4f}")
+        assert mn == mx == h_esp, f"el disco {cid} no quedo plano"
     assert h_min >= 2.0, "hay agua profunda (min < 2.0)"
     return 0
 

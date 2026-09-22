@@ -152,7 +152,9 @@ func _t_respawn_basico() -> void:
 	_check(nuevo.arquetipo_id == "goblin", "respawn: mismo arquetipo")
 	_check(nuevo.esta_vivo(), "respawn: el reaparecido está vivo")
 	var dist: float = nuevo.global_position.distance_to(origen)
-	_check(dist <= SpawnerMobs.RADIO_VARIACION + 0.05,
+	# La variacion es ±RADIO_VARIACION por eje (X y Z independientes): el
+	# maximo real es la diagonal. El umbral anterior (RADIO+0.05) era flaky.
+	_check(dist <= sqrt(2.0) * SpawnerMobs.RADIO_VARIACION + 0.05,
 		"respawn: reaparece cerca del punto de origen", str(dist))
 	# La factory la llamó el spawner con (arquetipo, posición).
 	_check(nuevo.is_inside_tree(), "respawn: el reaparecido está en el árbol")

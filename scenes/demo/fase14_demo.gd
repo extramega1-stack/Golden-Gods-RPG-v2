@@ -1,20 +1,48 @@
 extends "res://scenes/demo/fase12_demo.gd"
 ## Demo de la fase 14: rework 2026 del mapa — ciudad principal "Moon Town".
+## Fase 15: ademas construye las 8 ciudades secundarias (desierto, volcan,
+## norte, mistica, sombra, furia, tormenta, dorada) con el CiudadLuna
+## generalizado (`centro` regional, `luces_reales = false`).
 ##
 ## Hereda TODO de fase12_demo (mundo abierto, streaming de mobs, regiones +
 ## banner, ciclo día/noche, minimapa + brújula, flujo título → creación →
-## juego con Continuar y F9/F10) y añade la ciudad:
+## juego con Continuar y F9/F10) y añade las ciudades:
 ## - `CiudadLuna` se crea con el terreno asignado ANTES del add_child
 ##   (contrato de su API); su `_ready` construye los 18 edificios y emite
 ##   `ciudad_lista`. El ciclo día/noche también se asigna antes (modula las
-##   antorchas de la ciudad).
+##   antorchas de la ciudad). Las 8 secundarias (16 edificios c/u) usan
+##   FalsaAntorcha en vez de OmniLight3D.
 ## - El jugador aparece en `punto_aparicion_jugador()` (plaza, sobre el
 ##   terreno) mirando con `yaw_aparicion()`.
-## - Los NPCs Ilya/Bram/Sira se recolocan en `npc_spawn(id)` (data-driven).
+## - Los NPCs Ilya/Bram/Sira se recolocan en `npc_spawn(id)` (data-driven);
+##   los 8 ambientales van a su ciudad secundaria.
 ## Es scaffolding de demo, no un sistema del juego.
 
 ## La ciudad construida (data/ciudad_luna.json: 18 edificios procedurales).
 var _ciudad: CiudadLuna = null
+
+## Fase 15: las 8 ciudades secundarias (mismo CiudadLuna generalizado,
+## con `luces_reales = false` y su `centro` regional). Se construyen en
+## _ready() antes de super._ready(), igual que Moon Town.
+var _ciudades_sec: Array = []
+
+const _SECUNDARIAS: Array = [
+	["CiudadDesert", "res://data/ciudad_desert.json", Vector2(9966, 0)],
+	["CiudadFire", "res://data/ciudad_fire.json", Vector2(-9966, 0)],
+	["CiudadNorth", "res://data/ciudad_north.json", Vector2(0, -5358)],
+	["CiudadMystic", "res://data/ciudad_mystic.json", Vector2(0, 9966)],
+	["CiudadShadow", "res://data/ciudad_shadow.json", Vector2(9966, -9966)],
+	["CiudadRage", "res://data/ciudad_rage.json", Vector2(-9966, -9966)],
+	["CiudadFury", "res://data/ciudad_fury.json", Vector2(-9966, 9966)],
+	["CiudadGolden", "res://data/ciudad_golden.json", Vector2(9966, 9966)],
+]
+
+## Fase 15: a que ciudad secundaria pertenece cada NPC ambiental
+## (indice en _ciudades_sec / _SECUNDARIAS). Ilya/Bram/Sira van a Moon Town.
+const _NPC_CIUDAD_SEC: Dictionary = {
+	"yasmina": 0, "durnan": 1, "sella": 2, "elthar": 3,
+	"vex": 4, "karg": 5, "maris": 6, "aurelio": 7,
+}
 
 ## TEMPORAL — Fase 14.1: portales de inspección para Juan Diego.
 ## QUITAR cuando lo pida: borrar data/portales_temp.json,
@@ -31,6 +59,18 @@ func _ready() -> void:
 	_ciudad.terreno = $Terreno as Terreno
 	_ciudad.ciclo = $CicloDia as CicloDia
 	add_child(_ciudad)
+	# Fase 15: las 8 ciudades secundarias (mismo contrato de API:
+	# terreno/ciclo/centro/cargar_datos ANTES del add_child).
+	for spec in _SECUNDARIAS:
+		var c := CiudadLuna.new()
+		c.name = str(spec[0])
+		c.terreno = $Terreno as Terreno
+		c.ciclo = $CicloDia as CicloDia
+		c.centro = spec[2]
+		c.luces_reales = false
+		c.cargar_datos(str(spec[1]))
+		add_child(c)
+		_ciudades_sec.append(c)
 	super._ready()
 	# Jugador y NPCs a sus puntos data-driven de Moon Town.
 	_colocar_en_ciudad()
@@ -132,7 +172,12 @@ func _colocar_en_ciudad() -> void:
 		var npc: NPC = n as NPC
 		if npc == null:
 			continue
-		npc.position = _ciudad.npc_spawn(npc.npc_id)
+		# Fase 15: los ambientales van a su ciudad secundaria; el resto a Moon.
+		if _NPC_CIUDAD_SEC.has(npc.npc_id) and int(_NPC_CIUDAD_SEC[npc.npc_id]) < _ciudades_sec.size():
+			var c2: CiudadLuna = _ciudades_sec[int(_NPC_CIUDAD_SEC[npc.npc_id])] as CiudadLuna
+			npc.position = c2.npc_spawn(npc.npc_id)
+		else:
+			npc.position = _ciudad.npc_spawn(npc.npc_id)
 		npc._pegar_al_terreno()
 	# La cámara persigue con damping: colocarla de golpe en el spawn para
 	# que no "deslice" desde la posición vieja (mismo truco que el F10).

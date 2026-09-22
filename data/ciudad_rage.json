@@ -1,0 +1,162 @@
+{
+  "_nota": "Fortaleza del Abismo Lloroso (fase 15). Empalizadas de madera recia, el trofeo de guerra en la plaza: no se arrodillaron. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/trofeo_guerra, cuartel/fortaleza, forja/guerra, templo/colmillos, tienda/botin, salon_clases/piedra, casa/empalizada_a, casa/empalizada_b.",
+  "_paleta": {
+    "muros": "#6e5a44",
+    "empalizadas": "#4a3a2c",
+    "techos": "#3c322a",
+    "acentos": "#a32e1e",
+    "detalle": "#8a7a5a"
+  },
+  "_region": "rage",
+  "nombre": "Rage Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "trofeo_guerra",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "fortaleza",
+      "x": 216.7,
+      "z": 67.0,
+      "rot": 1.39631,
+      "escala": 1.2
+    },
+    {
+      "tipo": "forja",
+      "variante": "guerra",
+      "x": 34.7,
+      "z": 197.0,
+      "rot": 0.17435,
+      "escala": 1.0
+    },
+    {
+      "tipo": "templo",
+      "variante": "colmillos",
+      "x": -181.9,
+      "z": 105.0,
+      "rot": -1.04728,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "botin",
+      "x": -188.4,
+      "z": -131.9,
+      "rot": -2.18159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "piedra",
+      "x": 71.0,
+      "z": -236.4,
+      "rot": 2.96699,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_a",
+      "x": 304.1,
+      "z": 304.1,
+      "rot": 0.7854,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_b",
+      "x": -116.5,
+      "z": 434.7,
+      "rot": -0.26185,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_a",
+      "x": -410.5,
+      "z": 110.0,
+      "rot": -1.30898,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_b",
+      "x": -314.7,
+      "z": -314.7,
+      "rot": -2.35619,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_a",
+      "x": 112.6,
+      "z": -420.2,
+      "rot": 2.87978,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "empalizada_b",
+      "x": 439.5,
+      "z": -117.8,
+      "rot": 1.83267,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "karg": {
+      "_nombre": "Karg",
+      "_dialogo": "Veterano del cuartel: ensena la cicatriz y dice que el hielo endurece mas que el acero.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": 172.7,
+      "z": 6.2
+    }
+  }
+}

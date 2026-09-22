@@ -1,0 +1,162 @@
+{
+  "_nota": "Puerto libre de la Costa del Lamento (fase 15). Piedra gris tormentosa, la tormenta esculpida en la plaza, gaviotas y sal. Coordenadas x/z RELATIVAS al centro de la ciudad (el constructor las desplaza). Altura Y desde Terreno.altura_en en runtime. Nada por encima de 28 u.",
+  "_nota_variantes": "Variantes NUEVAS que debe implementar el worker 2 (fase 15): monumento/tormenta, tienda/mareas, templo/marea, cuartel/acantilado, forja/hollin, salon_clases/piedra, casa/puerto_a, casa/puerto_b.",
+  "_paleta": {
+    "muros": "#7a7f86",
+    "techos": "#4a4f55",
+    "velas": "#d9d2c0",
+    "acentos": "#2e6e8a",
+    "detalle": "#a8b4bc"
+  },
+  "_region": "fury",
+  "nombre": "Fury Town",
+  "radio": 700.0,
+  "radio_muralla": 620.0,
+  "plaza_radio": 60.0,
+  "_altura_max": 28.0,
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "z": 45.0,
+    "yaw": 0.0
+  },
+  "edificios": [
+    {
+      "tipo": "monumento",
+      "variante": "tormenta",
+      "x": 0.0,
+      "z": 0.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "tienda",
+      "variante": "mareas",
+      "x": 141.4,
+      "z": 168.5,
+      "rot": 0.69817,
+      "escala": 1.0
+    },
+    {
+      "tipo": "templo",
+      "variante": "marea",
+      "x": -100.0,
+      "z": 173.2,
+      "rot": -0.52361,
+      "escala": 1.0
+    },
+    {
+      "tipo": "cuartel",
+      "variante": "acantilado",
+      "x": -226.5,
+      "z": -39.9,
+      "rot": -1.74517,
+      "escala": 1.0
+    },
+    {
+      "tipo": "forja",
+      "variante": "hollin",
+      "x": -55.6,
+      "z": -207.7,
+      "rot": -2.88003,
+      "escala": 1.0
+    },
+    {
+      "tipo": "salon_clases",
+      "variante": "piedra",
+      "x": 183.9,
+      "z": -154.3,
+      "rot": 2.26889,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_a",
+      "x": 415.3,
+      "z": 111.3,
+      "rot": 1.30895,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_b",
+      "x": 39.2,
+      "z": 448.3,
+      "rot": 0.08722,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_a",
+      "x": -385.2,
+      "z": 179.6,
+      "rot": -1.13451,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_b",
+      "x": -314.7,
+      "z": -314.7,
+      "rot": -2.35619,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_a",
+      "x": 148.8,
+      "z": -408.8,
+      "rot": 2.79251,
+      "escala": 1.0
+    },
+    {
+      "tipo": "casa",
+      "variante": "puerto_b",
+      "x": 448.1,
+      "z": -79.0,
+      "rot": 1.7453,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -620.0,
+      "rot": 3.14159,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 620.0,
+      "rot": 0.0,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 620.0,
+      "z": 0.0,
+      "rot": 1.5708,
+      "escala": 1.0
+    },
+    {
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -620.0,
+      "z": 0.0,
+      "rot": -1.5708,
+      "escala": 1.0
+    }
+  ],
+  "npcs": {
+    "maris": {
+      "_nombre": "Maris",
+      "_dialogo": "Marinera: cuenta que las mareas del Lamento devuelven lo que el mar se llevo... cambiado.",
+      "nota": "NPC ambiental (fase 15); el worker 2 decide si se integra al sistema de dialogo",
+      "x": 161.4,
+      "z": 192.5
+    }
+  }
+}
