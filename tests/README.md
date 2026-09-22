@@ -206,6 +206,7 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_ciudad.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_terreno.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_integracion.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_portales_temp.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -263,3 +264,5 @@ La fase 14 añade `test_fase14_ciudad.gd` (49 asserts): `CiudadLuna` construye l
 La fase 14 (terreno del rework) añade `test_fase14_terreno.gd` (34 asserts): `data/terreno.bin` del rework 2026 (disco plano urbano de 40.0 u en (0,0) radio 800; biomas por región con tintes de `data/regiones.json`), `data/regiones.json` remapeado (región 1 = `moon_town` "Moon Town", 10 rects sin huecos ni solapes), `data/spawns.json` regenerado (1121 spawns, zona segura de 40 m en la ciudad, ninguno de Moon Town dentro del disco), y determinismo de `tools/generar_terreno_rework.py` / `tools/generar_spawns_rework.py`.
 
 La fase 14 (integración) añade `test_fase14_integracion.gd` (36 asserts): `fase14_demo` hereda de `fase12_demo`, crea `CiudadLuna` con el terreno asignado ANTES del add_child, usa `punto_aparicion_jugador()`/`yaw_aparicion()`/`npc_spawn()` y conserva el flujo fase 12 (`super._ready()`); el título abre `fase14_demo.tscn`; `data/npcs.json` habla de "Moon Town" (sin "Piedraceniza", solo texto); el spawn del jugador cae sobre el terreno, en la región `moon_town` y fuera de colisiones; `npc_spawn()` devuelve los puntos data-driven de ilya/bram/sira; el minimapa sigue leyendo `Terreno.color_en` del terreno nuevo (STANDBY: sin pulir, solo no romper).
+
+La fase 14.1 (TEMPORAL) añade `test_portales_temp.gd` (47 asserts): `data/portales_temp.json` trae >= 10 destinos con {id, nombre, x, z} (ids únicos, todos dentro del mundo, moon_town + 8 ciudades futuras + Montaña Oscura); `PortalTemporal` construye el visual al configurar (Label3D con el nombre del destino, billboard activado, etiqueta arriba; sin destino no construye); `jugador_distancia`/`portal_cercano` son puros (el más cercano dentro del radio gana, fuera no hay portal); `punto_destino(terreno)` cae en (x, z) sobre el terreno + margen; con ruta inexistente `cargar_destinos` devuelve vacío sin reventar (aislamiento: quitar los archivos temporales no rompe la demo).
