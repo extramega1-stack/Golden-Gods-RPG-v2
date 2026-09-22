@@ -61,3 +61,16 @@ static func lista() -> Array[String]:
 	var copia: Array[String] = []
 	copia.append_array(_orden)
 	return copia
+
+
+## Fase 18: ids de la clase dada (en orden del JSON). Incluye los skills sin
+## clase asignada ("" = todas las clases). Clase desconocida → lista vacía.
+static func skills_por_clase(clase_id: String) -> Array[String]:
+	cargar()
+	var res: Array[String] = []
+	for sid in _orden:
+		var sk: Dictionary = _cache.get(sid, {})
+		var c: String = str(sk.get("clase", ""))
+		if c == "" or c == clase_id:
+			res.append(sid)
+	return res

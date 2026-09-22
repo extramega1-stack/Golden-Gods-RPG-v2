@@ -693,4 +693,15 @@ bloqueo real.
 
 ---
 
-*Fin del documento maestro v3.11 — Fase 17 (barra de acciones estilo Flyff: 8 slots F1..F8, drag & drop, persistencia en save v6; 49 checks en verde).*
+## Fase 18 — Cuatro clases completas (guerrero, mago, arquero, clérigo)
+
+- **32 habilidades data-driven** en `data/skills.json` v2 (8 por clase), con tipos de efecto `dano|curar|aoe|buff|debuff`; campo `clase` por skill ("" = todas).
+- **Clases jugables** en `data/clases.json`: guerrero, arquero, mago, clérigo (daguero sigue no jugable); `ClaseDB.jugables()`.
+- **SkillSystem** extendido: AoE (radio alrededor del objetivo o del lanzador), buffs/debuffs porcentuales temporales con expiración por objetivo (reaplicar refresca, no acumula), curas; feedback visual por tinte temporal (curar verde, buff dorado, debuff violeta, AoE naranja); audio pendiente (TODO, no hay pipeline de sonido).
+- **Player.clase_id** ("guerrero" por defecto); hotbar y libro de habilidades filtrados por `SkillDB.skills_por_clase()`; creación de personaje con 4 tarjetas de clase.
+- **Save v7**: `clase_id` persiste; partidas v6 cargan con "guerrero" (tolerante).
+- Tests: `tests/test_fase18_clases.gd` (95 checks); suite completa 2376 checks en verde.
+
+---
+
+*Fin del documento maestro v3.12 — Fase 18 (4 clases × 8 habilidades, SkillSystem con AoE/buff/debuff, save v7; 95 checks nuevos, 2376 en verde).

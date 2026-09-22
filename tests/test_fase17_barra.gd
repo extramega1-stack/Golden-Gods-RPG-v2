@@ -95,19 +95,18 @@ func _t_validar() -> void:
 		"validar: datos de arrastre del inventario ok")
 
 
-## Layout por defecto: F1 = ataque, F2..F6 = skills, F7/F8 vacíos.
+## Layout por defecto: F1 = ataque, F2..F8 = los 7 primeros skills de la
+## clase (fase 18: `skills_por_clase`; sin jugador conectado, guerrero).
 func _t_defecto() -> void:
 	var b: BarraAcciones = _nueva_barra()
 	b.restablecer_defecto()
 	_check(str(b.obtener(0).get("tipo", "")) == "ataque", "defecto: F1 ataque")
-	var ids: Array[String] = SDB.lista()
-	var n: int = mini(ids.size(), 5)
+	var ids: Array[String] = SDB.skills_por_clase("guerrero")
+	var n: int = mini(ids.size(), 7)
 	for k in range(n):
 		var s: Dictionary = b.obtener(k + 1)
 		_check(str(s.get("tipo", "")) == "skill" and str(s.get("id", "")) == ids[k],
 			"defecto: F%d = %s" % [k + 2, ids[k]])
-	_check(b.obtener(6).is_empty() and b.obtener(7).is_empty(),
-		"defecto: F7/F8 vacíos")
 	_check(b.obtener(99).is_empty(), "defecto: índice fuera de rango = {}")
 
 
@@ -139,7 +138,9 @@ func _t_swap() -> void:
 	# Arrastra F8 -> F7: intercambio.
 	b._soltar_en(6, {"origen": "barra", "slot": 7, "tipo": "item", "id": "pocion_vida"})
 	_check(str(b.obtener(6).get("id", "")) == "pocion_vida", "swap: F7 recibe poción")
-	_check(b.obtener(7).is_empty(), "swap: F8 queda vacío")
+	# Fase 18: F7/F8 ya no nacen vacíos (el defecto llena F2..F8). El swap
+	# intercambia: F8 queda con el skill que estaba en F7 (muro_escudo).
+	_check(str(b.obtener(7).get("id", "")) == "muro_escudo", "swap: F8 recibe el skill de F7")
 	# Soltar sobre sí mismo no hace nada.
 	b._soltar_en(6, {"origen": "barra", "slot": 6, "tipo": "item", "id": "pocion_vida"})
 	_check(str(b.obtener(6).get("id", "")) == "pocion_vida", "swap: soltar en sí mismo no-op")

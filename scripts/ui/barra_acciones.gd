@@ -105,6 +105,9 @@ var _overlays: Array[Label] = []
 var _nombres: Array[Label] = []
 var _cantidades: Array[Label] = []
 var _libro: PanelContainer = null
+## Fase 18: la caja del libro (el primer hijo es el título; los chips se
+## reconstruyen al filtrar por clase).
+var _libro_caja: VBoxContainer = null
 var _slot_bajo_raton: int = -1
 
 
@@ -247,15 +250,35 @@ func _construir_libro() -> void:
 	caja.add_theme_constant_override("separation", 4)
 	caja.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_libro.add_child(caja)
+	_libro_caja = caja
 	var titulo: Label = _etiqueta("Libro de habilidades  (arrastra a un slot)", 15, Color(0.95, 0.9, 0.75))
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caja.add_child(titulo)
-	for sid in SkillDB.lista():
+	_reconstruir_libro()
+
+
+## Fase 18 — reconstruye los chips del libro filtrando por la clase del
+## jugador conectado (sin conexión: guerrero por defecto). Pública: la
+## demo la llama tras aplicar/cargar la clase (el orden de _ready no
+## garantiza que `conectar` llegue con la clase ya puesta).
+func reconstruir_libro() -> void:
+	_reconstruir_libro()
+
+
+func _reconstruir_libro() -> void:
+	if _libro_caja == null:
+		return
+	# Se conserva el título (hijo 0); se tiran los chips viejos.
+	for h in _libro_caja.get_children():
+		if h is ChipArrastre:
+			_libro_caja.remove_child(h)
+			h.queue_free()
+	for sid in SkillDB.skills_por_clase(_clase_jugador()):
 		var sk: Dictionary = SkillDB.obtener(sid)
 		var chip: ChipArrastre = _nuevo_chip(str(sk.get("nombre", sid)))
 		chip.datos = {"origen": "libro", "tipo": "skill", "id": sid}
 		chip.tooltip_text = str(sk.get("descripcion", ""))
-		caja.add_child(chip)
+		_libro_caja.add_child(chip)
 
 
 func _alternar_libro() -> void:
@@ -264,9 +287,18 @@ func _alternar_libro() -> void:
 
 
 ## Conecta la barra al jugador (solo lectura + API de acciones).
+## Reconstruye el libro con los skills de su clase.
 func conectar(j: Player) -> void:
 	_jugador = j
+	_reconstruir_libro()
 	_refrescar_nombres()
+
+
+## Clase del jugador conectado ("guerrero" si aún no hay conexión).
+func _clase_jugador() -> String:
+	if _jugador != null and _jugador.clase_id != "":
+		return _jugador.clase_id
+	return "guerrero"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -509,14 +541,15 @@ func cargar_estado(d: Dictionary) -> void:
 	_refrescar_nombres()
 
 
-## Layout por defecto: ataque en F1 y los skills en F2..F6 (como la barra
-## vieja de la fase 5, pero ahora movibles).
+## Layout por defecto: ataque en F1 y los skills DE LA CLASE DEL JUGADOR
+## en F2..F8 (fase 18: `skills_por_clase`; antes eran los primeros del
+## JSON global).
 func restablecer_defecto() -> void:
 	_slots.clear()
 	for i in range(NUM_SLOTS):
 		_slots.append({})
 	_slots[0] = {"tipo": "ataque"}
-	var ids: Array[String] = SkillDB.lista()
+	var ids: Array[String] = SkillDB.skills_por_clase(_clase_jugador())
 	for k in range(mini(ids.size(), NUM_SLOTS - 1)):
 		_slots[k + 1] = {"tipo": "skill", "id": ids[k]}
 	_refrescar_nombres()

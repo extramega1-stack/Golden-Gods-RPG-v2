@@ -145,7 +145,8 @@ func _t_ataque_t_persiste() -> void:
 
 ## (b) El caso literal del pedido: skill fuera de rango -> pendiente ->
 ## al llegar castea -> DESPUÉS sigue pegando básicos.
-## bola_fuego = índice 2, rango 12.
+## bola_fuego por id (fase 17), rango 12. El hotbar lanzar_skill(i) es por
+## clase desde la fase 18; la mecánica de pendiente se prueba con el id.
 func _t_skill_lejos_castea_y_sigue() -> void:
 	var p: Player = _player(Vector3(100, 0, 100))
 	var e: Enemy = _enemigo(Vector3(100, 0, 120))
@@ -154,7 +155,7 @@ func _t_skill_lejos_castea_y_sigue() -> void:
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
 	p.seleccionar(e)
-	p.lanzar_skill(2) # a 20 m > rango 12: pendiente y camina
+	p.lanzar_skill_id("bola_fuego") # a 20 m > rango 12: pendiente y camina
 	_check(p.tiene_lanzamiento_pendiente(), "setup: skill pendiente", "")
 	_check(p.objetivo_ataque == e, "el pendiente ya fija objetivo_ataque", "")
 	# Simulamos la llegada al rango del skill (el harness no integra
@@ -249,7 +250,8 @@ func _t_doble_clic_inicia_bucle() -> void:
 
 
 ## (h) La curación no fija objetivo ni ordena moverse.
-## curacion_menor = índice 3.
+## curacion_menor por id (fase 17): el hotbar lanzar_skill(i) es por clase
+## desde la fase 18 (el guerrero ya no tiene curar en su lista).
 func _t_curacion_no_altera_combate() -> void:
 	var p: Player = _player(Vector3(700, 0, 700))
 	var e: Enemy = _enemigo(Vector3(700, 0, 702))
@@ -257,7 +259,7 @@ func _t_curacion_no_altera_combate() -> void:
 	p.mana_actual = 999.0
 	p.seleccionar(e)
 	p.take_damage(30.0, null)
-	p.lanzar_skill(3)
+	p.lanzar_skill_id("curacion_menor")
 	_check(p.objetivo_ataque == null, "la curacion no fija objetivo", "")
 	_check(not p._tiene_destino, "la curacion no ordena moverse", "")
 	_check(_golpes == 0, "la curacion no pega", "")

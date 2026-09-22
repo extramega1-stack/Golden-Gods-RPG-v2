@@ -85,9 +85,11 @@ func _entidad(fuerza: float, agilidad: float, destreza: float, inteligencia: flo
 
 func _t_db() -> void:
 	var ids: Array[String] = SDB.lista()
-	_check(ids.size() == 5, "SkillDB tiene 5 skills", str(ids.size()))
-	var esperado: Array[String] = ["golpe_heroico", "tajo_veloz", "bola_fuego", "curacion_menor", "ejecucion"]
-	_check(ids == esperado, "lista() en orden de hotbar", str(ids))
+	_check(ids.size() == 32, "SkillDB tiene 32 skills (8 × 4 clases)", str(ids.size()))
+	# Orden de hotbar = orden del JSON: primero los 8 del guerrero.
+	var esperado: Array[String] = ["golpe_heroico", "tajo_veloz", "embate",
+		"grito_guerra", "torbellino", "muro_escudo", "ejecucion", "ira_titan"]
+	_check(ids.slice(0, 8) == esperado, "lista(): primero los 8 del guerrero", str(ids.slice(0, 8)))
 	_check(SDB.existe("bola_fuego"), "existe(bola_fuego)")
 	_check(not SDB.existe("magia_inexistente"), "no existe skill inventada")
 	var bf: Dictionary = SDB.obtener("bola_fuego")

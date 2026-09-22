@@ -83,6 +83,9 @@ func _ready() -> void:
 	_hud.conectar(_jugador)
 	_barra.conectar(_jugador)
 	_indicador.conectar(_jugador)
+	# Fase 18: gancho visual del feedback de skills en el héroe (tinte
+	# temporal que lee Entity.fx_color; hermano de DamageFlash).
+	_jugador.add_child(SkillFX.new())
 	# Fase 8: hablar abre el diálogo Y registra el diálogo en las misiones
 	# (objetivos "hablar") y refresca el botón de misión.
 	_misiones = QuestLog.new()
@@ -154,6 +157,10 @@ func _cargar_partida_guardada() -> bool:
 		_panel_tienda.conectar(_jugador)
 		_panel_misiones.conectar(_jugador, _misiones)
 		_hud.refrescar()
+		# Fase 18: la clase restaurada del save puede no ser la de la
+		# conexión inicial; el libro se refiltra (los slots los trae el
+		# save con cargar_estado).
+		_barra.reconstruir_libro()
 		print("[Fase9] partida cargada")
 	return cargo
 
@@ -255,6 +262,9 @@ func _crear_enemigo(arquetipo_id: String, posicion: Vector3) -> Enemy:
 		return null
 	e.arquetipo_id = arquetipo_id
 	e.add_to_group("enemigos")
+	# Fase 18: gancho visual del feedback de skills (tinte temporal que
+	# lee Entity.fx_color; hermano de DamageFlash).
+	e.add_child(SkillFX.new())
 	e.position = posicion
 	add_child(e)
 	var arq: Dictionary = _arquetipos.get(arquetipo_id, {})

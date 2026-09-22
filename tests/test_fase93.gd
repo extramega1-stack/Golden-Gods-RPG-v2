@@ -130,7 +130,7 @@ func _t_skill_pendiente_muere_no_camina() -> void:
 	var p: Player = _player(Vector3.ZERO)
 	var e: Enemy = _enemigo(Vector3(20, 0, 0))
 	p.seleccionar(e)
-	p.lanzar_skill(2)  # Bola de fuego, rango 12 < 20: queda pendiente y camina.
+	p.lanzar_skill_id("bola_fuego")  # Bola de fuego, rango 12 < 20: queda pendiente y camina.
 	_check(p.tiene_lanzamiento_pendiente(), "setup: skill pendiente", "")
 	_check(p._tiene_destino, "setup: caminando a castear", "")
 	e.take_damage(999999.0, p)
@@ -146,7 +146,7 @@ func _t_skill_casteo_mata_no_camina() -> void:
 	var e: Enemy = _enemigo(Vector3(20, 0, 0))
 	e.vida_actual = 1.0  # la bola lo one-shotea
 	p.seleccionar(e)
-	p.lanzar_skill(2)  # pendiente, camina hacia él
+	p.lanzar_skill_id("bola_fuego")  # pendiente, camina hacia él
 	p.global_position = Vector3(10, 0, 0)  # dentro del rango: castea
 	_frames(p, 5)
 	_check(not e.esta_vivo(), "setup: el casteo lo mato", "")
@@ -161,7 +161,7 @@ func _t_skill_tras_matar_no_fija_muerto() -> void:
 	p.seleccionar(e)
 	e.take_damage(999999.0, p)
 	_frames(p, 5)
-	p.lanzar_skill(2)
+	p.lanzar_skill_id("bola_fuego")
 	_check(not p.tiene_lanzamiento_pendiente(), "skill tras matar no deja pendiente", "")
 	_check(not p._tiene_destino, "skill tras matar no ordena caminar", "")
 	_check(p.objetivo_ataque == null, "skill tras matar no fija objetivo", "")

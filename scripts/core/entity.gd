@@ -43,6 +43,15 @@ var combatible: bool = true
 const FLASH_DURACION: float = 0.25
 var flash_tiempo: float = 0.0
 
+## Fase 18 — feedback visual de skills: tinte temporal con el color que
+## elige quien dispara el efecto (`SkillSystem`). El gancho visual
+## (`SkillFX`, hermano de DamageFlash) lo lee; la lógica del temporizador
+## vive aquí y es testeable sin 3D. El daño ya tiene su propio flash rojo
+## (flash_tiempo); este canal es para curar/buff/debuff/aoe.
+const FX_DURACION: float = 0.45
+var fx_tiempo: float = 0.0
+var fx_color: Color = Color.WHITE
+
 var stats: StatBlock
 var vida_actual: float = 0.0
 var mana_actual: float = 0.0
@@ -108,11 +117,27 @@ func take_damage(cantidad: float, fuente: Entity) -> void:
 func _process(delta: float) -> void:
 	if flash_tiempo > 0.0:
 		flash_tiempo = maxf(flash_tiempo - delta, 0.0)
+	if fx_tiempo > 0.0:
+		fx_tiempo = maxf(fx_tiempo - delta, 0.0)
 
 
 ## 0.0 = sin flash, 1.0 = impacto recién recibido. Lo lee DamageFlash.
 func intensidad_flash() -> float:
 	return clampf(flash_tiempo / FLASH_DURACION, 0.0, 1.0)
+
+
+## Fase 18 — dispara el tinte visual de un skill (color por tipo de
+## efecto). Lo lee SkillFX. No hace nada en muertos.
+func mostrar_fx(color: Color) -> void:
+	if not esta_vivo():
+		return
+	fx_color = color
+	fx_tiempo = FX_DURACION
+
+
+## 0.0 = sin tinte, 1.0 = skill recién lanzado. Lo lee SkillFX.
+func intensidad_fx() -> float:
+	return clampf(fx_tiempo / FX_DURACION, 0.0, 1.0)
 
 
 ## Cura hasta el máximo. Sin efecto en muertos.

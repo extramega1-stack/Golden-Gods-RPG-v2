@@ -21,4 +21,9 @@ func _al_iniciar() -> void:
 		_cargar_partida_guardada()
 	else:
 		DatosSesion.aplicar_a(_jugador)
+		# Fase 18: la barra se conectó en super._ready() con la clase por
+		# defecto; tras aplicar la clase elegida se refrescan el layout
+		# (skills de la clase) y el libro de habilidades.
+		_barra.restablecer_defecto()
+		_barra.reconstruir_libro()
 	DatosSesion.limpiar()

@@ -1,54 +1,66 @@
 {
-  "clases": {
-    "arquero": {
-      "agilidad": 35.0,
-      "color_primario": "2e6b3a",
-      "color_secundario": "1c241f",
-      "descripcion": "Exploradora de los riscos de Liberty. Sus flechas no necesitan dioses: solo viento, distancia y un ojo que nunca falla.",
-      "destreza": 10.0,
-      "fuerza": 15.0,
-      "inteligencia": 0.0,
-      "jugable": false,
-      "nombre": "Arquero"
-    },
-    "daguero": {
-      "agilidad": 25.0,
-      "color_primario": "5a2a6e",
-      "color_secundario": "241a2a",
-      "descripcion": "Sombra de los callejones de Piedraceniza. Donde los dioses miran hacia otro lado, sus dagas ya terminaron el trabajo.",
-      "destreza": 15.0,
-      "fuerza": 25.0,
-      "inteligencia": 0.0,
-      "jugable": false,
-      "nombre": "Daguero"
-    },
-    "guerrero": {
-      "agilidad": 10.0,
-      "color_primario": "b03a2e",
-      "color_secundario": "2a2a30",
-      "descripcion": "Último descendiente del héroe que mató a un dios. Los mortales de Liberty forjaron su acero sin bendición divina: lo que un guerrero no puede cortar, lo puede resistir.",
-      "destreza": 0.0,
-      "fuerza": 45.0,
-      "inteligencia": 0.0,
-      "jugable": true,
-      "nombre": "Guerrero"
-    },
-    "mago": {
-      "agilidad": 10.0,
-      "color_primario": "3a4a8f",
-      "color_secundario": "1a1c2a",
-      "descripcion": "Erudito de la última biblioteca de los mortales. La magia abandona el mundo, pero él aún recuerda cómo se escribía.",
-      "destreza": 0.0,
-      "fuerza": 5.0,
-      "inteligencia": 40.0,
-      "jugable": false,
-      "nombre": "Mago"
-    }
+ "clases": {
+  "arquero": {
+   "agilidad": 35.0,
+   "color_primario": "2e6b3a",
+   "color_secundario": "1c241f",
+   "descripcion": "Exploradora de los riscos de Liberty. Sus flechas no necesitan dioses: solo viento, distancia y un ojo que nunca falla.",
+   "destreza": 10.0,
+   "fuerza": 15.0,
+   "inteligencia": 0.0,
+   "jugable": true,
+   "nombre": "Arquero"
   },
-  "orden": [
-    "guerrero",
-    "arquero",
-    "mago",
-    "daguero"
-  ]
+  "daguero": {
+   "agilidad": 25.0,
+   "color_primario": "5a2a6e",
+   "color_secundario": "241a2a",
+   "descripcion": "Sombra de los callejones de Piedraceniza. Donde los dioses miran hacia otro lado, sus dagas ya terminaron el trabajo.",
+   "destreza": 15.0,
+   "fuerza": 25.0,
+   "inteligencia": 0.0,
+   "jugable": false,
+   "nombre": "Daguero"
+  },
+  "guerrero": {
+   "agilidad": 10.0,
+   "color_primario": "b03a2e",
+   "color_secundario": "2a2a30",
+   "descripcion": "Último descendiente del héroe que mató a un dios. Los mortales de Liberty forjaron su acero sin bendición divina: lo que un guerrero no puede cortar, lo puede resistir.",
+   "destreza": 0.0,
+   "fuerza": 45.0,
+   "inteligencia": 0.0,
+   "jugable": true,
+   "nombre": "Guerrero"
+  },
+  "mago": {
+   "agilidad": 10.0,
+   "color_primario": "3a4a8f",
+   "color_secundario": "1a1c2a",
+   "descripcion": "Erudito de la última biblioteca de los mortales. La magia abandona el mundo, pero él aún recuerda cómo se escribía.",
+   "destreza": 0.0,
+   "fuerza": 5.0,
+   "inteligencia": 40.0,
+   "jugable": true,
+   "nombre": "Mago"
+  },
+  "clerigo": {
+   "nombre": "Clérigo",
+   "descripcion": "Voz de los últimos templos de Liberty. Donde los dioses callaron, su luz aún responde: sana a los mortales y juzga a los impíos.",
+   "fuerza": 10.0,
+   "agilidad": 10.0,
+   "destreza": 10.0,
+   "inteligencia": 35.0,
+   "color_primario": "e8c96a",
+   "color_secundario": "2a2416",
+   "jugable": true
+  }
+ },
+ "orden": [
+  "guerrero",
+  "arquero",
+  "mago",
+  "clerigo",
+  "daguero"
+ ]
 }

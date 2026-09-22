@@ -2,9 +2,9 @@ extends Control
 ## Creación de personaje (fase 11): nombre + clase del héroe.
 ##
 ## Pantalla de UI pura (sin 3D): fondo oscuro, LineEdit para el nombre
-## (máx. 16 caracteres), tarjetas de clase desde ClaseDB (las no jugables
-## salen "Próximamente" y deshabilitadas —activarlas después es solo tocar
-## datos—), panel de descripción de la clase elegida y botones
+## (máx. 16 caracteres), tarjetas de las clases JUGABLES desde
+## ClaseDB.jugables() (fase 18: nombre, descripción y colores de la
+## clase), panel de descripción de la clase elegida y botones
 ## "Comenzar aventura" / "Atrás". ESC (ui_cancel) = atrás.
 ##
 ## Al confirmar: valida el nombre (sin error no avanza), escribe
@@ -98,13 +98,15 @@ func _construir() -> void:
 	subt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caja.add_child(subt)
 
+	# Fase 18: solo las jugables (ClaseDB.jugables()) como tarjetas con los
+	# colores de la clase. Activar otra clase después es solo tocar datos.
 	var tarjetas: HBoxContainer = HBoxContainer.new()
 	tarjetas.alignment = BoxContainer.ALIGNMENT_CENTER
 	tarjetas.add_theme_constant_override("separation", 10)
 	tarjetas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caja.add_child(tarjetas)
 	_grupo = ButtonGroup.new()
-	for cid in ClaseDB.ids():
+	for cid in ClaseDB.jugables():
 		tarjetas.add_child(_tarjeta_clase(cid))
 
 	var marco: PanelContainer = PanelContainer.new()
@@ -156,24 +158,22 @@ func _etiqueta(texto: String, tam: int, color: Color) -> Label:
 func _tarjeta_clase(cid: String) -> Button:
 	var datos: Dictionary = ClaseDB.obtener(cid)
 	var b: Button = Button.new()
-	var nombre: String = str(datos.get("nombre", cid))
-	if ClaseDB.es_jugable(cid):
-		b.text = nombre
-	else:
-		b.text = "%s\n(Próximamente)" % nombre
-		b.disabled = true
+	b.text = str(datos.get("nombre", cid))
 	b.toggle_mode = true
 	b.button_group = _grupo
 	b.focus_mode = Control.FOCUS_NONE
 	b.custom_minimum_size = Vector2(150, 96)
 	b.add_theme_font_size_override("font_size", 18)
+	var primario: Color = ClaseDB.color_primario(cid)
+	var secundario: Color = ClaseDB.color_secundario(cid)
+	# Tarjeta con los colores de la clase: borde primario, fondo oscuro
+	# mezclado con el secundario (no jugables ya no existen aquí, pero la
+	# tolerancia queda: una clase sin colores cae al dorado de ClaseDB).
 	b.add_theme_color_override("font_color", Color(0.93, 0.88, 0.74))
-	b.add_theme_color_override("font_hover_color", Color(1.0, 0.90, 0.55))
-	b.add_theme_color_override("font_disabled_color", Color(0.50, 0.48, 0.45))
-	b.add_theme_stylebox_override("normal", _estilo(Color(0.08, 0.08, 0.11, 0.95), Color(0.35, 0.33, 0.30)))
-	b.add_theme_stylebox_override("hover", _estilo(Color(0.12, 0.11, 0.10, 0.97), Color(0.60, 0.50, 0.30)))
-	b.add_theme_stylebox_override("pressed", _estilo(Color(0.14, 0.12, 0.10, 0.98), Color(0.95, 0.76, 0.32)))
-	b.add_theme_stylebox_override("disabled", _estilo(Color(0.05, 0.05, 0.07, 0.90), Color(0.22, 0.21, 0.20)))
+	b.add_theme_color_override("font_hover_color", primario.lightened(0.35))
+	b.add_theme_stylebox_override("normal", _estilo(Color(0.08, 0.08, 0.11, 0.95).lerp(secundario, 0.35), primario.darkened(0.25)))
+	b.add_theme_stylebox_override("hover", _estilo(Color(0.12, 0.11, 0.10, 0.97).lerp(secundario, 0.35), primario.lightened(0.15)))
+	b.add_theme_stylebox_override("pressed", _estilo(Color(0.14, 0.12, 0.10, 0.98).lerp(secundario, 0.45), primario))
 	b.pressed.connect(_al_elegir_clase.bind(cid))
 	if cid == _clase_id:
 		b.button_pressed = true

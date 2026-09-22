@@ -1,1 +1,581 @@
-{"nota":"Skills de la fase 5. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del hotbar). Campos: id, nombre, descripcion, mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica (usa poder en vez de ataque), bonus_crit, varianza, efecto {tipo: dano|curar, cantidad}.","skills":[{"bonus_crit":0.0,"cooldown":4.0,"descripcion":"Un tajo descendente cargado de fuerza que aplasta al enemigo.","efecto":{"cantidad":0.0,"tipo":"dano"},"id":"golpe_heroico","magica":false,"mana":10.0,"nombre":"Golpe heroico","power":1.6,"rango":3.0,"varianza":0.1},{"bonus_crit":0.15,"cooldown":2.5,"descripcion":"Corte rapidísimo con alta probabilidad de crítico.","efecto":{"cantidad":0.0,"tipo":"dano"},"id":"tajo_veloz","magica":false,"mana":6.0,"nombre":"Tajo veloz","power":0.9,"rango":3.0,"varianza":0.1},{"bonus_crit":0.0,"cooldown":6.0,"descripcion":"Proyectil ígneo de largo alcance que quema al impactar.","efecto":{"cantidad":0.0,"tipo":"dano"},"id":"bola_fuego","magica":true,"mana":18.0,"nombre":"Bola de fuego","power":2.0,"rango":12.0,"varianza":0.1},{"bonus_crit":0.0,"cooldown":10.0,"descripcion":"Luz restauradora que cierra las heridas del lanzador.","efecto":{"cantidad":80.0,"tipo":"curar"},"id":"curacion_menor","magica":false,"mana":20.0,"nombre":"Curación menor","power":0.0,"rango":0.0,"varianza":0.0},{"bonus_crit":0.05,"cooldown":12.0,"descripcion":"Golpe final devastador contra el enemigo.","efecto":{"cantidad":0.0,"tipo":"dano"},"id":"ejecucion","magica":false,"mana":25.0,"nombre":"Ejecución","power":2.2,"rango":3.0,"varianza":0.1}],"version":1}
+{
+ "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}.",
+ "version": 2,
+ "skills": [
+  {
+   "id": "golpe_heroico",
+   "nombre": "Golpe heroico",
+   "descripcion": "Un tajo descendente cargado de fuerza que aplasta al enemigo.",
+   "clase": "guerrero",
+   "mana": 10.0,
+   "cooldown": 4.0,
+   "rango": 3.0,
+   "power": 1.6,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "tajo_veloz",
+   "nombre": "Tajo veloz",
+   "descripcion": "Corte rapidísimo con alta probabilidad de crítico.",
+   "clase": "guerrero",
+   "mana": 6.0,
+   "cooldown": 2.5,
+   "rango": 3.0,
+   "power": 0.9,
+   "magica": false,
+   "bonus_crit": 0.15,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "embate",
+   "nombre": "Embestida brutal",
+   "descripcion": "Carga contra el enemigo y lo golpea con el hombro.",
+   "clase": "guerrero",
+   "mana": 12.0,
+   "cooldown": 10.0,
+   "rango": 6.0,
+   "power": 1.4,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "grito_guerra",
+   "nombre": "Grito de guerra",
+   "descripcion": "Un rugido que enardece: +25% de ataque durante 10 s.",
+   "clase": "guerrero",
+   "mana": 15.0,
+   "cooldown": 20.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.25,
+    "duracion": 10.0,
+    "stat": "ataque"
+   }
+  },
+  {
+   "id": "torbellino",
+   "nombre": "Torbellino",
+   "descripcion": "Gira con la espada golpeando a todos los enemigos cercanos.",
+   "clase": "guerrero",
+   "mana": 20.0,
+   "cooldown": 8.0,
+   "rango": 0.0,
+   "power": 1.2,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 4.0
+   }
+  },
+  {
+   "id": "muro_escudo",
+   "nombre": "Muro de escudo",
+   "descripcion": "Levanta el escudo: +40% de defensa durante 8 s.",
+   "clase": "guerrero",
+   "mana": 18.0,
+   "cooldown": 18.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.4,
+    "duracion": 8.0,
+    "stat": "defensa"
+   }
+  },
+  {
+   "id": "ejecucion",
+   "nombre": "Ejecución",
+   "descripcion": "Golpe final devastador contra el enemigo.",
+   "clase": "guerrero",
+   "mana": 25.0,
+   "cooldown": 12.0,
+   "rango": 3.0,
+   "power": 2.2,
+   "magica": false,
+   "bonus_crit": 0.05,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "ira_titan",
+   "nombre": "Ira del titán",
+   "descripcion": "Desata la furia ancestral: +60% de ataque y +20% de crítico durante 12 s.",
+   "clase": "guerrero",
+   "mana": 40.0,
+   "cooldown": 60.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.2,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.6,
+    "duracion": 12.0,
+    "stat": "ataque"
+   }
+  },
+  {
+   "id": "descarga_arcana",
+   "nombre": "Descarga arcana",
+   "descripcion": "Un dardo de energía pura, rápido y barato.",
+   "clase": "mago",
+   "mana": 8.0,
+   "cooldown": 2.0,
+   "rango": 10.0,
+   "power": 1.0,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "bola_fuego",
+   "nombre": "Bola de fuego",
+   "descripcion": "Proyectil ígneo de largo alcance que quema al impactar.",
+   "clase": "mago",
+   "mana": 18.0,
+   "cooldown": 6.0,
+   "rango": 12.0,
+   "power": 2.0,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "prision_hielo",
+   "nombre": "Prisión de hielo",
+   "descripcion": "Hielo que atrapa las piernas del enemigo: -50% de velocidad durante 5 s.",
+   "clase": "mago",
+   "mana": 14.0,
+   "cooldown": 12.0,
+   "rango": 10.0,
+   "power": 0.0,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.5,
+    "duracion": 5.0,
+    "stat": "velocidad"
+   }
+  },
+  {
+   "id": "escudo_mana",
+   "nombre": "Escudo de maná",
+   "descripcion": "Barrera arcana: +50% de defensa durante 8 s.",
+   "clase": "mago",
+   "mana": 20.0,
+   "cooldown": 20.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.5,
+    "duracion": 8.0,
+    "stat": "defensa"
+   }
+  },
+  {
+   "id": "rayo_encadenado",
+   "nombre": "Rayo encadenado",
+   "descripcion": "Un rayo que salta entre enemigos cercanos.",
+   "clase": "mago",
+   "mana": 24.0,
+   "cooldown": 9.0,
+   "rango": 10.0,
+   "power": 1.4,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 3.0
+   }
+  },
+  {
+   "id": "nova_escarcha",
+   "nombre": "Nova de escarcha",
+   "descripcion": "Explosión gélida que daña a todos los enemigos alrededor.",
+   "clase": "mago",
+   "mana": 22.0,
+   "cooldown": 10.0,
+   "rango": 0.0,
+   "power": 1.3,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 5.0
+   }
+  },
+  {
+   "id": "explosion_mental",
+   "nombre": "Explosión mental",
+   "descripcion": "Detona la mente del enemigo con poder psíquico.",
+   "clase": "mago",
+   "mana": 30.0,
+   "cooldown": 15.0,
+   "rango": 10.0,
+   "power": 2.4,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "lluvia_meteoros",
+   "nombre": "Lluvia de meteoros",
+   "descripcion": "Invoca meteoros que arrasan una zona amplia.",
+   "clase": "mago",
+   "mana": 45.0,
+   "cooldown": 30.0,
+   "rango": 12.0,
+   "power": 2.5,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 6.0
+   }
+  },
+  {
+   "id": "disparo_certero",
+   "nombre": "Disparo certero",
+   "descripcion": "Flecha al punto débil: alta probabilidad de crítico.",
+   "clase": "arquero",
+   "mana": 8.0,
+   "cooldown": 3.0,
+   "rango": 14.0,
+   "power": 1.5,
+   "magica": false,
+   "bonus_crit": 0.1,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "disparo_doble",
+   "nombre": "Disparo doble",
+   "descripcion": "Dos flechas en rápida sucesión.",
+   "clase": "arquero",
+   "mana": 10.0,
+   "cooldown": 4.0,
+   "rango": 14.0,
+   "power": 1.1,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "tiro_rodilla",
+   "nombre": "Tiro a la rodilla",
+   "descripcion": "Flecha a la pierna: -40% de velocidad durante 5 s.",
+   "clase": "arquero",
+   "mana": 10.0,
+   "cooldown": 8.0,
+   "rango": 14.0,
+   "power": 0.7,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.4,
+    "duracion": 5.0,
+    "stat": "velocidad"
+   }
+  },
+  {
+   "id": "flecha_venenosa",
+   "nombre": "Flecha venenosa",
+   "descripcion": "Punta envenenada: -25% de ataque durante 8 s.",
+   "clase": "arquero",
+   "mana": 12.0,
+   "cooldown": 10.0,
+   "rango": 14.0,
+   "power": 0.8,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.25,
+    "duracion": 8.0,
+    "stat": "ataque"
+   }
+  },
+  {
+   "id": "ojo_halcon",
+   "nombre": "Ojo de halcón",
+   "descripcion": "Vista de depredador: +25% de crítico durante 12 s.",
+   "clase": "arquero",
+   "mana": 15.0,
+   "cooldown": 25.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.25,
+    "duracion": 12.0,
+    "stat": "crit"
+   }
+  },
+  {
+   "id": "disparo_explosivo",
+   "nombre": "Disparo explosivo",
+   "descripcion": "Flecha con carga alquímica que detona al impactar.",
+   "clase": "arquero",
+   "mana": 20.0,
+   "cooldown": 10.0,
+   "rango": 14.0,
+   "power": 1.8,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 3.0
+   }
+  },
+  {
+   "id": "lluvia_flechas",
+   "nombre": "Lluvia de flechas",
+   "descripcion": "Una andanada que cubre una zona amplia.",
+   "clase": "arquero",
+   "mana": 24.0,
+   "cooldown": 12.0,
+   "rango": 12.0,
+   "power": 1.4,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 5.0
+   }
+  },
+  {
+   "id": "danza_flechas",
+   "nombre": "Danza de flechas",
+   "descripcion": "El arquero gira disparando en todas direcciones.",
+   "clase": "arquero",
+   "mana": 40.0,
+   "cooldown": 30.0,
+   "rango": 10.0,
+   "power": 2.2,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 6.0
+   }
+  },
+  {
+   "id": "curacion_menor",
+   "nombre": "Curación menor",
+   "descripcion": "Luz restauradora que cierra las heridas del lanzador.",
+   "clase": "clerigo",
+   "mana": 20.0,
+   "cooldown": 10.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "curar",
+    "cantidad": 80.0
+   }
+  },
+  {
+   "id": "castigo_divino",
+   "nombre": "Castigo divino",
+   "descripcion": "Un haz de luz sagrada que juzga al enemigo.",
+   "clase": "clerigo",
+   "mana": 16.0,
+   "cooldown": 6.0,
+   "rango": 10.0,
+   "power": 1.8,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   }
+  },
+  {
+   "id": "bendicion",
+   "nombre": "Bendición",
+   "descripcion": "Luz protectora: +20% de ataque durante 12 s.",
+   "clase": "clerigo",
+   "mana": 18.0,
+   "cooldown": 25.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.2,
+    "duracion": 12.0,
+    "stat": "ataque"
+   }
+  },
+  {
+   "id": "juicio",
+   "nombre": "Juicio",
+   "descripcion": "La mirada del juez: -20% de ataque del enemigo durante 8 s.",
+   "clase": "clerigo",
+   "mana": 15.0,
+   "cooldown": 14.0,
+   "rango": 10.0,
+   "power": 0.0,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.2,
+    "duracion": 8.0,
+    "stat": "ataque"
+   }
+  },
+  {
+   "id": "escudo_sagrado",
+   "nombre": "Escudo sagrado",
+   "descripcion": "Barrera de fe: +60% de defensa durante 10 s.",
+   "clase": "clerigo",
+   "mana": 25.0,
+   "cooldown": 22.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.6,
+    "duracion": 10.0,
+    "stat": "defensa"
+   }
+  },
+  {
+   "id": "luz_sanadora",
+   "nombre": "Luz sanadora",
+   "descripcion": "Una columna de luz que restaura una gran cantidad de vida.",
+   "clase": "clerigo",
+   "mana": 35.0,
+   "cooldown": 18.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "curar",
+    "cantidad": 200.0
+   }
+  },
+  {
+   "id": "nova_sagrada",
+   "nombre": "Nova sagrada",
+   "descripcion": "Onda de luz que daña a los enemigos alrededor del clérigo.",
+   "clase": "clerigo",
+   "mana": 28.0,
+   "cooldown": 14.0,
+   "rango": 0.0,
+   "power": 1.5,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 4.0
+   }
+  },
+  {
+   "id": "juicio_final",
+   "nombre": "Juicio final",
+   "descripcion": "El cielo se abre: luz devastadora sobre una zona amplia.",
+   "clase": "clerigo",
+   "mana": 50.0,
+   "cooldown": 45.0,
+   "rango": 8.0,
+   "power": 2.4,
+   "magica": true,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 6.0
+   }
+  }
+ ]
+}

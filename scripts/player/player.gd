@@ -157,11 +157,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_clic_izquierdo(mb.position)
 
 
-## Habilidades 1-5: lanza el skill i-ésimo del hotbar con objetivo inteligente.
+## Habilidades 1-5: lanza el skill i-ésimo del hotbar de la CLASE del
+## jugador (fase 18: `skills_por_clase(clase_id)`, no todos los skills).
 ## Fase 5.1: si es dañina y el objetivo está fuera de rango, NO se lanza
 ## todavía: queda "pendiente" y el jugador se acerca hasta el rango para
 ## lanzarla (se cancela si el objetivo muere o se deselecciona). Las
-## curaciones se aplican al lanzador sin moverse. Pública para tests.
+## curaciones y los buffs se aplican al lanzador sin moverse. Pública para
+## tests.
 ## Fase 10: un skill dañino sobre un objetivo válido fija el objetivo de
 ## ataque (auto-ataque persistente): tras el casteo el héroe sigue
 ## golpeando solo hasta que el mob muera, salga del rango (lo persigue y
@@ -169,24 +171,33 @@ func _unhandled_input(event: InputEvent) -> void:
 func lanzar_skill(i: int) -> void:
 	if skills == null:
 		return
-	var ids: Array[String] = SkillDB.lista()
+	var ids: Array[String] = skills_clase()
 	if i < 0 or i >= ids.size():
 		return
 	lanzar_skill_id(ids[i])
 
 
+## Skills de la clase del jugador, en orden del JSON (los que salen en el
+## hotbar y en el libro de habilidades). Clase desconocida → lista vacía.
+func skills_clase() -> Array[String]:
+	return SkillDB.skills_por_clase(clase_id)
+
+
 ## Fase 17 — lanza un skill por id (lo usa la barra de acciones). Mismo
 ## cuerpo que lanzar_skill(i); el índice solo resuelve el id.
+## Fase 18 — "hostil" = dano, debuff, o aoe dirigido (rango > 0): sobre un
+## objetivo válido fija el objetivo de ataque (auto-ataque persistente de
+## la fase 10) y, si está fuera de rango, queda pendiente y el jugador se
+## acerca. Curar, buff y aoe centrado en el lanzador nunca tocan el
+## combate en curso.
 func lanzar_skill_id(id: String) -> void:
 	if skills == null:
 		return
 	if not SkillDB.existe(id):
 		return
 	var sk: Dictionary = SkillDB.obtener(id)
-	var efecto: Dictionary = sk.get("efecto", {})
-	var es_dano: bool = str(efecto.get("tipo", "")) == "dano"
 	var obj: Entity = _objetivo_skill(id)
-	if es_dano and obj != null and obj.esta_vivo():
+	if _es_hostil(sk) and obj != null and obj.esta_vivo():
 		# Fase 10 — auto-ataque persistente (pedido de Juan Diego: "cuando
 		# llega le pega, el personaje le sigue atacando al mob"). Entrar en
 		# combate con un skill fija el objetivo de ataque; el bucle de
@@ -198,6 +209,7 @@ func lanzar_skill_id(id: String) -> void:
 		# o en cooldown): el jugador quería pelear con ese mob. Las
 		# curaciones (obj null) no tocan el combate en curso.
 		# `_objetivo_skill` ya excluye NPCs y muertos (REGLA DURA intacta).
+		# Fase 18: "skill dañino" aquí = hostil (dano, debuff, aoe dirigido).
 		objetivo_ataque = obj
 		intent.objetivo = obj
 		intent.quiere_atacar = true
@@ -323,14 +335,19 @@ func solicitar_ataque() -> void:
 	intencion_atacar.emit(foco)
 
 
-## Objetivo para un skill: las curaciones van al lanzador (null, el sistema
-## las aplica sobre sí mismo); el daño usa el foco de combate (selección
-## combatible > objetivo de ataque) y, si no hay foco, el combatible vivo
-## más cercano. Los NPCs nunca son objetivo de daño.
+## Objetivo para un skill: las curaciones y los buffs van al lanzador
+## (null, el sistema los aplica sobre sí mismo); el daño, los debuffs y el
+## aoe dirigido (rango > 0) usan el foco de combate (selección combatible >
+## objetivo de ataque) y, si no hay foco, el combatible vivo más cercano;
+## el aoe centrado en el lanzador (rango == 0) no necesita objetivo. Los
+## NPCs nunca son objetivo de daño.
 func _objetivo_skill(skill_id: String) -> Entity:
 	var sk: Dictionary = SkillDB.obtener(skill_id)
 	var efecto: Dictionary = sk.get("efecto", {})
-	if str(efecto.get("tipo", "")) == "curar":
+	var tipo: String = str(efecto.get("tipo", ""))
+	if tipo == "curar" or tipo == "buff":
+		return null
+	if tipo == "aoe" and float(sk.get("rango", 0.0)) <= 0.0:
 		return null
 	var foco: Entity = _foco_combate()
 	if foco != null:
@@ -339,6 +356,18 @@ func _objetivo_skill(skill_id: String) -> Entity:
 	if arbol == null:
 		return null
 	return SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
+
+
+## Fase 18 — ¿este skill es "hostil" (entra en combate / puede quedar
+## pendiente de acercamiento)? dano, debuff y aoe dirigido (rango > 0).
+static func _es_hostil(sk: Dictionary) -> bool:
+	var efecto: Dictionary = sk.get("efecto", {})
+	var tipo: String = str(efecto.get("tipo", ""))
+	if tipo == "dano" or tipo == "debuff":
+		return true
+	if tipo == "aoe" and float(sk.get("rango", 0.0)) > 0.0:
+		return true
+	return false
 
 
 ## ¿Este collider puede ser objetivo de ataque? Solo Enemy vivo y

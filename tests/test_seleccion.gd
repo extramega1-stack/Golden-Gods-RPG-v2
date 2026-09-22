@@ -264,8 +264,8 @@ func _t_skill_acercamiento() -> void:
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
 	var mana0: float = p.mana_actual
-	# bola_fuego = índice 2, rango 12, maná 18. El objetivo está a 20.
-	p.lanzar_skill(2)
+	# bola_fuego por id (fase 17): rango 12, maná 18. El objetivo está a 20.
+	p.lanzar_skill_id("bola_fuego")
 	_check(p.tiene_lanzamiento_pendiente(), "skill fuera de rango queda pendiente", "")
 	_check(p.mana_actual == mana0, "pendiente: aún no gasta maná", "")
 	# La orden de acercamiento apunta al objetivo…
@@ -295,7 +295,7 @@ func _t_skill_pendiente_cancel_muerte() -> void:
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
 	var mana0: float = p.mana_actual
-	p.lanzar_skill(2)
+	p.lanzar_skill_id("bola_fuego")
 	_check(p.tiene_lanzamiento_pendiente(), "pendiente creado (cancel-muerte)", "")
 	en.die()
 	p._physics_process(0.1)
@@ -309,7 +309,7 @@ func _t_skill_pendiente_cancel_deseleccion() -> void:
 	var p: Player = _player(Vector3(700, 0, 700))
 	var en: Enemy = _enemigo(Vector3(700, 0, 720))
 	p.seleccionar(en)
-	p.lanzar_skill(2)
+	p.lanzar_skill_id("bola_fuego")
 	_check(p.tiene_lanzamiento_pendiente(), "pendiente creado (cancel-deselección)", "")
 	p.deseleccionar()
 	p._physics_process(0.1)
@@ -321,8 +321,8 @@ func _t_curacion_sin_moverse() -> void:
 	var p: Player = _player(Vector3.ZERO)
 	p.take_damage(30.0, null)
 	var vida_daniada: float = p.vida_actual
-	# curacion_menor = índice 3. Sin objetivo: va al lanzador.
-	p.lanzar_skill(3)
+	# curacion_menor por id (fase 17). Sin objetivo: va al lanzador.
+	p.lanzar_skill_id("curacion_menor")
 	_check(not p.tiene_lanzamiento_pendiente(), "la curación no genera pendiente", "")
 	_check(p.vida_actual > vida_daniada, "la curación se aplica al lanzador", "")
 	_check(p.global_position == Vector3.ZERO, "el jugador no se mueve al curarse", "")

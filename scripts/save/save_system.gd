@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 6
+const SAVE_VERSION: int = 7
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -103,11 +103,13 @@ func _enemigos_a_datos() -> Array:
 
 func _cargar_jugador(dj: Dictionary) -> void:
 	jugador.restaurar(dj.get("entidad", {}))
-	# Fase 11: identidad del héroe. Las partidas viejas (sin
-	# "nombre"/"clase_id") cargan con los defaults, tolerante como siempre.
-	# Los stats NO se re-aplican: ya vienen del dict de entidad restaurado.
+	# Fase 11/18: identidad del héroe. Las partidas viejas (v6, sin
+	# "nombre"/"clase_id") cargan con los defaults ("Héroe"/"guerrero"),
+	# tolerante como siempre. Los stats NO se re-aplican: ya vienen del
+	# dict de entidad restaurado.
 	jugador.nombre = str(dj.get("nombre", "Héroe"))
-	jugador.clase_id = str(dj.get("clase_id", "guerrero"))
+	var cid: String = str(dj.get("clase_id", "guerrero"))
+	jugador.clase_id = cid if ClaseDB.existe(cid) else "guerrero"
 	jugador.identidad_cambiada.emit()
 	jugador.oro = maxi(0, int(dj.get("oro", 0)))
 	jugador.oro_cambiado.emit(jugador.oro)
