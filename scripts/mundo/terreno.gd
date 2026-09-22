@@ -132,8 +132,11 @@ func _hacer_material() -> StandardMaterial3D:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 0.95
-	# El winding es correcto, pero con cull desactivado el terreno es
-	# robusto ante cualquier vertice degenerado del bin.
+	# Fase 15.1: el winding era el bug del clic. Con (a,c,b) las caras
+	# frontales apuntaban hacia ABAJO (-Y) y los raycasts descendentes del
+	# clic izquierdo del Player atravesaban el terreno (ConcavePolygonShape3D
+	# tiene backface_collision=false por defecto). El orden (a,b,c) pone las
+	# caras frontales hacia ARRIBA (+Y): los rayos hacia abajo golpean.
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat
 
@@ -191,12 +194,15 @@ func _malla_chunk(cx: int, cz: int, paso: int) -> ArrayMesh:
 			var b: int = a + 1
 			var c: int = a + lado
 			var d: int = c + 1
+			# Fase 15.1: orden (a,b,c)/(c,b,d) = frontales hacia +Y (arriba).
+			# Con el viejo (a,c,b)/(c,d,b) las caras miraban hacia abajo y el
+			# raycast del clic izquierdo atravesaba el terreno.
 			indices[q] = a
-			indices[q + 1] = c
-			indices[q + 2] = b
+			indices[q + 1] = b
+			indices[q + 2] = c
 			indices[q + 3] = c
-			indices[q + 4] = d
-			indices[q + 5] = b
+			indices[q + 4] = b
+			indices[q + 5] = d
 			q += 6
 	var arr: Array = []
 	arr.resize(Mesh.ARRAY_MAX)
@@ -231,12 +237,14 @@ func _caras_colision(cx: int, cz: int) -> PackedVector3Array:
 			var b: int = a + 1
 			var c: int = a + lado
 			var d: int = c + 1
+			# Fase 15.1: mismo orden que la malla (frontales hacia +Y) para
+			# que los raycasts descendentes (clic del Player) golpeen.
 			caras[q] = verts[a]
-			caras[q + 1] = verts[c]
-			caras[q + 2] = verts[b]
+			caras[q + 1] = verts[b]
+			caras[q + 2] = verts[c]
 			caras[q + 3] = verts[c]
-			caras[q + 4] = verts[d]
-			caras[q + 5] = verts[b]
+			caras[q + 4] = verts[b]
+			caras[q + 5] = verts[d]
 			q += 6
 	return caras
 
