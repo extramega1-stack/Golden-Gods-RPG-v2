@@ -7,7 +7,7 @@ extends SceneTree
 ## (b) Cobertura total por muestreo: 625 puntos de todo el mapa caen en
 ##     alguna región (incluye las 4 esquinas del mundo).
 ## (c) Sin solapes por muestreo: cada punto cae en exactamente 1 región.
-## (d) Piedraceniza contiene al (0,0); region_en en bordes compartidos.
+## (d) Moon Town contiene al (0,0); region_en en bordes compartidos.
 ## (e) por_id: existente/desconocido; fuera del mapa -> {}.
 ## (f) VigiaRegion: emite `descubierta` una sola vez por región por sesión;
 ##     region_actual(); sin jugador/db no revienta; reiniciar_descubrimientos.
@@ -19,9 +19,10 @@ extends SceneTree
 ## Exit code 0 = todo verde; distinto de 0 = número de fallos.
 ## (Si agregaste scripts con class_name, corre antes el --import del README.)
 
+## Rework 2026 (Fase 14): ids Liberty remapeados a la geografia nueva.
 const IDS_ESPERADOS: Array[String] = [
-	"piedraceniza", "tierras_francas", "ceniza_forja", "costa_lamento",
-	"bosque_hondo", "abismo_lloroso", "tierras_trueno", "umbral_ladon",
+	"moon_town", "tierras_francas", "ceniza_forja", "tierras_trueno",
+	"bosque_hondo", "umbral_ladon", "abismo_lloroso", "costa_lamento",
 	"corona_quebrada", "velo",
 ]
 
@@ -121,14 +122,14 @@ func _t_db(db: RegionDB) -> void:
 		str(tintes_malos))
 	_check(niveles_malos.is_empty(), "db: 1 <= nivel_min <= nivel_max",
 		str(niveles_malos))
-	var piedra: Dictionary = db.por_id("piedraceniza")
+	var piedra: Dictionary = db.por_id("moon_town")
 	_check(int(piedra.get("nivel_min", -1)) == 1
 		and int(piedra.get("nivel_max", -1)) == 5,
-		"db: Piedraceniza banda 1-5")
+		"db: Moon Town banda 1-5")
 	var velo: Dictionary = db.por_id("velo")
-	_check(int(velo.get("nivel_min", -1)) == 55
+	_check(int(velo.get("nivel_min", -1)) == 45
 		and int(velo.get("nivel_max", -1)) == 70,
-		"db: El Velo banda 55-70 (la más dura)")
+		"db: El Velo banda 45-70 (la más dura)")
 	_check(db.cargar(), "db: cargar() idempotente (segunda vez true)")
 	_check(db.todas().size() == 10, "db: sigue habiendo 10 tras recargar")
 
@@ -175,24 +176,24 @@ func _region_id(db: RegionDB, x: float, z: float) -> String:
 
 
 func _t_bordes(db: RegionDB) -> void:
-	_check(_region_id(db, 0.0, 0.0) == "piedraceniza",
-		"db: (0,0) en Piedraceniza")
+	_check(_region_id(db, 0.0, 0.0) == "moon_town",
+		"db: (0,0) en Moon Town")
 	_check(_region_id(db, 1500.0, 0.0) == "tierras_francas",
 		"db: borde x=1500 -> Tierras Francas (semiabierto)")
-	_check(_region_id(db, -1500.0, 0.0) == "piedraceniza",
-		"db: borde x=-1500 -> Piedraceniza")
-	_check(_region_id(db, 0.0, 1500.0) == "umbral_ladon",
-		"db: borde z=1500 -> Umbral de Ladón")
-	_check(_region_id(db, 0.0, -1500.0) == "piedraceniza",
-		"db: borde z=-1500 -> Piedraceniza")
-	_check(_region_id(db, 6144.0, -2000.0) == "corona_quebrada",
-		"db: borde x=6144 norte -> Corona Quebrada")
+	_check(_region_id(db, -1500.0, 0.0) == "moon_town",
+		"db: borde x=-1500 -> Moon Town")
+	_check(_region_id(db, 0.0, 1500.0) == "bosque_hondo",
+		"db: borde z=1500 -> Bosque Hondo (semiabierto)")
+	_check(_region_id(db, 0.0, -1500.0) == "moon_town",
+		"db: borde z=-1500 -> Moon Town")
+	_check(_region_id(db, 6144.0, -2000.0) == "umbral_ladon",
+		"db: (6144,-2000) -> Umbral de Ladón (noreste)")
 	_check(_region_id(db, -6144.0, -2000.0) == "abismo_lloroso",
 		"db: borde x=-6144 norte -> Abismo Lloroso")
-	_check(_region_id(db, 18432.0, 18432.0) == "costa_lamento",
-		"db: esquina (18432,18432) incluida -> Costa del Lamento")
-	_check(_region_id(db, -18432.0, -18432.0) == "velo",
-		"db: esquina (-18432,-18432) -> El Velo")
+	_check(_region_id(db, 18432.0, 18432.0) == "corona_quebrada",
+		"db: esquina (18432,18432) incluida -> Corona Quebrada")
+	_check(_region_id(db, -18432.0, -18432.0) == "abismo_lloroso",
+		"db: esquina (-18432,-18432) -> Abismo Lloroso")
 	_check(db.region_en(20000.0, 0.0).is_empty(),
 		"db: fuera del mapa (x) -> {}")
 	_check(db.region_en(0.0, -20000.0).is_empty(),
@@ -202,10 +203,10 @@ func _t_bordes(db: RegionDB) -> void:
 func _t_por_id(db: RegionDB) -> void:
 	_check(str(db.por_id("velo").get("nombre", "")) == "El Velo",
 		"db: por_id('velo') nombre")
-	_check(int(db.por_id("velo").get("nivel_min", -1)) == 55,
-		"db: por_id('velo') nivel_min 55")
-	_check(str(db.por_id("piedraceniza").get("nombre", "")) == "Piedraceniza",
-		"db: por_id('piedraceniza') nombre")
+	_check(int(db.por_id("velo").get("nivel_min", -1)) == 45,
+		"db: por_id('velo') nivel_min 45")
+	_check(str(db.por_id("moon_town").get("nombre", "")) == "Moon Town",
+		"db: por_id('moon_town') nombre")
 	_check(db.por_id("inexistente").is_empty(),
 		"db: por_id desconocido -> {}")
 	var copia: Array = db.todas()
@@ -230,19 +231,19 @@ func _t_vigia(db: RegionDB) -> void:
 		"vigia: no sondea antes de 0.5 s")
 	jugador.position = Vector3(0.0, 0.0, 0.0)
 	vigia._process(0.6)
-	_check(_descubiertas == ["piedraceniza"],
-		"vigia: emite descubierta al entrar a Piedraceniza",
+	_check(_descubiertas == ["moon_town"],
+		"vigia: emite descubierta al entrar a Moon Town",
 		str(_descubiertas))
-	_check(str(vigia.region_actual().get("id", "")) == "piedraceniza",
-		"vigia: region_actual = piedraceniza")
+	_check(str(vigia.region_actual().get("id", "")) == "moon_town",
+		"vigia: region_actual = moon_town")
 	vigia._process(0.6)
 	vigia._process(0.6)
 	vigia._process(0.6)
-	_check(_descubiertas == ["piedraceniza"],
+	_check(_descubiertas == ["moon_town"],
 		"vigia: no re-emite en la misma región", str(_descubiertas))
 	jugador.position = Vector3(10000.0, 0.0, 100.0)
 	vigia._process(0.6)
-	_check(_descubiertas == ["piedraceniza", "tierras_francas"],
+	_check(_descubiertas == ["moon_town", "tierras_francas"],
 		"vigia: emite al entrar a Tierras Francas", str(_descubiertas))
 	_check(str(vigia.region_actual().get("id", "")) == "tierras_francas",
 		"vigia: region_actual = tierras_francas")
@@ -252,7 +253,7 @@ func _t_vigia(db: RegionDB) -> void:
 		"vigia: una sola vez por región por sesión", str(_descubiertas))
 	vigia.reiniciar_descubrimientos()
 	vigia._process(0.6)
-	_check(_descubiertas == ["piedraceniza", "tierras_francas", "piedraceniza"],
+	_check(_descubiertas == ["moon_town", "tierras_francas", "moon_town"],
 		"vigia: reiniciar_descubrimientos permite re-descubrir",
 		str(_descubiertas))
 	var sordo: VigiaRegion = VigiaRegion.new()
@@ -283,11 +284,11 @@ func _t_banner() -> void:
 	_check(banner.mouse_filter == Control.MOUSE_FILTER_IGNORE,
 		"banner: mouse_filter IGNORE")
 	_check(_ignoran_todos(banner), "banner: hijos también IGNORE")
-	banner.mostrar("Piedraceniza", "Nivel recomendado 1–5")
+	banner.mostrar("Moon Town", "Nivel recomendado 1–5")
 	_check(banner.visible, "banner: mostrar() lo hace visible")
 	_check(banner.mouse_filter == Control.MOUSE_FILTER_IGNORE,
 		"banner: sigue IGNORE tras mostrar()")
-	_check(str(banner._titulo.text) == "Has descubierto: Piedraceniza",
+	_check(str(banner._titulo.text) == "Has descubierto: Moon Town",
 		"banner: título correcto", banner._titulo.text)
 	_check(str(banner._subtitulo.text) == "Nivel recomendado 1–5",
 		"banner: subtítulo correcto", banner._subtitulo.text)

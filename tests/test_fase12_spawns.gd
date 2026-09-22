@@ -2,15 +2,16 @@ extends SceneTree
 ## Tests headless de la Fase 12 (SPAWNS — Mundo abierto real).
 ##
 ## `data/spawns.json` es el contrato que lee la demo: array de
-## {arquetipo, x, z, nivel} generado por `tools/generar_spawns.py` desde los
-## 1121 creeps del legado (conversion WC3 -> Godot: gx = x, gz = 4096 - y).
+## {arquetipo, x, z, nivel} generado por `tools/generar_spawns_rework.py`
+## (Fase 14, rework 2026: determinista, semilla fija, distribuido por las
+## 10 regiones de data/regiones.json).
 ## Este test blinda el contrato: el JSON existe y es valido, todos los puntos
 ## caen dentro del terreno [-18432, 18432], ninguno invade la zona segura de
 ## 40 m alrededor de la aldea inicial (0, 0), los arquetipos son solo los 3
 ## oficiales (goblin/lobo/ogro), los niveles se preservan en rango sensato y
 ## la regla nivel -> arquetipo del generador se cumple en cada entrada.
 ##
-## Regla nivel -> arquetipo (documentada en tools/generar_spawns.py):
+## Regla nivel -> arquetipo (documentada en tools/generar_spawns_rework.py):
 ##   nivel <= 30  -> goblin
 ##   30 < nivel <= 200 -> lobo
 ##   nivel > 200  -> ogro
@@ -23,18 +24,18 @@ const RUTA_SPAWNS := "res://data/spawns.json"
 const LIMITE := 18432.0
 const RADIO_SEGURO := 40.0
 const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro"]
-## Conteos esperados del port (generador determinista sobre el legado congelado).
+## Conteos esperados del generador determinista (semilla 20260922).
 const TOTAL_ESPERADO := 1121
-const GOBLIN_ESPERADO := 361
-const LOBO_ESPERADO := 458
-const OGRO_ESPERADO := 302
+const GOBLIN_ESPERADO := 489
+const LOBO_ESPERADO := 632
+const OGRO_ESPERADO := 0
 
 var _ok: int = 0
 var _fallos: int = 0
 
 
 func _init() -> void:
-	print("[TEST] Fase 12 — spawns.json (port de los 1121 creeps del legado)")
+	print("[TEST] Fase 12 — spawns.json (rework 2026: 1121 spawns por region)")
 
 
 var _empezo: bool = false
@@ -60,8 +61,8 @@ func _check(cond: bool, nombre: String, detalle: String = "") -> void:
 		printerr("  FAIL " + nombre + extra)
 
 
-## Regla nivel -> arquetipo (espejo de tools/generar_spawns.py; si el
-## generador cambia la regla, este test lo detecta).
+## Regla nivel -> arquetipo (espejo de tools/generar_spawns_rework.py;
+## si el generador cambia la regla, este test lo detecta).
 func _arquetipo_esperado(nivel: int) -> String:
 	if nivel <= 30:
 		return "goblin"
@@ -83,12 +84,12 @@ func _cargar_spawns() -> Array:
 func _t_contrato_spawns() -> void:
 	# 1. El JSON existe y es válido.
 	_check(FileAccess.file_exists(RUTA_SPAWNS), "data/spawns.json existe",
-		"el generador tools/generar_spawns.py no se corrió")
+		"el generador tools/generar_spawns_rework.py no se corrió")
 	var spawns: Array = _cargar_spawns()
 	_check(spawns.size() > 0, "el JSON parsea a un array no vacío",
 		"tamaño=%d" % spawns.size())
 
-	# 2. Conteo total y por arquetipo (determinista sobre el legado congelado).
+	# 2. Conteo total y por arquetipo (determinista, semilla fija).
 	_check(spawns.size() == TOTAL_ESPERADO,
 		"total de spawns == %d" % TOTAL_ESPERADO, "hay %d" % spawns.size())
 	var por_arq: Dictionary = {}
@@ -146,7 +147,7 @@ func _t_contrato_spawns() -> void:
 
 	# 4. El generador es determinista: dos corridas -> mismo SHA.
 	var sha1: String = FileAccess.get_sha256(RUTA_SPAWNS)
-	var ruta_py: String = ProjectSettings.globalize_path("res://tools/generar_spawns.py")
+	var ruta_py: String = ProjectSettings.globalize_path("res://tools/generar_spawns_rework.py")
 	var salida: Array = []
 	var rc1: int = OS.execute("python3", PackedStringArray([ruta_py]), salida, true)
 	var sha2: String = FileAccess.get_sha256(RUTA_SPAWNS)

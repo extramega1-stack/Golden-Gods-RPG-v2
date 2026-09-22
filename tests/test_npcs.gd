@@ -134,10 +134,10 @@ func _t_db() -> void:
 		"db: rol de ilya", str(ilya.get("rol", "")))
 	var lineas: Array = ilya.get("dialogo", [])
 	_check(lineas.size() == 4, "db: ilya tiene 4 líneas", str(lineas.size()))
-	_check(str(lineas[0]).contains("Piedraceniza"),
-		"db: primera línea de ilya menciona Piedraceniza")
+	_check(str(lineas[0]).contains("Moon Town"),
+		"db: primera línea de ilya menciona Moon Town")
 	var bram: Dictionary = NDB.obtener("bram")
-	_check(str(bram.get("rol", "")) == "Herrero de Piedraceniza",
+	_check(str(bram.get("rol", "")) == "Herrero de Moon Town",
 		"db: rol de bram", str(bram.get("rol", "")))
 	_check((bram.get("dialogo", []) as Array).size() == 3,
 		"db: bram tiene 3 líneas")
@@ -153,7 +153,7 @@ func _t_configurar() -> void:
 	var n: NPC = _npc("bram", Vector3(-5, 0, 5))
 	_check(n.npc_id == "bram", "npc: npc_id bram")
 	_check(n.nombre_mostrado == "Herrero Bram", "npc: nombre_mostrado bram")
-	_check(n.rol == "Herrero de Piedraceniza", "npc: rol bram")
+	_check(n.rol == "Herrero de Moon Town", "npc: rol bram")
 	_check(n.lineas_dialogo.size() == 3, "npc: 3 líneas de bram")
 	_check(not n.combatible, "npc: no combatible (regla dura)")
 	# Tolerancia: campos ausentes no revientan.
@@ -221,7 +221,7 @@ func _t_dialogo() -> void:
 	_check(d.rol_texto() == "Mariscala de Liberty",
 		"dialogo: rol", d.rol_texto())
 	_check(d.indice() == 0, "dialogo: arranca en la línea 0")
-	_check(d.linea_actual().contains("Piedraceniza"),
+	_check(d.linea_actual().contains("Moon Town"),
 		"dialogo: primera línea de ilya")
 	# Avance por líneas.
 	d.avanzar()

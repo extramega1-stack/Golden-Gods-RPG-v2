@@ -1,4 +1,4 @@
-# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12, 12.1 y 13
+# Tests headless — Fases 1, 2, 3, 4, 5, 5.1, 6, 6.2, 7, 8, 8.1, 9, 9.1, 9.2, 9.3, 10, 11, 12, 12.1, 13 y 14
 
 `test_stats.gd` verifica los datos puros (`StatBlock` + `Formulas`),
 `test_entity.gd` la entidad base (`Entity`): daño, muerte, XP/niveles,
@@ -131,11 +131,11 @@ Player real y con `continuar=true` sin tocar nada), save con nombre/clase
 del HUD (conectar/refrescar con el retrato integrado no revientan).
 
 La fase 12 (regiones) añade `test_fase12_regiones.gd` (52 asserts):
-`RegionDB` carga `data/regiones.json` (10 regiones, ids únicos en orden,
-10 campos, tintes "#rrggbb", bandas 1–5 … 55–70; `cargar()` idempotente),
-cobertura total y sin solapes por muestreo (625 puntos del mapa, esquinas
-incluidas; intervalos semiabiertos, el borde 18432 incluido), Piedraceniza
-contiene al (0,0), `region_en` en bordes compartidos y fuera del mapa → {},
+`RegionDB` carga `data/regiones.json` (10 regiones del rework 2026, ids
+únicos en orden, 10 campos, tintes "#rrggbb", bandas 1–5 … 45–70;
+`cargar()` idempotente), cobertura total y sin solapes por muestreo (625
+puntos del mapa, esquinas incluidas; intervalos semiabiertos, el borde
+18432 incluido), Moon Town contiene al (0,0), `region_en` en bordes compartidos y fuera del mapa → {},
 `por_id` existente/desconocido, `VigiaRegion` (emite `descubierta` una sola
 vez por región por sesión, `region_actual`, sin jugador/db no revienta,
 `reiniciar_descubrimientos`) y `BannerRegion` (arranca oculto,
@@ -150,10 +150,12 @@ bordes, `dentro()`, 36 chunks 6×6 con 2 LODs (`visibility_range` 0–900 y
 `terreno == null` no cambia nada).
 
 La fase 12 (spawns) añade `test_fase12_spawns.gd` (14 asserts):
-`data/spawns.json` trae 1121 entradas {arquetipo, x, z, nivel} del legado
-(gx=x, gz=4096−y; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro;
-zona segura de 40 m en la aldea), todas dentro del terreno y con
-arquetipos válidos; `tools/generar_spawns.py` es determinista.
+`data/spawns.json` trae 1121 entradas {arquetipo, x, z, nivel} del rework
+2026 (distribuidos por las 10 regiones, nivel dentro de la banda de su
+región; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro; zona segura
+de 40 m en la aldea; los de Moon Town fuera del disco de la ciudad),
+todas dentro del terreno y con arquetipos válidos;
+`tools/generar_spawns_rework.py` es determinista.
 
 La fase 12 (ciclo) añade `test_fase12_ciclo.gd` (35 asserts):
 `data/ciclo.json` (día de 720 s, hora inicial 9.0), `CicloDia.avanzar()`
@@ -164,7 +166,7 @@ señales `amanecer`/`anochecer` al cruzar 6h/18h, `fijar_hora` con wrap, y
 flicker dentro de banda).
 
 La fase 12 (integración) añade `test_fase12_integracion.gd` (18 asserts):
-cada spawn cae en una región, la aldea (0,0) está en Piedraceniza, la
+cada spawn cae en una región, la aldea (0,0) está en Moon Town, la
 escala es la real (36864), la demo fase12 referencia Terreno/CicloDia/
 VigiaRegion/BannerRegion/Antorchas (sin enemigos fijos: los da
 spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
@@ -201,6 +203,9 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_streaming.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase13_minimapa.gd
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase13_brujula.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_ciudad.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_terreno.gd
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase14_integracion.gd
 
 # Smoke test de la escena demo de la fase 6 (300 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase6_demo.tscn --quit-after 300
@@ -226,6 +231,14 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 # Smoke test de la escena demo de la fase 12 (mundo abierto: terreno 36.864 u,
 # 1121 creeps, ciclo día/noche; 400 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase12_demo.tscn --quit-after 400
+
+# Smoke test de la escena demo de la fase 14 (Moon Town: ciudad data-driven
+# con 18 edificios, NPCs recolocados, minimapa STANDBY; 500 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase14_demo.tscn --quit-after 500
+
+# Smoke test del streaming fuera de la ciudad (teletransporta al jugador a
+# (1019.4, -701), activa el streaming de mobs y corre 500 frames sin errores):
+~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/smoke_fase14_streaming.gd
 ```
 
 - Exit code **0** = todo verde.
@@ -244,3 +257,9 @@ enemigos muertos quedan muertos).
 La fase 12.1 añade `test_streaming.gd` (26 asserts): `StreamingMobs` instancia solo los registros dentro de `radio_alta` y libera más allá de `radio_baja` (histéresis sin churn en la banda intermedia); la puerta de reaparición del `SpawnerMobs` veta reaparecer lejos (el pendiente se reprograma, no se pierde) y al acercarse el mob reaparece re-asociado a su registro; `Enemy.intervalo_cerebro(dist)` devuelve 1/3/6 por bandas; el tinte por arquetipo comparte material entre mobs del mismo color.
 
 La fase 13 añade `test_fase13_minimapa.gd` (31 asserts): `mundo_a_mapa`/`mapa_a_mundo` son redondas (5 puntos + esquinas exactas), el fade baja a 0.35 tras 4 s quieto y vuelve a 1.0 al moverse, Alt+clic crea un ping de 5 s que expira solo (sin ordenar mover), clic normal llama `ordenar_mover_a` con el punto del mundo, `Terreno.color_en` no revienta sin bin y la etiqueta muestra la región actual (vacía fuera del mapa). Y `test_fase13_brujula.gd` (33 asserts): `offset_para` centra el N con yaw 0, pone E a la derecha y O a la izquierda, hace wrap en ±PI y es idéntico con +TAU; `offset_marcador` deja intacto lo visible y pega al borde lo de detrás; `resolver_objetivo` devuelve null sin misión, el goblin vivo más cercano para matar, el NPC de origen si la misión está lista, el NPC objetivo para hablar y el origen para recolectar (null si el NPC no existe); `QuestLog.cambiada` refresca el marcador (aceptar → mob, completar → NPC, entregar → apagado); `configurar` con todo null no revienta.
+
+La fase 14 añade `test_fase14_ciudad.gd` (49 asserts): `CiudadLuna` construye la ciudad principal "Moon Town" reimaginada desde `data/ciudad_luna.json` (18 edificios data-driven: monumento con luna creciente dorada, Salón de Clases, forja de Bram, tienda de Sira, cuartel de Ilya, templo menor, 8 casas en 3 variantes procedurales, 4 puertas N/S/E/O); cada edificio con StaticBody3D en capa 1 y BoxShape3D; muralla con >= 40 tramos; `puntos_npc`/`npc_spawn()` para ilya/bram/sira (dentro del radio 800 y fuera de colisiones); `punto_aparicion_jugador()` en la plaza mirando al monumento y sobre el terreno; ninguna estructura supera 28 u; plaza y calles (40 u) libres de colisiones invisibles por muestreo; >= 35 antorchas reutilizando `Antorcha`.
+
+La fase 14 (terreno del rework) añade `test_fase14_terreno.gd` (34 asserts): `data/terreno.bin` del rework 2026 (disco plano urbano de 40.0 u en (0,0) radio 800; biomas por región con tintes de `data/regiones.json`), `data/regiones.json` remapeado (región 1 = `moon_town` "Moon Town", 10 rects sin huecos ni solapes), `data/spawns.json` regenerado (1121 spawns, zona segura de 40 m en la ciudad, ninguno de Moon Town dentro del disco), y determinismo de `tools/generar_terreno_rework.py` / `tools/generar_spawns_rework.py`.
+
+La fase 14 (integración) añade `test_fase14_integracion.gd` (36 asserts): `fase14_demo` hereda de `fase12_demo`, crea `CiudadLuna` con el terreno asignado ANTES del add_child, usa `punto_aparicion_jugador()`/`yaw_aparicion()`/`npc_spawn()` y conserva el flujo fase 12 (`super._ready()`); el título abre `fase14_demo.tscn`; `data/npcs.json` habla de "Moon Town" (sin "Piedraceniza", solo texto); el spawn del jugador cae sobre el terreno, en la región `moon_town` y fuera de colisiones; `npc_spawn()` devuelve los puntos data-driven de ilya/bram/sira; el minimapa sigue leyendo `Terreno.color_en` del terreno nuevo (STANDBY: sin pulir, solo no romper).

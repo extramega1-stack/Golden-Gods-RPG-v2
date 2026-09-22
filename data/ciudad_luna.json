@@ -1,0 +1,176 @@
+{
+  "_nota": "Moon Town reimaginada 2026 (Fase 14). Data-driven: anadir/mover un edificio = tocar esta lista. Campos: tipo, x, z, rot (radianes, yaw), escala, variante (color/tipo). La altura Y la pone el script consultando Terreno.altura_en en runtime.",
+  "aparicion_jugador": {
+    "nota": "centro de la plaza, mirando al monumento (norte = -Z)",
+    "x": 0.0,
+    "yaw": 0.0,
+    "z": 45.0
+  },
+  "edificios": [
+    {
+      "escala": 1.0,
+      "rot": 0.0,
+      "tipo": "monumento",
+      "variante": "luna",
+      "x": 0.0,
+      "z": 0.0
+    },
+    {
+      "escala": 1.0,
+      "rot": -0.49734,
+      "tipo": "salon_clases",
+      "variante": "piedra",
+      "x": 95.0,
+      "z": -175.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 2.70764,
+      "tipo": "cuartel",
+      "variante": "rojo",
+      "x": -95.0,
+      "z": 205.0
+    },
+    {
+      "escala": 1.0,
+      "rot": -1.5708,
+      "tipo": "forja",
+      "variante": "hollin",
+      "x": 150.0,
+      "z": -60.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 1.5708,
+      "tipo": "tienda",
+      "variante": "alquimia",
+      "x": -150.0,
+      "z": -60.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 2.4286,
+      "tipo": "templo",
+      "variante": "marmol",
+      "x": -130.0,
+      "z": 150.0
+    },
+    {
+      "escala": 1.0,
+      "rot": -2.0944,
+      "tipo": "casa",
+      "variante": "a",
+      "x": 285.8,
+      "z": 165.0
+    },
+    {
+      "escala": 1.1,
+      "rot": -2.618,
+      "tipo": "casa",
+      "variante": "b",
+      "x": 180.0,
+      "z": 311.8
+    },
+    {
+      "escala": 0.95,
+      "rot": 2.618,
+      "tipo": "casa",
+      "variante": "c",
+      "x": -160.0,
+      "z": 277.1
+    },
+    {
+      "escala": 1.0,
+      "rot": 2.0944,
+      "tipo": "casa",
+      "variante": "a",
+      "x": -320.4,
+      "z": 185.0
+    },
+    {
+      "escala": 1.05,
+      "rot": 1.0472,
+      "tipo": "casa",
+      "variante": "b",
+      "x": -294.4,
+      "z": -170.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 0.5236,
+      "tipo": "casa",
+      "variante": "c",
+      "x": -190.0,
+      "z": -329.1
+    },
+    {
+      "escala": 1.0,
+      "rot": -0.5236,
+      "tipo": "casa",
+      "variante": "a",
+      "x": 165.0,
+      "z": -285.8
+    },
+    {
+      "escala": 1.1,
+      "rot": -1.0472,
+      "tipo": "casa",
+      "variante": "b",
+      "x": 320.4,
+      "z": -185.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 3.14159,
+      "tipo": "puerta",
+      "variante": "norte",
+      "x": 0.0,
+      "z": -700.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 0.0,
+      "tipo": "puerta",
+      "variante": "sur",
+      "x": 0.0,
+      "z": 700.0
+    },
+    {
+      "escala": 1.0,
+      "rot": 1.5708,
+      "tipo": "puerta",
+      "variante": "este",
+      "x": 700.0,
+      "z": 0.0
+    },
+    {
+      "escala": 1.0,
+      "rot": -1.5708,
+      "tipo": "puerta",
+      "variante": "oeste",
+      "x": -700.0,
+      "z": 0.0
+    }
+  ],
+  "nombre": "Moon Town",
+  "npcs": {
+    "bram": {
+      "nota": "forja",
+      "x": 170.0,
+      "z": -30.0
+    },
+    "ilya": {
+      "nota": "cuartel/plaza",
+      "x": -50.0,
+      "z": 160.0
+    },
+    "sira": {
+      "nota": "tienda",
+      "x": -178.0,
+      "z": -25.0
+    }
+  },
+  "plaza_radio": 60.0,
+  "radio": 800.0,
+  "radio_muralla": 700.0
+}

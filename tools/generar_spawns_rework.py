@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""Generador determinista de spawns para el REWORK 2026 (Fase 14) — Golden Gods RPG.
+
+Reemplaza el port de fase 12 (1121 creeps del legado WC3) por spawns generados
+de forma determinista sobre las 10 regiones de data/regiones.json.
+
+Contrato de salida (igual que fase 12): data/spawns.json, array de
+{arquetipo, x, z, nivel} en coordenadas Godot.
+
+REGLA NIVEL -> ARQUETIPO (misma que fase 12, tools/generar_spawns.py):
+    nivel <= 30          -> goblin
+    30 < nivel <= 200    -> lobo
+    nivel > 200          -> ogro
+Con las bandas actuales (1-70) todos los spawns son goblin: la variedad de
+arquetipo aparecera cuando se anadan bandas por encima de 30. La regla es
+estable y monotona: un nivel mas alto nunca mapea a un tier inferior. El
+`nivel` elegido se preserva intacto en cada entrada.
+
+DISTRIBUCION (semilla fija SEMILLA = 20260922, random.Random determinista):
+  - Moon Town: 24 spawns de nivel 1-5 en el anillo 800 < r < 1450 (fuera del
+    disco de la ciudad donde el worker de ciudad construye, dentro de la
+    region). La zona segura de 40 m alrededor de (0, 0) queda blindada.
+  - Las otras 9 regiones: 1097 spawns repartidos por area (resto mayor),
+    posicion uniforme dentro del rectangulo con margen de 8 u, nivel
+    uniforme entero dentro de la banda [nivel_min, nivel_max] de su region.
+
+Determinista y re-ejecutable: dos corridas -> mismo SHA-256.
+
+Uso:
+    python3 tools/generar_spawns_rework.py
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import os
+import random
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROYECTO = os.path.dirname(HERE)
+DESTINO = os.path.join(PROYECTO, "data", "spawns.json")
+REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
+
+SEMILLA = 20260922
+TOTAL = 1121
+SPAWNS_MOON = 24            # en el anillo 800 < r < 1450 de Moon Town
+RADIO_SEGURO = 40.0         # m alrededor de (0, 0): zona segura
+R_CIUDAD = 800.0            # disco de la ciudad (lo construye otro worker)
+MARGEN = 8.0                # margen dentro de cada rectangulo de region
+
+
+def arquetipo_de(nivel: int) -> str:
+    """REGLA NIVEL -> ARQUETIPO (ver docstring del modulo)."""
+    if nivel <= 30:
+        return "goblin"
+    if nivel <= 200:
+        return "lobo"
+    return "ogro"
+
+
+def main() -> int:
+    with open(REGIONES, "r", encoding="utf-8") as f:
+        regiones = json.load(f)
+    rng = random.Random(SEMILLA)
+
+    por_id = {r["id"]: r for r in regiones}
+    moon = por_id["moon_town"]
+    resto = [r for r in regiones if r["id"] != "moon_town"]
+
+    # Reparto por area (resto mayor) para que la suma sea exacta.
+    objetivo = TOTAL - SPAWNS_MOON
+    areas = [(r["x1"] - r["x0"]) * (r["z1"] - r["z0"]) for r in resto]
+    area_total = sum(areas)
+    cuotas = [objetivo * a / area_total for a in areas]
+    asignados = [int(c) for c in cuotas]
+    faltan = objetivo - sum(asignados)
+    orden = sorted(range(len(resto)), key=lambda i: cuotas[i] - asignados[i],
+                   reverse=True)
+    for i in orden[:faltan]:
+        asignados[i] += 1
+    assert sum(asignados) == objetivo
+
+    spawns = []
+
+    # 1) Moon Town: anillo fuera del disco de la ciudad, niveles 1-5.
+    nmin, nmax = int(moon["nivel_min"]), int(moon["nivel_max"])
+    for _ in range(SPAWNS_MOON):
+        ang = rng.random() * 2.0 * math.pi
+        r = R_CIUDAD + rng.random() * (1450.0 - R_CIUDAD)
+        x = r * math.cos(ang)
+        z = r * math.sin(ang)
+        nivel = rng.randint(nmin, nmax)
+        assert math.hypot(x, z) >= RADIO_SEGURO
+        spawns.append({
+            "arquetipo": arquetipo_de(nivel),
+            "x": round(x, 3),
+            "z": round(z, 3),
+            "nivel": nivel,
+        })
+
+    # 2) Resto de regiones: uniforme en rectangulo, nivel en su banda.
+    for r, n_spawns in zip(resto, asignados):
+        nmin, nmax = int(r["nivel_min"]), int(r["nivel_max"])
+        for _ in range(n_spawns):
+            x = r["x0"] + MARGEN + rng.random() * (r["x1"] - r["x0"] - 2 * MARGEN)
+            z = r["z0"] + MARGEN + rng.random() * (r["z1"] - r["z0"] - 2 * MARGEN)
+            if math.hypot(x, z) < RADIO_SEGURO:
+                # Blindaje de la zona segura (en la practica solo podria
+                # pasar en Moon Town, que ya se genera en anillo).
+                continue
+            nivel = rng.randint(nmin, nmax)
+            spawns.append({
+                "arquetipo": arquetipo_de(nivel),
+                "x": round(x, 3),
+                "z": round(z, 3),
+                "nivel": nivel,
+            })
+
+    assert len(spawns) == TOTAL, f"total={len(spawns)} != {TOTAL}"
+
+    with open(DESTINO, "w", encoding="utf-8") as f:
+        json.dump(spawns, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    conteo = {}
+    for s in spawns:
+        conteo[s["arquetipo"]] = conteo.get(s["arquetipo"], 0) + 1
+    sha = hashlib.sha256(open(DESTINO, "rb").read()).hexdigest()
+    print(f"[SPAWNS] total={len(spawns)} " +
+          " ".join(f"{k}={conteo.get(k, 0)}" for k in ("goblin", "lobo", "ogro")))
+    print(f"[SPAWNS] escrito {DESTINO} sha256={sha}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -60,10 +60,10 @@ func _run() -> void:
 			sin_region += 1
 	_check(fuera == 0, "ningún spawn fuera del terreno (fuera=%d)" % fuera)
 	_check(sin_region == 0, "todo spawn cae en una región (sin región=%d)" % sin_region)
-	# 2. La aldea inicial está en Piedraceniza.
+	# 2. La aldea inicial está en Moon Town (rework 2026).
 	var aldea: Dictionary = db.region_en(0.0, 0.0)
-	_check(str(aldea.get("id", "")) == "piedraceniza",
-		"la aldea (0,0) está en Piedraceniza (es %s)" % str(aldea.get("id", "?")))
+	_check(str(aldea.get("id", "")) == "moon_town",
+		"la aldea (0,0) está en Moon Town (es %s)" % str(aldea.get("id", "?")))
 	# 3. Terreno: escala real del proyecto.
 	_check(Terreno.TAMANO == 36864.0, "Terreno.TAMANO == 36864")
 	_check(Terreno.PASO == 128.0, "Terreno.PASO == 128")
@@ -77,6 +77,6 @@ func _run() -> void:
 	_check(tscn.find("scripts/mundo/antorcha.gd") >= 0, "tscn incluye Antorchas")
 	_check(tscn.find("Goblin1") < 0, "tscn sin enemigos fijos (los da spawns.json)")
 	_check(tscn.find("far = 40000.0") >= 0, "cámara con far 40000 para el mundo")
-	# 5. El título arranca la demo del mundo abierto.
+	# 5. El título arranca la demo vigente (fase 14: Moon Town).
 	var titulo: String = FileAccess.get_file_as_string("res://scripts/ui/pantalla_titulo.gd")
-	_check(titulo.find("fase12_demo.tscn") >= 0, "el título abre fase12_demo")
+	_check(titulo.find("fase14_demo.tscn") >= 0, "el título abre fase14_demo")
