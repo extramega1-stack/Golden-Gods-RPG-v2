@@ -24,7 +24,7 @@ extends SceneTree
 ## (Si agregaste scripts con class_name, corre antes el --import del README.)
 
 const HUDS: GDScript = preload("res://scripts/ui/hud.gd")
-const BSK: GDScript = preload("res://scripts/ui/barra_skills.gd")
+const BSK: GDScript = preload("res://scripts/ui/barra_acciones.gd")
 const DLG: GDScript = preload("res://scripts/ui/ventana_dialogo.gd")
 const NP: GDScript = preload("res://scripts/npc/npc.gd")
 const NDB: GDScript = preload("res://scripts/npc/npc_db.gd")

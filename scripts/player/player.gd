@@ -172,7 +172,16 @@ func lanzar_skill(i: int) -> void:
 	var ids: Array[String] = SkillDB.lista()
 	if i < 0 or i >= ids.size():
 		return
-	var id: String = ids[i]
+	lanzar_skill_id(ids[i])
+
+
+## Fase 17 — lanza un skill por id (lo usa la barra de acciones). Mismo
+## cuerpo que lanzar_skill(i); el índice solo resuelve el id.
+func lanzar_skill_id(id: String) -> void:
+	if skills == null:
+		return
+	if not SkillDB.existe(id):
+		return
 	var sk: Dictionary = SkillDB.obtener(id)
 	var efecto: Dictionary = sk.get("efecto", {})
 	var es_dano: bool = str(efecto.get("tipo", "")) == "dano"

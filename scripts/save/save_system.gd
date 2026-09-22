@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -24,6 +24,9 @@ var tienda: Tienda = null
 ## Fase 8: misiones (estados + progreso). Sin asignar, el bloque
 ## "misiones" se guarda vacío y la carga avisa sin reventar.
 var misiones: QuestLog = null
+## Fase 17: barra de acciones (asignaciones de slots). Sin asignar, el
+## bloque "barra_acciones" se guarda vacío y la carga avisa sin reventar.
+var barra_acciones: BarraAcciones = null
 
 
 func hay_partida() -> bool:
@@ -50,6 +53,7 @@ func guardar() -> bool:
 		"npcs": _npcs_a_datos(),
 		"tiendas": tienda.to_dict() if tienda != null else {"version": Tienda.SAVE_VERSION, "tiendas": {}},
 		"misiones": misiones.to_dict() if misiones != null else {"version": QuestLog.SAVE_VERSION, "misiones": {}},
+		"barra_acciones": barra_acciones.to_dict() if barra_acciones != null else {},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -80,6 +84,7 @@ func cargar() -> bool:
 	_cargar_npcs(datos.get("npcs", []))
 	_cargar_tiendas(datos.get("tiendas", {}))
 	_cargar_misiones(datos.get("misiones", {}))
+	_cargar_barra(datos.get("barra_acciones", {}))
 	return true
 
 
@@ -193,6 +198,19 @@ func _cargar_misiones(bloque: Dictionary) -> void:
 		push_warning("[SaveSystem] sin QuestLog asignado; las misiones quedan sin cargar")
 		return
 	misiones.cargar_estado(bloque)
+
+
+## Fase 17 — barra de acciones: se guardan las asignaciones de slots.
+## Tolerante: las partidas v5 (sin bloque) cargan con el layout por defecto;
+## los ids inválidos se descartan en cargar_estado.
+func _cargar_barra(bloque: Dictionary) -> void:
+	if barra_acciones == null:
+		push_warning("[SaveSystem] sin barra asignada; las asignaciones quedan sin cargar")
+		return
+	if bloque.is_empty():
+		barra_acciones.restablecer_defecto()
+		return
+	barra_acciones.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que

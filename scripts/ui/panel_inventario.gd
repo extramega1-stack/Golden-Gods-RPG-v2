@@ -110,10 +110,15 @@ func _reconstruir() -> void:
 		fila.add_theme_constant_override("separation", 8)
 		fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_lista.add_child(fila)
-		var lab: Label = Label.new()
-		lab.text = "%s x%d" % [nombre, cant]
+		var lab: Label
+		if tipo == "consumible":
+			# Fase 17: el nombre del consumible es arrastrable a la barra.
+			lab = _chip_consumible(nombre, cant, item_id)
+		else:
+			lab = Label.new()
+			lab.text = "%s x%d" % [nombre, cant]
+			lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		fila.add_child(lab)
 		if tipo == "consumible":
 			fila.add_child(_boton("Usar", _usar.bind(item_id)))
@@ -126,6 +131,18 @@ func _boton(texto: String, accion: Callable) -> Button:
 	b.text = texto
 	b.pressed.connect(accion)
 	return b
+
+
+## Fase 17 — chip arrastrable de un consumible (origen "inventario" para la
+## barra de acciones). Reusa el ChipArrastre de la barra.
+func _chip_consumible(nombre: String, cant: int, item_id: String) -> BarraAcciones.ChipArrastre:
+	var chip: BarraAcciones.ChipArrastre = BarraAcciones.ChipArrastre.new()
+	chip.text = "%s x%d (arrastrar)" % [nombre, cant]
+	chip.add_theme_color_override("font_color", Color(0.85, 0.95, 0.85))
+	chip.add_theme_font_size_override("font_size", 15)
+	chip.tooltip_text = "Arrastra a la barra de acciones"
+	chip.datos = {"origen": "inventario", "tipo": "item", "id": item_id}
+	return chip
 
 
 func _usar(item_id: String) -> void:

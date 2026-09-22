@@ -14,7 +14,7 @@ const ENEMIES_JSON: String = "res://data/enemies.json"
 @onready var _jugador: Player = $Player
 @onready var _rig: CameraRig = $CameraRig
 @onready var _hud: HUD = $HUD
-@onready var _barra: BarraSkills = $BarraSkills
+@onready var _barra: BarraAcciones = $BarraAcciones
 @onready var _panel_inv: PanelInventario = $PanelInventario
 @onready var _panel_eq: PanelEquipo = $PanelEquipo
 

@@ -22,7 +22,7 @@ const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
 @onready var _jugador: Player = $Player
 @onready var _rig: CameraRig = $CameraRig
 @onready var _hud: HUD = $HUD
-@onready var _barra: BarraSkills = $BarraSkills
+@onready var _barra: BarraAcciones = $BarraAcciones
 @onready var _indicador: IndicadorSeleccion = $IndicadorSeleccion
 @onready var _dialogo: VentanaDialogo = $VentanaDialogo
 @onready var _panel_inv: PanelInventario = $PanelInventario
@@ -110,6 +110,8 @@ func _ready() -> void:
 	_guardado.npcs = lista_npcs
 	_guardado.tienda = _tienda
 	_guardado.misiones = _misiones
+	# Fase 17: las asignaciones de la barra de acciones se guardan/cargan.
+	_guardado.barra_acciones = _barra
 	# Pickups de prueba junto al spawn (el jugador arranca en el origen).
 	_colocar_pickup("espada_corta", Vector3(2.0, 0.0, 2.0))
 	_colocar_pickup("pocion_vida", Vector3(-2.0, 0.0, 2.0))

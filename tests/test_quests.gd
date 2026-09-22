@@ -424,16 +424,16 @@ func _t_save_v5() -> void:
 	q.aceptar("goblins_fuera")
 	for i in 2:
 		q.registrar_muerte("goblin")
-	_check(s.guardar(), "save v5: guardar() true")
+	_check(s.guardar(), "save v6: guardar() true")
 	var texto: String = FileAccess.get_file_as_string(SaveSystem.RUTA)
 	var crudo: Variant = JSON.parse_string(texto)
-	_check(crudo is Dictionary and int((crudo as Dictionary).get("version", 0)) == 5,
-		"save v5: la partida guarda version 5")
+	_check(crudo is Dictionary and int((crudo as Dictionary).get("version", 0)) == 6,
+		"save v6: la partida guarda version 6")
 	# Cambiar el progreso DESPUÉS de guardar: cargar debe restaurarlo.
 	for i in 3:
 		q.registrar_muerte("goblin")
 	_check(q.estado("goblins_fuera") == "lista",
-		"save v5: estado lista antes de cargar")
+		"save v6: estado lista antes de cargar")
 	var s2: SaveSystem = SV.new()
 	var p2: Player = _player(Vector3(10, 0, 10))
 	var q2: QuestLog = _log()
@@ -442,13 +442,13 @@ func _t_save_v5() -> void:
 	s2.npcs = []
 	s2.tienda = null
 	s2.misiones = q2
-	_check(s2.cargar(), "save v5: cargar() true")
+	_check(s2.cargar(), "save v6: cargar() true")
 	_check(q2.estado("goblins_fuera") == "activa",
-		"save v5: estado restaurado (activa)")
+		"save v6: estado restaurado (activa)")
 	_check(q2.progreso_texto("goblins_fuera") == "Goblins derrotados: 2/5",
-		"save v5: progreso 2/5 restaurado")
+		"save v6: progreso 2/5 restaurado")
 	# El QuestLog de la demo es el MISMO objeto (se restaura en sitio).
-	_check(s2.misiones == q2, "save v5: misiones restauradas en sitio")
+	_check(s2.misiones == q2, "save v6: misiones restauradas en sitio")
 
 
 func _t_save_tolerante_v4() -> void:
