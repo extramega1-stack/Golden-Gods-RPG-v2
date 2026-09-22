@@ -206,8 +206,11 @@ func _fila_destino(info: Dictionary) -> HBoxContainer:
 	var lab: Label = Label.new()
 	lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lab.text = "%s — %d oro · Nv. %d" % [
-		str(info.get("nombre", "")), int(info.get("costo_oro", 0)),
+	# TEMPORAL: con GRATIS_TEMPORAL el costo es 0 y se muestra "Gratis".
+	var costo_mostrar: int = int(info.get("costo_oro", 0))
+	var texto_costo: String = "Gratis" if costo_mostrar <= 0 else "%d oro" % costo_mostrar
+	lab.text = "%s — %s · Nv. %d" % [
+		str(info.get("nombre", "")), texto_costo,
 		int(info.get("nivel_min", 1))]
 	fila.add_child(lab)
 	var bloqueado: bool = not bool(info.get("ok", false))

@@ -23,6 +23,11 @@ extends RefCounted
 
 const RUTA_DATOS: String = "res://data/viaje_rapido.json"
 
+## TEMPORAL — quitar cuando Juan Diego confirme que el viaje funciona:
+## mientras esté en true, todos los viajes son GRATIS (el JSON conserva
+## los costos reales). Al quitarlo, volver a `false`.
+const GRATIS_TEMPORAL: bool = true
+
 var _datos: Dictionary = {}
 var _ciudades: Dictionary = {}
 
@@ -102,10 +107,14 @@ func destinos_desde(origen_id: String) -> Array:
 		var did: String = str(fd.get("destino_id", ""))
 		if did == "" or did == origen_id:
 			continue
+		# TEMPORAL (GRATIS_TEMPORAL): costo 0 mientras se valida el viaje.
+		var costo_final: int = int(fd.get("costo_oro", 0))
+		if GRATIS_TEMPORAL:
+			costo_final = 0
 		resultado.append({
 			"destino_id": did,
 			"nombre": nombre_ciudad(did),
-			"costo_oro": int(fd.get("costo_oro", 0)),
+			"costo_oro": costo_final,
 			"nivel_min": int(fd.get("nivel_min", 1)),
 		})
 	return resultado

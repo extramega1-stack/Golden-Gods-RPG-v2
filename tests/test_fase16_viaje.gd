@@ -133,13 +133,25 @@ func _t_json() -> void:
 			_check(esperadas.has(did), "json: destino conocido " + did)
 			_check(not vistos.has(did), "json: sin duplicados " + did)
 			vistos.append(did)
-			_check(int(dd.get("costo_oro", 0)) > 0,
-				"json: costo>0 %s->%s" % [o, did])
+			# TEMPORAL: con GRATIS_TEMPORAL destinos_desde devuelve costo 0
+			# (el JSON conserva los costos reales, sin tocar).
+			if VJ.GRATIS_TEMPORAL:
+				_check(int(dd.get("costo_oro", -1)) == 0,
+					"json: GRATIS_TEMPORAL costo=0 %s->%s" % [o, did])
+			else:
+				_check(int(dd.get("costo_oro", 0)) > 0,
+					"json: costo>0 %s->%s" % [o, did])
 			_check(int(dd.get("nivel_min", 0)) == int(nmin[did]),
 				"json: nivel_min coherente %s->%s" % [o, did])
 	# Coherencia del criterio: más lejos / banda mayor => más caro.
-	_check(v.costo("moon_town", "golden") > v.costo("moon_town", "desert"),
-		"json: golden más caro que desert desde moon")
+	# TEMPORAL: con GRATIS_TEMPORAL ambos son 0.
+	if VJ.GRATIS_TEMPORAL:
+		_check(v.costo("moon_town", "golden") == 0
+			and v.costo("moon_town", "desert") == 0,
+			"json: GRATIS_TEMPORAL costos = 0")
+	else:
+		_check(v.costo("moon_town", "golden") > v.costo("moon_town", "desert"),
+			"json: golden más caro que desert desde moon")
 	_check(v.costo("moon_town", "moon_town") == -1,
 		"json: costo a sí misma = -1 (desconocido)")
 	_check(v.destinos_desde("atlantis").is_empty(),
@@ -169,14 +181,21 @@ func _t_evaluar() -> void:
 	_check(VJ.texto_motivo(ev) == "Requiere nivel 36",
 		"evaluar: texto 'Requiere nivel 36'")
 	# Sin oro (nivel 10 sí puede ir a desert: Nv. 4, 160 oro).
+	# TEMPORAL: con GRATIS_TEMPORAL el viaje es gratis y no bloquea por oro.
 	var pelado: Player = _player(10, 0)
 	ev = v.evaluar(pelado, "moon_town", "desert")
-	_check(not bool(ev.get("ok", true)) and str(ev.get("motivo", "")) == "sin_oro",
-		"evaluar: sin_oro bloquea")
-	_check(int(ev.get("oro_faltante", 0)) == v.costo("moon_town", "desert"),
-		"evaluar: oro_faltante = costo exacto")
-	_check(VJ.texto_motivo(ev) == "Te faltan %d de oro" % v.costo("moon_town", "desert"),
-		"evaluar: texto 'Te faltan X de oro'")
+	if VJ.GRATIS_TEMPORAL:
+		_check(bool(ev.get("ok", false)),
+			"evaluar: GRATIS_TEMPORAL: sin oro viaja igual")
+		_check(int(ev.get("costo", -1)) == 0,
+			"evaluar: GRATIS_TEMPORAL: costo = 0")
+	else:
+		_check(not bool(ev.get("ok", true)) and str(ev.get("motivo", "")) == "sin_oro",
+			"evaluar: sin_oro bloquea")
+		_check(int(ev.get("oro_faltante", 0)) == v.costo("moon_town", "desert"),
+			"evaluar: oro_faltante = costo exacto")
+		_check(VJ.texto_motivo(ev) == "Te faltan %d de oro" % v.costo("moon_town", "desert"),
+			"evaluar: texto 'Te faltan X de oro'")
 	# El nivel se revisa antes que el oro (nivel 1, oro 0 -> sin_nivel).
 	ev = v.evaluar(_player(1, 0), "moon_town", "desert")
 	_check(str(ev.get("motivo", "")) == "sin_nivel",
@@ -206,8 +225,11 @@ func _t_evaluar() -> void:
 func _t_viajar() -> void:
 	var v: ViajeRapido = _viaje()
 	v.cargar_datos()
+	# TEMPORAL: con GRATIS_TEMPORAL el costo es 0; si no, 360 (Nv. 22).
+	var costo_esperado: int = 0 if VJ.GRATIS_TEMPORAL else 360
 	var costo: int = v.costo("moon_town", "shadow")  # 360, Nv. 22
-	_check(costo == 360, "viajar: costo moon->shadow = 360", str(costo))
+	_check(costo == costo_esperado, "viajar: costo moon->shadow",
+		"costo=%d esperado=%d" % [costo, costo_esperado])
 	var p: Player = _player(40, 1000)
 	var res: Dictionary = v.viajar(p, "moon_town", "shadow")
 	_check(bool(res.get("ok", false)), "viajar: ok")
@@ -217,12 +239,16 @@ func _t_viajar() -> void:
 	_check(res.get("plaza", Vector2.ZERO) == Vector2(9966, -9921),
 		"viajar: plaza de shadow correcta")
 	_check(int(res.get("costo", 0)) == costo, "viajar: devuelve el costo")
-	# Sin oro: no descuenta (sigue en 0) y falla.
+	# Sin oro: con GRATIS_TEMPORAL viaja igual; si no, falla sin descontar.
 	var pelado: Player = _player(40, 0)
 	res = v.viajar(pelado, "moon_town", "shadow")
-	_check(not bool(res.get("ok", true)), "viajar: sin oro falla")
-	_check(pelado.oro == 0, "viajar: sin oro no descuenta")
-	_check(str(res.get("motivo", "")) == "sin_oro", "viajar: motivo sin_oro")
+	if VJ.GRATIS_TEMPORAL:
+		_check(bool(res.get("ok", false)), "viajar: GRATIS_TEMPORAL: sin oro viaja")
+		_check(pelado.oro == 0, "viajar: GRATIS_TEMPORAL: oro intacto")
+	else:
+		_check(not bool(res.get("ok", true)), "viajar: sin oro falla")
+		_check(pelado.oro == 0, "viajar: sin oro no descuenta")
+		_check(str(res.get("motivo", "")) == "sin_oro", "viajar: motivo sin_oro")
 	# En combate: re-evalúa y no descuenta.
 	var g: Player = _player(40, 1000)
 	var dummy: Entity = ENT.new()
@@ -276,7 +302,8 @@ func _t_panel_logica() -> void:
 	var golden: Dictionary = por_id.get("golden", {})
 	_check(str(golden.get("motivo_texto", "")) == "Requiere nivel 36",
 		"panel: texto 'Requiere nivel 36'")
-	# Nivel 10 sin oro: desert bloqueado por oro con el texto exacto.
+	# Nivel 10 sin oro: con GRATIS_TEMPORAL desert está desbloqueado;
+	# si no, bloqueado por oro con el texto exacto.
 	var pelado: Player = _player(10, 0)
 	filas = pv.info_filas("moon_town", pelado)
 	por_id.clear()
@@ -284,10 +311,16 @@ func _t_panel_logica() -> void:
 		var fd2: Dictionary = f
 		por_id[str(fd2.get("destino_id", ""))] = fd2
 	desert = por_id.get("desert", {})
-	_check(str(desert.get("motivo", "")) == "sin_oro",
-		"panel: motivo sin_oro en desert")
-	_check(str(desert.get("motivo_texto", "")) == "Te faltan 160 de oro",
-		"panel: texto 'Te faltan 160 de oro'")
+	if VJ.GRATIS_TEMPORAL:
+		_check(bool(desert.get("ok", false)),
+			"panel: GRATIS_TEMPORAL: desert desbloqueado sin oro")
+		_check(int(desert.get("costo_oro", -1)) == 0,
+			"panel: GRATIS_TEMPORAL: costo_oro = 0")
+	else:
+		_check(str(desert.get("motivo", "")) == "sin_oro",
+			"panel: motivo sin_oro en desert")
+		_check(str(desert.get("motivo_texto", "")) == "Te faltan 160 de oro",
+			"panel: texto 'Te faltan 160 de oro'")
 	# Jugador top: todo alcanzable.
 	var top: Player = _player(60, 99999)
 	filas = pv.info_filas("moon_town", top)
