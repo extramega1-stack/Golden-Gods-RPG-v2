@@ -26,8 +26,11 @@ DISTRIBUCION (semilla fija SEMILLA = 20260922, random.Random determinista):
 
 ZONAS SEGURAS (fase 15): ningun spawn a menos de 40 m del centro de ninguna
 de las 9 ciudades (Moon Town + 8 secundarias de data/portales_temp.json).
-Se remuestrea con el mismo rng hasta salir de la zona segura: el total
-sigue siendo exactamente 1121.
+Se remuestrea con el mismo rng hasta salir de la zona segura.
+
+PACK DE PRUEBA (fase 18.2+): 6 mobs fijos cerca de la plaza de Moon Town
+(ver PACK_PRUEBA) para probar el combate; el total es 1127 = 1121 de
+distribucion + 6 del pack.
 
 Determinista y re-ejecutable: dos corridas -> mismo SHA-256.
 
@@ -49,11 +52,35 @@ DESTINO = os.path.join(PROYECTO, "data", "spawns.json")
 REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
 
 SEMILLA = 20260922
-TOTAL = 1121
+TOTAL = 1127
 SPAWNS_MOON = 24            # en el anillo 800 < r < 1450 de Moon Town
 RADIO_SEGURO = 40.0         # m alrededor del centro de cada ciudad
 R_CIUDAD = 800.0            # disco de la ciudad (lo construye otro worker)
 MARGEN = 8.0                # margen dentro de cada rectangulo de region
+
+# Pack de prueba de combate (fase 18.2+, pedido de Juan Diego 2026-09-23):
+# mobs fijos cerca de la plaza de Moon Town para probar el sistema de
+# combate sin caminar 800 m. Posiciones a mano (verificadas: fuera de los
+# 18 edificios de data/ciudad_luna.json, fuera de la zona segura de 40 m
+# y dentro del radio de streaming de 600 m -> se instancian al arrancar).
+# Llevan "grupo": "prueba_combate" para que los tests los eximan de las
+# reglas de distribucion (disco de la ciudad / banda de nivel de region).
+# La regla nivel -> arquetipo SI se cumple (goblin<=30, lobo 31-200,
+# ogro>200) para no romper ese contrato.
+PACK_PRUEBA = [
+    {"arquetipo": "goblin", "x": 130.0, "z": 70.0, "nivel": 2,
+     "grupo": "prueba_combate"},
+    {"arquetipo": "goblin", "x": 165.0, "z": 115.0, "nivel": 3,
+     "grupo": "prueba_combate"},
+    {"arquetipo": "goblin", "x": 100.0, "z": 165.0, "nivel": 2,
+     "grupo": "prueba_combate"},
+    {"arquetipo": "lobo", "x": 220.0, "z": -25.0, "nivel": 32,
+     "grupo": "prueba_combate"},
+    {"arquetipo": "lobo", "x": 190.0, "z": -95.0, "nivel": 35,
+     "grupo": "prueba_combate"},
+    {"arquetipo": "ogro", "x": 240.0, "z": 110.0, "nivel": 250,
+     "grupo": "prueba_combate"},
+]
 
 # Centros de las 9 ciudades con zona segura (fase 15). Los 8 secundarios
 # son los destinos de data/portales_temp.json (fase 14.1).
@@ -94,7 +121,8 @@ def main() -> int:
     resto = [r for r in regiones if r["id"] != "moon_town"]
 
     # Reparto por area (resto mayor) para que la suma sea exacta.
-    objetivo = TOTAL - SPAWNS_MOON
+    # El pack de prueba se suma aparte: no entra en el reparto.
+    objetivo = TOTAL - SPAWNS_MOON - len(PACK_PRUEBA)
     areas = [(r["x1"] - r["x0"]) * (r["z1"] - r["z0"]) for r in resto]
     area_total = sum(areas)
     cuotas = [objetivo * a / area_total for a in areas]
@@ -142,6 +170,10 @@ def main() -> int:
                 "z": round(z, 3),
                 "nivel": nivel,
             })
+
+    # 3) Pack de prueba de combate: posiciones fijas, sin rng (el orden es
+    # estable y no afecta al determinismo: dos corridas -> mismo SHA).
+    spawns.extend(PACK_PRUEBA)
 
     assert len(spawns) == TOTAL, f"total={len(spawns)} != {TOTAL}"
 

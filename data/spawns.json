@@ -6724,5 +6724,47 @@
     "x": 13.091,
     "z": -14034.334,
     "nivel": 55
+  },
+  {
+    "arquetipo": "goblin",
+    "x": 130.0,
+    "z": 70.0,
+    "nivel": 2,
+    "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "goblin",
+    "x": 165.0,
+    "z": 115.0,
+    "nivel": 3,
+    "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "goblin",
+    "x": 100.0,
+    "z": 165.0,
+    "nivel": 2,
+    "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "lobo",
+    "x": 220.0,
+    "z": -25.0,
+    "nivel": 32,
+    "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "lobo",
+    "x": 190.0,
+    "z": -95.0,
+    "nivel": 35,
+    "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "ogro",
+    "x": 240.0,
+    "z": 110.0,
+    "nivel": 250,
+    "grupo": "prueba_combate"
   }
 ]

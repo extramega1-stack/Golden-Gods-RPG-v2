@@ -308,7 +308,7 @@ func _t_spawns() -> void:
 	if not (crudo is Array):
 		return
 	var lista: Array = crudo
-	_check(lista.size() == 1121, "spawns: 1121 entradas",
+	_check(lista.size() == 1127, "spawns: 1127 entradas (1121 + 6 pack de prueba)",
 		"hay %d" % lista.size())
 	var db := RegionDB.new()
 	_check(db.cargar(), "spawns: regiones cargadas")
@@ -324,6 +324,11 @@ func _t_spawns() -> void:
 		var z: float = float(sd.get("z", 0.0))
 		var nivel: int = int(sd.get("nivel", 0))
 		var arq: String = str(sd.get("arquetipo", ""))
+		# Fase 18.2+: el pack de prueba de combate ("grupo": "prueba_combate")
+		# es colocacion a mano pedida por Juan Diego: se exime de las reglas
+		# de DISTRIBUCION (disco de la ciudad y banda de nivel de region),
+		# pero sigue cumpliendo arquetipo valido y regla nivel->arquetipo.
+		var es_prueba: bool = str(sd.get("grupo", "")) == "prueba_combate"
 		if x < -LIMITE or x > LIMITE or z < -LIMITE or z > LIMITE:
 			fuera += 1
 		if Vector2(x, z).length() < RADIO_SEGURO:
@@ -336,9 +341,9 @@ func _t_spawns() -> void:
 		else:
 			var nmin: int = int(r.get("nivel_min", 0))
 			var nmax: int = int(r.get("nivel_max", 0))
-			if nivel < nmin or nivel > nmax:
+			if not es_prueba and (nivel < nmin or nivel > nmax):
 				fuera_banda += 1
-			if str(r.get("id", "")) == "moon_town" \
+			if not es_prueba and str(r.get("id", "")) == "moon_town" \
 					and Vector2(x, z).length() < R_DISCO:
 				moon_en_disco += 1
 	_check(fuera == 0, "spawns: todos dentro del terreno",

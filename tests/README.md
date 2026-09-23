@@ -150,10 +150,13 @@ bordes, `dentro()`, 36 chunks 6×6 con 2 LODs (`visibility_range` 0–900 y
 `terreno == null` no cambia nada).
 
 La fase 12 (spawns) añade `test_fase12_spawns.gd` (14 asserts):
-`data/spawns.json` trae 1121 entradas {arquetipo, x, z, nivel} del rework
-2026 (distribuidos por las 10 regiones, nivel dentro de la banda de su
+`data/spawns.json` trae 1127 entradas {arquetipo, x, z, nivel} del rework
+2026 (1121 distribuidos por las 10 regiones, nivel dentro de la banda de su
 región; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro; zona segura
-de 40 m en la aldea; los de Moon Town fuera del disco de la ciudad),
+de 40 m en la aldea; los de Moon Town fuera del disco de la ciudad; más
+6 del pack de prueba de combate (fase 18.3, `"grupo": "prueba_combate"`,
+cerca de la plaza, eximidos de disco/banda pero con regla nivel→arquetipo
+intacta),
 todas dentro del terreno y con arquetipos válidos;
 `tools/generar_spawns_rework.py` es determinista.
 
@@ -235,7 +238,7 @@ spawns.json), cámara con `far = 40000`, y el título abre `fase12_demo`.
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase11_demo.tscn --quit-after 300
 
 # Smoke test de la escena demo de la fase 12 (mundo abierto: terreno 36.864 u,
-# 1121 creeps, ciclo día/noche; 400 frames sin errores):
+# 1127 creeps (1121 + 6 pack de prueba), ciclo día/noche; 400 frames sin errores):
 ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake res://scenes/demo/fase12_demo.tscn --quit-after 400
 
 # Smoke test de la escena demo de la fase 14 (Moon Town: ciudad data-driven
@@ -274,7 +277,7 @@ La fase 13 añade `test_fase13_minimapa.gd` (31 asserts): `mundo_a_mapa`/`mapa_a
 
 La fase 14 añade `test_fase14_ciudad.gd` (49 asserts): `CiudadLuna` construye la ciudad principal "Moon Town" reimaginada desde `data/ciudad_luna.json` (18 edificios data-driven: monumento con luna creciente dorada, Salón de Clases, forja de Bram, tienda de Sira, cuartel de Ilya, templo menor, 8 casas en 3 variantes procedurales, 4 puertas N/S/E/O); cada edificio con StaticBody3D en capa 1 y BoxShape3D; muralla con >= 40 tramos; `puntos_npc`/`npc_spawn()` para ilya/bram/sira (dentro del radio 800 y fuera de colisiones); `punto_aparicion_jugador()` en la plaza mirando al monumento y sobre el terreno; ninguna estructura supera 28 u; plaza y calles (40 u) libres de colisiones invisibles por muestreo; >= 35 antorchas reutilizando `Antorcha`.
 
-La fase 14 (terreno del rework) añade `test_fase14_terreno.gd` (34 asserts): `data/terreno.bin` del rework 2026 (disco plano urbano de 40.0 u en (0,0) radio 800; biomas por región con tintes de `data/regiones.json`), `data/regiones.json` remapeado (región 1 = `moon_town` "Moon Town", 10 rects sin huecos ni solapes), `data/spawns.json` regenerado (1121 spawns, zona segura de 40 m en la ciudad, ninguno de Moon Town dentro del disco), y determinismo de `tools/generar_terreno_rework.py` / `tools/generar_spawns_rework.py`.
+La fase 14 (terreno del rework) añade `test_fase14_terreno.gd` (34 asserts): `data/terreno.bin` del rework 2026 (disco plano urbano de 40.0 u en (0,0) radio 800; biomas por región con tintes de `data/regiones.json`), `data/regiones.json` remapeado (región 1 = `moon_town` "Moon Town", 10 rects sin huecos ni solapes), `data/spawns.json` regenerado (1127 spawns: 1121 por distribución + 6 del pack de prueba de combate de la fase 18.3; zona segura de 40 m intacta; el pack, a mano, queda eximido del disco urbano y de la banda de nivel), y determinismo de `tools/generar_terreno_rework.py` / `tools/generar_spawns_rework.py`.
 
 La fase 14 (integración) añade `test_fase14_integracion.gd` (36 asserts): `fase14_demo` hereda de `fase12_demo`, crea `CiudadLuna` con el terreno asignado ANTES del add_child, usa `punto_aparicion_jugador()`/`yaw_aparicion()`/`npc_spawn()` y conserva el flujo fase 12 (`super._ready()`); el título abre `fase14_demo.tscn`; `data/npcs.json` habla de "Moon Town" (sin "Piedraceniza", solo texto); el spawn del jugador cae sobre el terreno, en la región `moon_town` y fuera de colisiones; `npc_spawn()` devuelve los puntos data-driven de ilya/bram/sira; el minimapa sigue leyendo `Terreno.color_en` del terreno nuevo (STANDBY: sin pulir, solo no romper).
 

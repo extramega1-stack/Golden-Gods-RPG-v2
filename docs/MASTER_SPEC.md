@@ -717,3 +717,16 @@ Bug de playtest (Juan Diego): "Nueva partida" → creación de personaje → abr
 - `tests/test_fase14_integracion.gd`: el contrato ahora verifica la fuente única (título y creación usan `Escenas.JUEGO`; `Escenas.JUEGO` apunta a `fase14_demo`; nadie apunta a `fase11_demo`/`fase12_demo`). 39 checks en verde.
 
 *Fin del documento maestro v3.12.1 — Hotfix fase-18.1.*
+
+---
+
+## Fase 18.3 — Pack de prueba de combate cerca de Moon Town (2026-09-23)
+
+Pedido de Juan Diego: monstruos cerca de la zona principal para probar el sistema de combate sin caminar 800 m (el spawn más cercano estaba a ~797 m de la plaza).
+
+- `tools/generar_spawns_rework.py`: nuevo `PACK_PRUEBA` — 6 mobs fijos a 132–249 m del punto de aparición del jugador (3 goblins nv. 2–3, 2 lobos nv. 32–35, 1 ogro nv. 250); posiciones a mano, verificadas fuera de los 18 edificios de `data/ciudad_luna.json`, fuera de la zona segura de 40 m y dentro del radio de streaming (600 m → se instancian al arrancar). Llevan `"grupo": "prueba_combate"`.
+- `data/spawns.json` regenerado: 1127 entradas (1121 por distribución + 6 del pack); el reparto por área ahora descuenta el pack (`TOTAL - SPAWNS_MOON - len(PACK_PRUEBA)`); determinismo intacto (dos corridas → mismo SHA-256).
+- Tests actualizados: `tests/test_fase12_spawns.gd` (14 checks: 1127 / 492 goblins / 634 lobos / 1 ogro), `tests/test_fase12_integracion.gd` y `tests/test_fase14_terreno.gd` (34 checks). El pack cumple la regla nivel→arquetipo y la zona segura; queda eximido (documentado) del disco urbano y de la banda de nivel de región, que son reglas de *distribución*, no de colocación a mano.
+- Nota: `test_fase12_integracion.gd` tiene 1 fallo pre-existente en HEAD ("el título abre fase14_demo", test desactualizado tras la fase 18.1) — no es regresión de esta fase.
+
+*Fin del documento maestro v3.13 — Fase 18.3 (pack de prueba de combate).*

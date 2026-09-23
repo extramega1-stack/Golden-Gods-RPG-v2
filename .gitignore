@@ -9,3 +9,6 @@ exports/
 *.orig
 .DS_Store
 Thumbs.db
+
+# Artefactos de export locales (los builds se distribuyen por releases, no por git)
+build/

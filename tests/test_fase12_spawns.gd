@@ -4,7 +4,9 @@ extends SceneTree
 ## `data/spawns.json` es el contrato que lee la demo: array de
 ## {arquetipo, x, z, nivel} generado por `tools/generar_spawns_rework.py`
 ## (Fase 14, rework 2026: determinista, semilla fija, distribuido por las
-## 10 regiones de data/regiones.json).
+## 10 regiones de data/regiones.json) mas el pack de prueba de combate
+## (fase 18.2+: 6 mobs fijos con "grupo": "prueba_combate" cerca de la
+## plaza de Moon Town; cumplen la regla nivel->arquetipo y la zona segura).
 ## Este test blinda el contrato: el JSON existe y es valido, todos los puntos
 ## caen dentro del terreno [-18432, 18432], ninguno invade la zona segura de
 ## 40 m alrededor de la aldea inicial (0, 0), los arquetipos son solo los 3
@@ -25,17 +27,17 @@ const LIMITE := 18432.0
 const RADIO_SEGURO := 40.0
 const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro"]
 ## Conteos esperados del generador determinista (semilla 20260922).
-const TOTAL_ESPERADO := 1121
-const GOBLIN_ESPERADO := 489
-const LOBO_ESPERADO := 632
-const OGRO_ESPERADO := 0
+const TOTAL_ESPERADO := 1127
+const GOBLIN_ESPERADO := 492
+const LOBO_ESPERADO := 634
+const OGRO_ESPERADO := 1
 
 var _ok: int = 0
 var _fallos: int = 0
 
 
 func _init() -> void:
-	print("[TEST] Fase 12 — spawns.json (rework 2026: 1121 spawns por region)")
+	print("[TEST] Fase 12 — spawns.json (rework 2026: 1127 = 1121 por region + 6 pack de prueba)")
 
 
 var _empezo: bool = false
