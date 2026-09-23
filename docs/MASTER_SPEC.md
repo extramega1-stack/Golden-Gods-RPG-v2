@@ -705,3 +705,15 @@ bloqueo real.
 ---
 
 *Fin del documento maestro v3.12 — Fase 18 (4 clases × 8 habilidades, SkillSystem con AoE/buff/debuff, save v7; 95 checks nuevos, 2376 en verde).
+
+---
+
+## Hotfix fase-18.1 — escena principal siempre actualizada (2026-09-22)
+
+Bug de playtest (Juan Diego): "Nueva partida" → creación de personaje → abría la escena vieja `fase11_demo.tscn` en vez de la demo real actual.
+
+- Nuevo `scripts/core/escenas.gd` (`class_name Escenas`): fuente única de verdad — `JUEGO` (demo real, hoy `fase14_demo.tscn`), `TITULO`, `CREACION`. La próxima fase que reemplace la escena cambia UNA constante.
+- `pantalla_titulo.gd` y `creacion_personaje.gd` usan `Escenas.*` (se eliminaron sus `const ESCENA_*` duplicadas y divergentes).
+- `tests/test_fase14_integracion.gd`: el contrato ahora verifica la fuente única (título y creación usan `Escenas.JUEGO`; `Escenas.JUEGO` apunta a `fase14_demo`; nadie apunta a `fase11_demo`/`fase12_demo`). 39 checks en verde.
+
+*Fin del documento maestro v3.12.1 — Hotfix fase-18.1.*

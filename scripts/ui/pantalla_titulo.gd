@@ -13,8 +13,8 @@ extends Node3D
 ## Salir, centrados, con hover visible. Continuar va deshabilitado si no
 ## hay partida guardada. ESC (ui_cancel) = salir.
 
-const ESCENA_CREACION: String = "res://scenes/creacion/creacion_personaje.tscn"
-const ESCENA_JUEGO: String = "res://scenes/demo/fase14_demo.tscn" # Fase 14: Moon Town
+## Las rutas de escena viven en Escenas (fuente única): la escena de juego
+## es siempre la más actualizada sin que cada pantalla la repita.
 const RADIO_ORBITA: float = 15.0
 const ALTURA_ORBITA: float = 6.5
 const VEL_ORBITA: float = 0.10
@@ -216,12 +216,12 @@ func _estilo_boton(fondo: Color, borde: Color) -> StyleBoxFlat:
 ## Nueva partida: va a la creación SIN presuponer nada (la creación valida
 ## el nombre y escribe DatosSesion.nueva_partida).
 func _al_nueva_partida() -> void:
-	get_tree().change_scene_to_file(ESCENA_CREACION)
+	get_tree().change_scene_to_file(Escenas.CREACION)
 
 
 func _al_continuar() -> void:
 	DatosSesion.pedir_continuar()
-	get_tree().change_scene_to_file(ESCENA_JUEGO)
+	get_tree().change_scene_to_file(Escenas.JUEGO)
 
 
 func _al_salir() -> void:

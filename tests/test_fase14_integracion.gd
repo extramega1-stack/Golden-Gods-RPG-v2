@@ -68,8 +68,13 @@ func _t_escena_y_titulo() -> void:
 	_check(tscn.find("Goblin1") < 0, "tscn sin enemigos fijos (los da spawns.json)")
 	_check(tscn.find("far = 40000.0") >= 0, "cámara con far 40000 para el mundo")
 	var titulo: String = FileAccess.get_file_as_string("res://scripts/ui/pantalla_titulo.gd")
-	_check(titulo.find("fase14_demo.tscn") >= 0, "el título abre fase14_demo")
+	_check(titulo.find("Escenas.JUEGO") >= 0, "el título abre Escenas.JUEGO (fuente única)")
 	_check(titulo.find("fase12_demo.tscn") < 0, "el título ya no abre fase12_demo")
+	var escenas: String = FileAccess.get_file_as_string("res://scripts/core/escenas.gd")
+	_check(escenas.find("fase14_demo.tscn") >= 0, "Escenas.JUEGO apunta a la demo real (fase14_demo)")
+	var creacion: String = FileAccess.get_file_as_string("res://scripts/ui/creacion_personaje.gd")
+	_check(creacion.find("Escenas.JUEGO") >= 0, "la creación abre Escenas.JUEGO (fuente única)")
+	_check(creacion.find("fase11_demo.tscn") < 0, "la creación ya no abre fase11_demo")
 
 
 ## 2. El script de la demo hereda de fase12 y usa la API de CiudadLuna.

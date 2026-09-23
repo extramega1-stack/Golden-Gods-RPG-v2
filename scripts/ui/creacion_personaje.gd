@@ -8,10 +8,8 @@ extends Control
 ## "Comenzar aventura" / "Atrás". ESC (ui_cancel) = atrás.
 ##
 ## Al confirmar: valida el nombre (sin error no avanza), escribe
-## `DatosSesion.nueva_partida` y cambia a la escena de juego.
-
-const ESCENA_TITULO: String = "res://scenes/titulo/pantalla_titulo.tscn"
-const ESCENA_JUEGO: String = "res://scenes/demo/fase11_demo.tscn"
+## `DatosSesion.nueva_partida` y cambia a la escena de juego
+## (Escenas.JUEGO: siempre la más actualizada).
 
 var _entrada: LineEdit = null
 var _error: Label = null
@@ -226,8 +224,8 @@ func _al_confirmar() -> void:
 	if err != "":
 		return
 	DatosSesion.nueva_partida(nombre_limpio, _clase_id)
-	get_tree().change_scene_to_file(ESCENA_JUEGO)
+	get_tree().change_scene_to_file(Escenas.JUEGO)
 
 
 func _al_atras() -> void:
-	get_tree().change_scene_to_file(ESCENA_TITULO)
+	get_tree().change_scene_to_file(Escenas.TITULO)
