@@ -131,10 +131,24 @@ func mobs_vivos() -> Array:
 	var vivos: Array = []
 	for r in _registros:
 		var rd: Dictionary = r
-		var nodo: Enemy = rd["nodo"] as Enemy
-		if nodo != null and is_instance_valid(nodo):
+		var nodo: Enemy = _nodo_registro(rd)
+		if nodo != null:
 			vivos.append(nodo)
 	return vivos
+
+
+## Lee el Enemy de un registro validando ANTES de castear: un `as` sobre
+## una referencia liberada dispara "Trying to cast a freed object" y aborta
+## la función que lo ejecuta (fase 19.1: cortaba `actualizar()` a la mitad).
+## Si la referencia está liberada (p. ej. la demo liberó el cadáver antes de
+## que el streaming re-asociara el respawn), se limpia el registro y se
+## devuelve null para que el ciclo siga con los demás registros.
+static func _nodo_registro(rd: Dictionary) -> Enemy:
+	var crudo: Variant = rd["nodo"]
+	if not is_instance_valid(crudo):
+		rd["nodo"] = null
+		return null
+	return crudo as Enemy
 
 
 func _process(delta: float) -> void:
@@ -156,10 +170,9 @@ func actualizar() -> void:
 	var jp: Vector3 = _jugador.global_position
 	for r in _registros:
 		var rd: Dictionary = r
-		var nodo: Enemy = rd["nodo"] as Enemy
-		if nodo != null and not is_instance_valid(nodo):
-			nodo = null
-			rd["nodo"] = null
+		# Fase 19.1: valida antes de castear (ver _nodo_registro); una
+		# referencia liberada se limpia aquí en vez de abortar el tick.
+		var nodo: Enemy = _nodo_registro(rd)
 		var origen: Vector3 = rd["origen"]
 		var d: float = _dist_plana(jp, origen)
 		if nodo == null:
@@ -195,9 +208,9 @@ func _instanciar(rd: Dictionary) -> void:
 
 
 func _liberar(rd: Dictionary) -> void:
-	var nodo: Enemy = rd["nodo"] as Enemy
+	var nodo: Enemy = _nodo_registro(rd)
 	rd["nodo"] = null
-	if nodo == null or not is_instance_valid(nodo):
+	if nodo == null:
 		return
 	if _spawner != null:
 		_spawner.olvidar(nodo)

@@ -41,8 +41,6 @@ var _misiones: QuestLog = null
 var _lista_enemigos: Array = []
 ## Fase 9: el spawner de respawn (los timers son runtime, no se guardan).
 var _spawner: SpawnerMobs = null
-## Fase 9: último enemigo muerto (para reemplazarlo al reaparecer).
-var _ultimo_muerto: Enemy = null
 ## Fase 9.1: NPCs en escena (para refrescar los marcadores de misión).
 var _lista_npcs: Array = []
 ## Fase 9.2: estados conocidos de misión (para detectar el paso
@@ -283,16 +281,46 @@ func _al_reaparecer_enemigo(nuevo: Enemy) -> void:
 		return
 	nuevo.botin_generado.connect(_al_botin_generado)
 	nuevo.murio.connect(_al_morir_enemigo.bind(nuevo))
-	var idx: int = _lista_enemigos.find(_ultimo_muerto)
+	# Fase 19.1: el cadáver a liberar es el muerto más cercano al punto de
+	# reaparición (mismo criterio que StreamingMobs._al_reaparecido). Antes
+	# se usaba _ultimo_muerto (una sola ranura): con 2+ muertes antes de un
+	# respawn se liberaba el cadáver equivocado y el streaming se quedaba
+	# con una referencia liberada ("Trying to cast a freed object" en cada
+	# tick de actualizar, que abortaba el ciclo a la mitad).
+	var idx: int = _indice_cadaver_cercano(nuevo.global_position)
 	if idx >= 0:
-		var viejo: Enemy = _lista_enemigos[idx] as Enemy
+		var crudo: Variant = _lista_enemigos[idx]
 		_lista_enemigos[idx] = nuevo
-		if viejo != null and is_instance_valid(viejo):
-			viejo.queue_free()
+		if is_instance_valid(crudo):
+			var viejo: Enemy = crudo as Enemy
+			if viejo != null and viejo != nuevo:
+				viejo.queue_free()
 	else:
 		_lista_enemigos.append(nuevo)
-	_ultimo_muerto = null
 	print("[Fase9] %s reapareció" % nuevo.nombre_mostrado)
+
+
+## Índice en _lista_enemigos del cadáver (muerto, aún válido) más cercano a
+## `pos`, dentro del margen de reaparición (8 m, igual que el streaming);
+## -1 si no hay ninguno. Valida antes de castear: la lista puede contener
+## referencias liberadas.
+func _indice_cadaver_cercano(pos: Vector3) -> int:
+	var mejor: int = -1
+	var mejor_d: float = 8.0
+	for i in _lista_enemigos.size():
+		var crudo: Variant = _lista_enemigos[i]
+		if not is_instance_valid(crudo):
+			continue
+		var c: Enemy = crudo as Enemy
+		if c == null or c.esta_vivo():
+			continue
+		var dx: float = c.global_position.x - pos.x
+		var dz: float = c.global_position.z - pos.z
+		var d: float = sqrt(dx * dx + dz * dz)
+		if d <= mejor_d:
+			mejor_d = d
+			mejor = i
+	return mejor
 
 
 ## Fase 7: el diálogo pidió comerciar con un NPC vendedor.
@@ -413,8 +441,7 @@ func _al_recoger_botin(drop: Dictionary) -> void:
 
 func _al_morir_enemigo(_fuente: Entity, e: Enemy) -> void:
 	e.ocultar_cuerpo()
-	# Fase 9: se guarda el último muerto para reemplazarlo en la lista
-	# cuando el spawner lo reaparezca.
-	_ultimo_muerto = e
+	# Fase 19.1: el cadáver se reemplaza en la lista cuando el spawner lo
+	# reaparezca (se busca por cercanía en _al_reaparecer_enemigo).
 	# Fase 8: las muertes avanzan los objetivos "matar".
 	_misiones.registrar_muerte(e.arquetipo_id)

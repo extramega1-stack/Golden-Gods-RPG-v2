@@ -91,6 +91,10 @@ func cargar() -> bool:
 func _enemigos_a_datos() -> Array:
 	var lista: Array = []
 	for e in enemigos:
+		# Fase 19.1: validar antes de castear (la lista puede contener una
+		# referencia liberada si un cadáver se liberó entre ticks).
+		if not is_instance_valid(e):
+			continue
 		var en: Enemy = e as Enemy
 		if en == null:
 			continue
@@ -166,6 +170,8 @@ func _cargar_enemigos(lista: Array) -> void:
 	if lista.size() != enemigos.size():
 		push_warning("[SaveSystem] enemigos guardados (%d) != en escena (%d); se cargan %d" % [lista.size(), enemigos.size(), n])
 	for i in range(n):
+		if not is_instance_valid(enemigos[i]):
+			continue
 		var en: Enemy = enemigos[i] as Enemy
 		if en == null:
 			continue

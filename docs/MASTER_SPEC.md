@@ -768,3 +768,19 @@ Elegida por Juan Diego ("Game feel me gusta, usemos eso"): pulir el combate que 
 - Tests: `tests/test_fase19_gamefeel.gd` — 29/29 en verde (números, crítico, hit-stop, barra, shake, integración). Regresión: entity 48/48, fase10 26/26, seleccion 62/62, fase93 20/20, skills 41/41, npcs 56/56, player 29/29, fase17_barra 50/50; barrido `--check-only` limpio.
 
 *Fin del documento maestro v3.14 — Fase 19 (game feel de combate).*
+
+## Fase 19.1 — Hotfix: "Trying to cast a freed object" (2026-09-23)
+
+Reporte de playtest de Juan Diego: al atacar/matar mobs (los 6 de prueba cerca de Moon Town), el debugger mostraba `Trying to cast a freed object` en `streaming_mobs.gd:159` dentro de `actualizar()` — el juego "como que se crashea".
+
+Causa raíz (dos capas):
+- `_al_reaparecer_enemigo` (fase9_demo) liberaba el cadáver con `_ultimo_muerto` (una sola ranura): con 2+ muertes antes de un respawn, el respawn de A liberaba el cadáver de B y el streaming se quedaba con `rd["nodo"]` apuntando a un objeto liberado.
+- `streaming_mobs.gd` casteaba ANTES de validar (`rd["nodo"] as Enemy` y luego `is_instance_valid`): el `as` sobre objeto liberado dispara el error y ABORTA la función (verificado en headless) — `actualizar()` se cortaba a la mitad y los mobs posteriores no se instanciaban/liberaban ese tick.
+
+Fix:
+- `scripts/mundo/streaming_mobs.gd`: helper estático `_nodo_registro()` que valida ANTES de castear y limpia el registro si la referencia está liberada; usado en `actualizar()`, `mobs_vivos()` y `_liberar()`.
+- `scenes/demo/fase9_demo.gd`: `_al_reaparecer_enemigo` ahora busca el cadáver por cercanía al punto de reaparición (`_indice_cadaver_cercano`, mismo margen de 8 m que el streaming) en vez de `_ultimo_muerto` (variable eliminada); valida antes de castear en la lista.
+- `scripts/save/save_system.gd`: valida antes de castear en `_enemigos_a_datos()` y `_cargar_enemigos()` (la lista puede contener una referencia liberada entre ticks).
+- Tests: `tests/test_fase19_1.gd` — 4 pruebas (referencia liberada no aborta el tick, respawn re-asocia tras limpieza, matcher de cadáveres, respawn libera el cadáver correcto).
+
+*Fin del documento maestro v3.14.1 — Fase 19.1 (hotfix freed object).*
