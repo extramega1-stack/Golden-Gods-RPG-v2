@@ -235,8 +235,10 @@ Fase 6: NPCs e interacción básica:
   feedback de playtest — le molestaba en pantalla).** El script
   `scripts/ui/boton_atacar.gd` y su nodo en las demos se eliminaron; la
   acción `atacar` del Input Map (T por defecto o segundo clic) sigue
-  funcionando igual vía `Player.solicitar_ataque` (foco > mob más cercano
-  en rango ≤ 8 m). El rebind de tecla por clic derecho murió con el botón:
+  funcionando igual vía `Player.solicitar_ataque` (foco: selección
+  combatible > objetivo de ataque; sin foco no hace nada — fase 18.4
+  eliminó el auto-ataque al mob más cercano). El rebind de tecla por clic
+  derecho murió con el botón:
   vuelve con la barra de acciones arrastrable (feature planificada, §9.3).
   Capa UI 13 queda reservada.
 - **Feature planificada (idea de Juan Diego, NO implementada):** barra de
@@ -730,3 +732,15 @@ Pedido de Juan Diego: monstruos cerca de la zona principal para probar el sistem
 - Nota: `test_fase12_integracion.gd` tiene 1 fallo pre-existente en HEAD ("el título abre fase14_demo", test desactualizado tras la fase 18.1) — no es regresión de esta fase.
 
 *Fin del documento maestro v3.13 — Fase 18.3 (pack de prueba de combate).*
+
+---
+
+## Fase 18.4 — Sin selección no se engancha al mob más cercano (2026-09-23)
+
+Pedido de Juan Diego (bug de playtest): "sin seleccionar el mob, si apretas atacar o una habilidad va directamente a atacar al mob mas cercano". El fallback de auto-ataque al mob más cercano (fase 5.1) volvió a notarse ahora que el pack 18.3 puso mobs cerca del spawn.
+
+- `scripts/player/player.gd`: `solicitar_ataque()` — sin foco (sin selección combatible ni objetivo de ataque) no hace nada; se eliminó el enganche al mob más cercano y la const `RADIO_AUTOATAQUE`. `_objetivo_skill()` — sin foco devuelve null para skills hostiles (se eliminó el fallback sin límite de rango al mob más cercano del árbol). `lanzar_skill_id()` — skill hostil sin objetivo válido sale en silencio (no fija objetivo, no camina, no gasta maná).
+- El modelo Flyff queda intacto: primer clic selecciona; segundo clic / T / slot de ataque / skill hostil atacan la SELECCIÓN. El auto-ataque persistente de la fase 10 (skill sobre objetivo válido → el héroe sigue pegando solo) no cambia.
+- Tests: `tests/test_seleccion.gd` — `_t_ataque_fallback` reescrito como `_t_ataque_sin_seleccion_no_engancha` + nuevo `_t_skill_sin_seleccion_no_engancha`; `_t_skill_acercamiento` y `_t_skill_pendiente_cancel_muerte` ahora seleccionan antes de lanzar (el fallback ya no existe). Verde: seleccion 58/58, fase10 26/26, fase93 20/20, skills 41/41, npcs 56/56, fase17_barra 50/50, player 29/29; barrido `--check-only` limpio.
+
+*Fin del documento maestro v3.13.1 — Fase 18.4 (sin selección no se engancha).*

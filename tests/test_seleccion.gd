@@ -53,7 +53,8 @@ func _process(_delta: float) -> bool:
 	_t_skill_pendiente_cancel_muerte()
 	_t_skill_pendiente_cancel_deseleccion()
 	_t_curacion_sin_moverse()
-	_t_ataque_fallback()
+	_t_ataque_sin_seleccion_no_engancha()
+	_t_skill_sin_seleccion_no_engancha()
 	print("[TEST] pasados=%d fallos=%d" % [_ok, _fallos])
 	for n in _basura:
 		(n as Node).queue_free()
@@ -265,6 +266,9 @@ func _t_skill_acercamiento() -> void:
 	_usadas.clear()
 	var mana0: float = p.mana_actual
 	# bola_fuego por id (fase 17): rango 12, maná 18. El objetivo está a 20.
+	# Fase 18.4: el skill hostil necesita selección (se eliminó el fallback
+	# al mob más cercano).
+	p.seleccionar(en)
 	p.lanzar_skill_id("bola_fuego")
 	_check(p.tiene_lanzamiento_pendiente(), "skill fuera de rango queda pendiente", "")
 	_check(p.mana_actual == mana0, "pendiente: aún no gasta maná", "")
@@ -295,6 +299,8 @@ func _t_skill_pendiente_cancel_muerte() -> void:
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
 	var mana0: float = p.mana_actual
+	# Fase 18.4: el skill hostil necesita selección (sin fallback al más cercano).
+	p.seleccionar(en)
 	p.lanzar_skill_id("bola_fuego")
 	_check(p.tiene_lanzamiento_pendiente(), "pendiente creado (cancel-muerte)", "")
 	en.die()
@@ -328,14 +334,30 @@ func _t_curacion_sin_moverse() -> void:
 	_check(p.global_position == Vector3.ZERO, "el jugador no se mueve al curarse", "")
 
 
-## Botón sin selección: engancha al mob más cercano en rango; fuera de
-## rango no hace nada.
-func _t_ataque_fallback() -> void:
+## Botón sin selección: NO engancha a ningún mob (fase 18.4: el
+## auto-ataque al más cercano se eliminó por pedido de Juan Diego — sin
+## seleccionar, apretar atacar no hace nada).
+func _t_ataque_sin_seleccion_no_engancha() -> void:
 	var p: Player = _player(Vector3(200, 0, 200))
 	var en: Enemy = _enemigo(Vector3(200, 0, 205))
 	p.solicitar_ataque()
-	_check(p.objetivo_ataque == en, "sin selección: engancha al más cercano en rango", "")
-	var p2: Player = _player(Vector3(300, 0, 300))
-	_enemigo(Vector3(300, 0, 360))
-	p2.solicitar_ataque()
-	_check(p2.objetivo_ataque == null, "sin mobs en rango: no hace nada", "")
+	_check(p.objetivo_ataque == null, "sin selección: no fija objetivo", "")
+	_check(p.seleccion == null, "sin selección: no selecciona nada", "")
+	_check(not p._tiene_destino, "sin selección: no ordena caminar", "")
+	# Con el mob seleccionado, el ataque sí engancha (modelo Flyff intacto).
+	p.seleccionar(en)
+	p.solicitar_ataque()
+	_check(p.objetivo_ataque == en, "con selección: engancha al seleccionado", "")
+
+
+## Skill hostil sin selección: no fija objetivo, no camina, no gasta maná
+## (fase 18.4: se eliminó el fallback al mob más cercano).
+func _t_skill_sin_seleccion_no_engancha() -> void:
+	var p: Player = _player(Vector3(800, 0, 800))
+	_enemigo(Vector3(800, 0, 805))
+	var mana0: float = p.mana_actual
+	p.lanzar_skill_id("bola_fuego")
+	_check(not p.tiene_lanzamiento_pendiente(), "skill sin selección: sin pendiente", "")
+	_check(p.objetivo_ataque == null, "skill sin selección: sin objetivo", "")
+	_check(not p._tiene_destino, "skill sin selección: no ordena caminar", "")
+	_check(p.mana_actual == mana0, "skill sin selección: no gasta maná", "")

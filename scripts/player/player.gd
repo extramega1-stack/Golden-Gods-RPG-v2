@@ -43,9 +43,6 @@ const VEL_GIRO: float = 12.0      ## Qué tan rápido rota el cuerpo al moverse.
 const GRAVEDAD: float = 24.0      ## Gravedad propia (mundo sin físicas raras).
 const ALCANCE_RAYO: float = 1000.0 ## Alcance del raycast clic→mundo.
 const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
-## Fase 5.1: el botón de atacar, sin selección útil, engancha al combatible
-## vivo más cercano dentro de este radio (luego lo persigue hasta el rango).
-const RADIO_AUTOATAQUE: float = 8.0
 ## Fase 9.1: radio de interacción con NPCs. El segundo clic en un NPC
 ## seleccionado que esté más lejos camina hasta él y al llegar habla solo;
 ## si ya está dentro de este radio, el segundo clic abre el diálogo directo.
@@ -189,7 +186,8 @@ func skills_clase() -> Array[String]:
 ## objetivo válido fija el objetivo de ataque (auto-ataque persistente de
 ## la fase 10) y, si está fuera de rango, queda pendiente y el jugador se
 ## acerca. Curar, buff y aoe centrado en el lanzador nunca tocan el
-## combate en curso.
+## combate en curso. Fase 18.4: un skill hostil sin objetivo (sin selección)
+## no hace nada — no engancha al mob más cercano.
 func lanzar_skill_id(id: String) -> void:
 	if skills == null:
 		return
@@ -197,7 +195,11 @@ func lanzar_skill_id(id: String) -> void:
 		return
 	var sk: Dictionary = SkillDB.obtener(id)
 	var obj: Entity = _objetivo_skill(id)
-	if _es_hostil(sk) and obj != null and obj.esta_vivo():
+	if _es_hostil(sk):
+		if obj == null or not obj.esta_vivo():
+			# Fase 18.4 — skill hostil sin objetivo (sin selección): no
+			# hace nada en vez de enganchar al mob más cercano.
+			return
 		# Fase 10 — auto-ataque persistente (pedido de Juan Diego: "cuando
 		# llega le pega, el personaje le sigue atacando al mob"). Entrar en
 		# combate con un skill fija el objetivo de ataque; el bucle de
@@ -301,32 +303,26 @@ func _dist_a(e: Entity) -> float:
 	return d.length()
 
 
-## Fase 5.1 — intención de ataque desde el botón del HUD o la tecla
-## "atacar": ataca al foco (selección > objetivo actual); sin foco y SIN
-## selección, engancha al combatible vivo más cercano dentro de
-## RADIO_AUTOATAQUE. Si hay una selección no atacable (NPC), no hace nada:
-## el fallback solo aplica cuando no hay selección.
+## Fase 5.1 — intención de ataque desde la tecla "atacar" (T) o el slot de
+## ataque de la barra de acciones (fase 17): ataca al foco (selección
+## combatible > objetivo de ataque actual).
+## Fase 18.4 — sin foco NO hace nada: se eliminó el auto-ataque al mob más
+## cercano (pedido de Juan Diego: sin seleccionar, apretar atacar no
+## engancha a ningún mob). Si hay una selección no atacable (NPC), no hace
+## nada.
 ## La UI solo emite la intención; el Player la consume aquí.
 func solicitar_ataque() -> void:
 	if not esta_vivo():
 		return
 	var foco: Entity = _foco_combate()
 	# Fase 9.3 — blindaje explícito: un muerto nunca es objetivo válido
-	# (ni fija objetivo ni ordena caminar hacia él). `_foco_combate` y
-	# `mas_cercano` ya lo garantizan; esto lo hace imposible por construcción.
+	# (ni fija objetivo ni ordena caminar hacia él).
 	if foco != null and not foco.esta_vivo():
 		foco = null
 	if foco == null:
-		if seleccion != null:
-			return
-		var arbol: SceneTree = get_tree()
-		if arbol == null:
-			return
-		var cerca: Entity = SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
-		if cerca == null or _dist_a(cerca) > RADIO_AUTOATAQUE:
-			return
-		seleccionar(cerca)
-		foco = cerca
+		# Fase 18.4 — sin foco (sin selección combatible ni objetivo de
+		# ataque) no se hace nada: nada se selecciona ni se ataca.
+		return
 	objetivo_ataque = foco
 	intent.objetivo = foco
 	intent.quiere_atacar = true
@@ -338,9 +334,10 @@ func solicitar_ataque() -> void:
 ## Objetivo para un skill: las curaciones y los buffs van al lanzador
 ## (null, el sistema los aplica sobre sí mismo); el daño, los debuffs y el
 ## aoe dirigido (rango > 0) usan el foco de combate (selección combatible >
-## objetivo de ataque) y, si no hay foco, el combatible vivo más cercano;
-## el aoe centrado en el lanzador (rango == 0) no necesita objetivo. Los
-## NPCs nunca son objetivo de daño.
+## objetivo de ataque); el aoe centrado en el lanzador (rango == 0) no
+## necesita objetivo. Fase 18.4: sin foco, los skills hostiles devuelven
+## null y no hacen nada — se eliminó el fallback al mob más cercano por
+## pedido de Juan Diego. Los NPCs nunca son objetivo de daño.
 func _objetivo_skill(skill_id: String) -> Entity:
 	var sk: Dictionary = SkillDB.obtener(skill_id)
 	var efecto: Dictionary = sk.get("efecto", {})
@@ -349,13 +346,7 @@ func _objetivo_skill(skill_id: String) -> Entity:
 		return null
 	if tipo == "aoe" and float(sk.get("rango", 0.0)) <= 0.0:
 		return null
-	var foco: Entity = _foco_combate()
-	if foco != null:
-		return foco
-	var arbol: SceneTree = get_tree()
-	if arbol == null:
-		return null
-	return SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
+	return _foco_combate()
 
 
 ## Fase 18 — ¿este skill es "hostil" (entra en combate / puede quedar
