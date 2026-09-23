@@ -261,6 +261,13 @@ func _configurar_niebla() -> void:
 	if _env == null:
 		push_warning("[Clima] el ciclo no tiene Environment: sin niebla")
 		return
+	# Hotfix fase-18.2: en macOS la niebla del Environment pinta la pantalla
+	# blanca (bug conocido de Godot 4.x con el driver Metal, ver issue
+	# godotengine/godot#115064). Se desactiva solo en Mac; en el resto de
+	# plataformas la niebla sigue funcionando igual.
+	if OS.get_name() == "macOS":
+		_env.fog_enabled = false
+		return
 	_env.fog_enabled = true
 	_env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	_env.fog_density = 0.0
