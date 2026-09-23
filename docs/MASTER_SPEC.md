@@ -751,3 +751,20 @@ Pedido de Juan Diego: la opción del mob más cercano se guarda para cuando se c
 - Tests: nuevo `_t_autoataque_movil_guardado` en `tests/test_seleccion.gd` (flag on → atacar y skill enganchan al más cercano; flag off → no engancha). Verde: seleccion 62/62.
 
 *Fin del documento maestro v3.13.2 — Fase 18.5 (flag guardado para móvil).*
+
+## Fase 19 — Game feel de combate (2026-09-23)
+
+Elegida por Juan Diego ("Game feel me gusta, usemos eso"): pulir el combate que ya existe — números de daño, barras de vida, hit-stop y screen shake.
+
+- `scripts/combate/game_feel.gd` (nuevo, `class_name GameFeel`): un nodo en la escena demo. `Entity.take_damage` le avisa por el estático `al_recibir_danio` (no-op sin instancia, tests seguros).
+  - Números de daño: pool de 20 Label3D con billboard y no_depth_test; blanco = normal, amarillo = crítico, rojo = daño al jugador. Flotan, hacen pop y se desvanecen en 0.9 s.
+  - Hit-stop: congela `Engine.time_scale` unas centésimas — crítico 0.05 s, golpe mortal 0.09 s, golpe fuerte al jugador (>15% vida) 0.06 s. Con guardia anti re-entrada.
+  - Shake: trauma al CameraRig (grupo `camera_rig`) — crítico del jugador 0.25, golpe mortal 0.45, golpe fuerte al jugador 0.35.
+- `scripts/combate/barra_vida_mob.gd` (nuevo, `class_name BarraVidaMob`): hijo del Enemy en `enemigo.tscn` (patrón DamageFlash). Dos quads con billboard; aparece al dañar, el color va de verde a rojo, se oculta a vida llena y al morir.
+- `scripts/player/camera_rig.gd`: `trauma` (0..1), `agregar_trauma()`, decaimiento solo; offset en `h_offset`/`v_offset` con trauma².
+- `scripts/core/entity.gd`: `take_damage` acepta `es_critico := false` (retrocompatible).
+- Los 3 atacantes (`player.gd`, `enemy.gd`, `skill_system.gd`) pasan `bool(res["crit"])`.
+- Escenas: `GameFeel` agregado a `fase14_demo.tscn`; `BarraVida` a `enemigo.tscn`.
+- Tests: `tests/test_fase19_gamefeel.gd` — 29/29 en verde (números, crítico, hit-stop, barra, shake, integración). Regresión: entity 48/48, fase10 26/26, seleccion 62/62, fase93 20/20, skills 41/41, npcs 56/56, player 29/29, fase17_barra 50/50; barrido `--check-only` limpio.
+
+*Fin del documento maestro v3.14 — Fase 19 (game feel de combate).*

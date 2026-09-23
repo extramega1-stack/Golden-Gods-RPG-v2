@@ -219,7 +219,7 @@ func _golpear() -> void:
 	var res: Dictionary = Formulas.damage(
 		stats, objetivo.stats, {"power": 1.0},
 		rng.randf(), rng.randf_range(-1.0, 1.0))
-	objetivo.take_damage(float(res["final"]), self)
+	objetivo.take_damage(float(res["final"]), self, bool(res["crit"]))
 
 
 ## Muerte: además del apagado de Entity, emite el botín y premia al asesino.

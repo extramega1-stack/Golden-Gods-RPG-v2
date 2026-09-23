@@ -96,9 +96,11 @@ func esta_vivo() -> bool:
 
 ## Recibe daño ya calculado (quien ataca usa Formulas.damage).
 ## Nunca deja la vida bajo 0; al llegar a 0 llama a die() una sola vez.
+## `es_critico` (fase 19) alimenta el game feel (número amarillo + hit-stop);
+## por defecto es false para no romper llamados viejos.
 ## REGLA DURA (fase 5.1): una entidad no combatible (NPC) ignora el daño
 ## por completo: sin vida perdida, sin señales, sin flash.
-func take_damage(cantidad: float, fuente: Entity) -> void:
+func take_damage(cantidad: float, fuente: Entity, es_critico: bool = false) -> void:
 	if not combatible:
 		return
 	if not esta_vivo():
@@ -107,6 +109,7 @@ func take_damage(cantidad: float, fuente: Entity) -> void:
 	vida_actual = maxf(vida_actual - dano, 0.0)
 	flash_tiempo = FLASH_DURACION
 	daniado.emit(dano, fuente)
+	GameFeel.al_recibir_danio(self, dano, fuente, es_critico)
 	vida_cambiada.emit(vida_actual, stats.vida_max)
 	if vida_actual <= 0.0:
 		die(fuente)

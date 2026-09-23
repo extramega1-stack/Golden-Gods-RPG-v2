@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3]
+[gd_scene load_steps=26 format=3]
 
 [ext_resource type="Script" path="res://scenes/demo/fase14_demo.gd" id="1_demo"]
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="2_player"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://scripts/ui/banner_region.gd" id="18_banner"]
 [ext_resource type="Script" path="res://scripts/mundo/antorcha.gd" id="19_antorcha"]
 [ext_resource type="Script" path="res://scripts/ui/panel_viaje.gd" id="20_viaje"]
+[ext_resource type="Script" path="res://scripts/combate/game_feel.gd" id="21_gamefeel"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_heroe"]
 radius = 0.4
@@ -79,6 +80,9 @@ fov = 65.0
 
 [node name="IndicadorSeleccion" type="Node3D" parent="."]
 script = ExtResource("10_indicador")
+
+[node name="GameFeel" type="Node3D" parent="."]
+script = ExtResource("21_gamefeel")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("4_hud")

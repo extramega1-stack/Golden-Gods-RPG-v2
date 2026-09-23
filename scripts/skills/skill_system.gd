@@ -140,7 +140,7 @@ func _aplicar_curar(lanzador: Entity, efecto: Dictionary) -> void:
 func _aplicar_dano(skill: Dictionary, lanzador: Entity, objetivo: Entity) -> void:
 	# Formulas.damage retorna Dictionary declarado: `=` es seguro aquí.
 	var res = Formulas.damage(lanzador.stats, objetivo.stats, skill, randf(), randf_range(-1.0, 1.0))
-	objetivo.take_damage(float(res["final"]), lanzador)
+	objetivo.take_damage(float(res["final"]), lanzador, bool(res["crit"]))
 
 
 func _aplicar_aoe(skill: Dictionary, lanzador: Entity, objetivo: Entity, candidatos: Array) -> void:

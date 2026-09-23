@@ -25,6 +25,13 @@ const PITCH_MIN: float = -1.05     ## Límite mirando hacia abajo.
 const PITCH_MAX: float = 0.30      ## Límite mirando hacia arriba.
 const ALTURA: float = 1.5          ## Altura del pivote sobre los pies.
 
+## --- Game feel: screen shake (fase 19) ---
+const TRAUMA_DECAIMIENTO: float = 1.8 ## Cuánto trauma se pierde por segundo.
+const SHAKE_MAX: float = 0.35         ## Offset máximo de cámara a trauma 1.
+## Trauma actual (0 = quieta, 1 = sacudida máxima). Crece con
+## `agregar_trauma()` y decae solo; el offset usa trauma².
+var trauma: float = 0.0
+
 ## Ruta al nodo que sigue (el Player; se asigna en el .tscn).
 @export var ruta_objetivo: NodePath
 
@@ -36,9 +43,11 @@ var _arrastrando: bool = false
 
 @onready var _pitch: Node3D = $Pitch
 @onready var _brazo: SpringArm3D = $Pitch/SpringArm3D
+@onready var _camara: Camera3D = $Pitch/SpringArm3D/Camera3D
 
 
 func _ready() -> void:
+	add_to_group("camera_rig")
 	if ruta_objetivo != NodePath(""):
 		_objetivo = get_node_or_null(ruta_objetivo) as Node3D
 	_yaw_obj = rotation.y
@@ -60,6 +69,21 @@ func _process(delta: float) -> void:
 	_pitch.rotation.x = lerp_angle(_pitch.rotation.x, _pitch_obj, tr)
 	var tz: float = 1.0 - exp(-K_ZOOM * delta)
 	_brazo.spring_length = lerpf(_brazo.spring_length, _dist_obj, tz)
+	# Fase 19 — screen shake: el trauma decae solo y el offset (h/v_offset
+	# de la cámara) usa trauma² para un decaimiento con pegada.
+	if trauma > 0.0:
+		trauma = maxf(trauma - TRAUMA_DECAIMIENTO * delta, 0.0)
+		var sh: float = trauma * trauma * SHAKE_MAX
+		_camara.h_offset = randf_range(-sh, sh)
+		_camara.v_offset = randf_range(-sh, sh)
+	elif _camara.h_offset != 0.0 or _camara.v_offset != 0.0:
+		_camara.h_offset = 0.0
+		_camara.v_offset = 0.0
+
+
+## Suma trauma de screen shake (0..1). La llama GameFeel.
+func agregar_trauma(cantidad: float) -> void:
+	trauma = minf(trauma + cantidad, 1.0)
 
 
 ## Yaw actual de la cámara (radianes). Lo lee la brújula de la fase 13.

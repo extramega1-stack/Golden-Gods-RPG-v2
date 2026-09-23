@@ -714,7 +714,7 @@ func ejecutar_ataque() -> void:
 	var res: Dictionary = Formulas.damage(
 		stats, objetivo_ataque.stats, {"power": 1.0},
 		randf(), randf_range(-1.0, 1.0))
-	objetivo_ataque.take_damage(float(res["final"]), self)
+	objetivo_ataque.take_damage(float(res["final"]), self, bool(res["crit"]))
 	_cd_ataque = 1.0 / maxf(stats.vel_ataque, 0.1)
 
 
