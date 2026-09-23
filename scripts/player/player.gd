@@ -43,6 +43,15 @@ const VEL_GIRO: float = 12.0      ## Qué tan rápido rota el cuerpo al moverse.
 const GRAVEDAD: float = 24.0      ## Gravedad propia (mundo sin físicas raras).
 const ALCANCE_RAYO: float = 1000.0 ## Alcance del raycast clic→mundo.
 const RANGO_ATAQUE: float = 2.6   ## Distancia cuerpo a cuerpo del héroe.
+## Fase 18.4 (guardado para la futura versión móvil, pedido de Juan Diego):
+## con `autoataque_movil` en true, atacar y los skills hostiles sin
+## selección vuelven al comportamiento de la fase 5.1 (enganchan al mob
+## más cercano). En PC queda en false: sin selección no se hace nada.
+## Es `static var` (no const) para que los tests verifiquen el camino
+## guardado y no se pudra con el tiempo.
+static var autoataque_movil: bool = false
+## Radio del enganche guardado para móvil (fase 5.1; inactivo en PC).
+const RADIO_AUTOATAQUE: float = 8.0
 ## Fase 9.1: radio de interacción con NPCs. El segundo clic en un NPC
 ## seleccionado que esté más lejos camina hasta él y al llegar habla solo;
 ## si ya está dentro de este radio, el segundo clic abre el diálogo directo.
@@ -308,8 +317,9 @@ func _dist_a(e: Entity) -> float:
 ## combatible > objetivo de ataque actual).
 ## Fase 18.4 — sin foco NO hace nada: se eliminó el auto-ataque al mob más
 ## cercano (pedido de Juan Diego: sin seleccionar, apretar atacar no
-## engancha a ningún mob). Si hay una selección no atacable (NPC), no hace
-## nada.
+## engancha a ningún mob). El comportamiento viejo quedó guardado tras el
+## flag `autoataque_movil` para la futura versión móvil. Si hay una
+## selección no atacable (NPC), no hace nada.
 ## La UI solo emite la intención; el Player la consume aquí.
 func solicitar_ataque() -> void:
 	if not esta_vivo():
@@ -319,9 +329,12 @@ func solicitar_ataque() -> void:
 	# (ni fija objetivo ni ordena caminar hacia él).
 	if foco != null and not foco.esta_vivo():
 		foco = null
+	if foco == null and autoataque_movil:
+		# Camino guardado para la futura versión móvil (fase 5.1).
+		foco = _mob_cercano_movil()
 	if foco == null:
-		# Fase 18.4 — sin foco (sin selección combatible ni objetivo de
-		# ataque) no se hace nada: nada se selecciona ni se ataca.
+		# Fase 18.4 — sin foco (y sin el modo móvil) no se hace nada:
+		# nada se selecciona ni se ataca.
 		return
 	objetivo_ataque = foco
 	intent.objetivo = foco
@@ -331,13 +344,28 @@ func solicitar_ataque() -> void:
 	intencion_atacar.emit(foco)
 
 
+## Fase 18.4 — enganche al mob más cercano, guardado para la futura
+## versión móvil (comportamiento de la fase 5.1). Solo se usa si
+## `autoataque_movil` está en true.
+func _mob_cercano_movil() -> Entity:
+	var arbol: SceneTree = get_tree()
+	if arbol == null:
+		return null
+	var cerca: Entity = SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
+	if cerca == null or _dist_a(cerca) > RADIO_AUTOATAQUE:
+		return null
+	seleccionar(cerca)
+	return cerca
+
+
 ## Objetivo para un skill: las curaciones y los buffs van al lanzador
 ## (null, el sistema los aplica sobre sí mismo); el daño, los debuffs y el
 ## aoe dirigido (rango > 0) usan el foco de combate (selección combatible >
 ## objetivo de ataque); el aoe centrado en el lanzador (rango == 0) no
 ## necesita objetivo. Fase 18.4: sin foco, los skills hostiles devuelven
-## null y no hacen nada — se eliminó el fallback al mob más cercano por
-## pedido de Juan Diego. Los NPCs nunca son objetivo de daño.
+## null y no hacen nada — salvo con `autoataque_movil` en true, que
+## restaura el camino guardado para móvil (mob más cercano, fase 5.1).
+## Los NPCs nunca son objetivo de daño.
 func _objetivo_skill(skill_id: String) -> Entity:
 	var sk: Dictionary = SkillDB.obtener(skill_id)
 	var efecto: Dictionary = sk.get("efecto", {})
@@ -346,7 +374,15 @@ func _objetivo_skill(skill_id: String) -> Entity:
 		return null
 	if tipo == "aoe" and float(sk.get("rango", 0.0)) <= 0.0:
 		return null
-	return _foco_combate()
+	var foco: Entity = _foco_combate()
+	if foco != null:
+		return foco
+	if autoataque_movil:
+		var arbol: SceneTree = get_tree()
+		if arbol == null:
+			return null
+		return SkillSystem.mas_cercano(self, arbol.get_nodes_in_group("enemigos"))
+	return null
 
 
 ## Fase 18 — ¿este skill es "hostil" (entra en combate / puede quedar

@@ -55,6 +55,7 @@ func _process(_delta: float) -> bool:
 	_t_curacion_sin_moverse()
 	_t_ataque_sin_seleccion_no_engancha()
 	_t_skill_sin_seleccion_no_engancha()
+	_t_autoataque_movil_guardado()
 	print("[TEST] pasados=%d fallos=%d" % [_ok, _fallos])
 	for n in _basura:
 		(n as Node).queue_free()
@@ -361,3 +362,25 @@ func _t_skill_sin_seleccion_no_engancha() -> void:
 	_check(p.objetivo_ataque == null, "skill sin selección: sin objetivo", "")
 	_check(not p._tiene_destino, "skill sin selección: no ordena caminar", "")
 	_check(p.mana_actual == mana0, "skill sin selección: no gasta maná", "")
+
+
+## El camino guardado para la versión móvil sigue funcionando cuando se
+## activa el flag (en PC va apagado por defecto).
+func _t_autoataque_movil_guardado() -> void:
+	# Coordenadas propias: otros tests ya dejaron enemigos en (200,0,205)
+	# y el empate de distancia lo ganaría el viejo.
+	var p: Player = _player(Vector3(250, 0, 250))
+	var en: Enemy = _enemigo(Vector3(250, 0, 255))
+	Player.autoataque_movil = true
+	p.solicitar_ataque()
+	_check(p.objetivo_ataque == en, "modo móvil: atacar engancha al más cercano", "")
+	_check(p.seleccion == en, "modo móvil: también lo selecciona", "")
+	var p2: Player = _player(Vector3(450, 0, 450))
+	var en2: Enemy = _enemigo(Vector3(450, 0, 470))
+	p2.lanzar_skill_id("bola_fuego")
+	_check(p2.objetivo_ataque == en2, "modo móvil: skill engancha al más cercano", "")
+	Player.autoataque_movil = false
+	var p3: Player = _player(Vector3(650, 0, 650))
+	_enemigo(Vector3(650, 0, 655))
+	p3.solicitar_ataque()
+	_check(p3.objetivo_ataque == null, "modo PC (flag apagado): no engancha", "")

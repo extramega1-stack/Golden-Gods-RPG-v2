@@ -743,4 +743,11 @@ Pedido de Juan Diego (bug de playtest): "sin seleccionar el mob, si apretas atac
 - El modelo Flyff queda intacto: primer clic selecciona; segundo clic / T / slot de ataque / skill hostil atacan la SELECCIÓN. El auto-ataque persistente de la fase 10 (skill sobre objetivo válido → el héroe sigue pegando solo) no cambia.
 - Tests: `tests/test_seleccion.gd` — `_t_ataque_fallback` reescrito como `_t_ataque_sin_seleccion_no_engancha` + nuevo `_t_skill_sin_seleccion_no_engancha`; `_t_skill_acercamiento` y `_t_skill_pendiente_cancel_muerte` ahora seleccionan antes de lanzar (el fallback ya no existe). Verde: seleccion 58/58, fase10 26/26, fase93 20/20, skills 41/41, npcs 56/56, fase17_barra 50/50, player 29/29; barrido `--check-only` limpio.
 
-*Fin del documento maestro v3.13.1 — Fase 18.4 (sin selección no se engancha).*
+## Fase 18.5 — Auto-ataque guardado tras un flag para la futura versión móvil (2026-09-23)
+
+Pedido de Juan Diego: la opción del mob más cercano se guarda para cuando se cree la versión móvil; mientras tanto queda guardada (inactiva en PC).
+
+- `scripts/player/player.gd`: nuevo `static var autoataque_movil: bool = false` + const `RADIO_AUTOATAQUE` restaurada (8 m). Con el flag en true, `solicitar_ataque()` y `_objetivo_skill()` usan el camino guardado de la fase 5.1 (`_mob_cercano_movil()`); en false (PC) el comportamiento 18.4 no cambia. Es `static var` para que los tests verifiquen el camino guardado y no se pudra.
+- Tests: nuevo `_t_autoataque_movil_guardado` en `tests/test_seleccion.gd` (flag on → atacar y skill enganchan al más cercano; flag off → no engancha). Verde: seleccion 62/62.
+
+*Fin del documento maestro v3.13.2 — Fase 18.5 (flag guardado para móvil).*
