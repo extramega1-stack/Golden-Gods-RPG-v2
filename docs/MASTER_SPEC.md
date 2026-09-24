@@ -967,3 +967,16 @@ Reescritura del modelo de stats (pedido de Juan Diego): 15 base en todo
   Pendiente: curas escalando con poder (el INT del clérigo hoy solo da maná).
 
 *Fin del documento maestro v3.29 — Fase 34 (stats 4-atributo).*
+
+## Fase 35 — Balance: HP de basura + curas por poder (2026-09-24)
+
+Con la skill `rpg` (fórmula deliberada, números acotados, datos no código).
+- Basura con `mult_vida: 0.8` (goblin/lobo/ogro 300→240 HP): el guerrero
+  fresco vuelve a 4 golpes (TTK previo a la fase 34, verificado con sonda).
+  Vía MOD `balance:vida` (reversible, serializa en el save); jefes intactos.
+- Curas ×(1+poder/200) (`SkillSystem.bono_curacion`, puro y testeado):
+  clérigo 80→112, mago ×1.59, guerrero ×1.21; tope 2.5×. El INT del
+  clérigo ya no solo da maná.
+- Tests: `tests/test_fase35_balance.gd` — 28/28.
+
+*Fin del documento maestro v3.30 — Fase 35 (balance).*

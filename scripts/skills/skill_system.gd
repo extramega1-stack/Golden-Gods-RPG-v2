@@ -274,9 +274,16 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 ## Fase 31: la fuente efectiva de la curación es `power_efectivo` (power
 ## base migrado 80/200 + `power_nivel` por nivel). `efecto.cantidad` se
 ## conserva en datos por compatibilidad pero ya no se lee aquí.
+## Fase 35: la cura escala con el poder del lanzador (el INT del clérigo
+## ya no solo da maná): ×(1 + poder/200). Acotado (poder 300 → ×2.5).
 func _aplicar_curar(skill_id: String, lanzador: Entity) -> void:
-	lanzador.heal(power_efectivo(skill_id))
+	lanzador.heal(power_efectivo(skill_id) * bono_curacion(lanzador.stats.poder))
 	lanzador.mostrar_fx(COLOR_CURAR)
+
+
+## Multiplicador de curación por poder. Puro y testeable.
+static func bono_curacion(poder: float) -> float:
+	return 1.0 + maxf(poder, 0.0) / 200.0
 
 
 func _aplicar_dano(skill: Dictionary, lanzador: Entity, objetivo: Entity) -> void:

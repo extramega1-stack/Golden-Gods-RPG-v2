@@ -105,6 +105,12 @@ func configurar(arquetipo: Dictionary) -> void:
 		"oro_max": int(arquetipo.get("oro_max", 0)),
 		"items": items,
 	}
+	# Fase 35: ajuste de balance data-driven (1.0 = sin cambio). Vía MOD
+	# (reversible, serializa en el save como el resto de mods).
+	var mv: float = float(arquetipo.get("mult_vida", 1.0))
+	if mv != 1.0:
+		stats.add_mod("balance:vida", "vida_max", StatBlock.ModKind.PORCENTUAL, mv - 1.0)
+		vida_actual = stats.vida_max
 	_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
 
 

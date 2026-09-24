@@ -161,14 +161,16 @@ func _test_lanzar() -> void:
 		"d: lanzar golpe_heroico nv3")
 	_chk(is_equal_approx(p.mana_actual, mana0 - p.skills.mana_efectivo("golpe_heroico")),
 		"d: gasta maná efectivo", str(p.mana_actual))
-	# Curación e2e: la fuente es power_efectivo (80 a nv1).
+	# Curación e2e: la fuente es power_efectivo (80 a nv1) × bono de poder
+	# (fase 35: clérigo poder 80 → ×1.4 → 112).
 	var c: Player = _player("clerigo")
-	c.take_damage(60.0, c, false)
+	c.aplicar_clase("clerigo")
+	c.take_damage(200.0, c, false)
 	var vida0: float = c.vida_actual
 	var mana_c0: float = c.mana_actual
 	_chk(c.skills.lanzar("curacion_menor", c, null), "d: lanzar curacion_menor")
-	_chk(is_equal_approx(c.vida_actual, minf(c.stats.vida_max, vida0 + 80.0)),
-		"d: cura 80 a nv1", str(c.vida_actual))
+	_chk(is_equal_approx(c.vida_actual, minf(c.stats.vida_max, vida0 + 112.0)),
+		"d: cura 112 a nv1 (80 × 1.4)", str(c.vida_actual))
 	_chk(is_equal_approx(c.mana_actual, mana_c0 - c.skills.mana_efectivo("curacion_menor")),
 		"d: cura gasta maná efectivo")
 

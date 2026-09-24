@@ -241,7 +241,8 @@
             "max": 1
           }
         ]
-      }
+      },
+      "mult_vida": 0.8
     },
     "lobo": {
       "color": [
@@ -297,7 +298,8 @@
             "max": 1
           }
         ]
-      }
+      },
+      "mult_vida": 0.8
     },
     "ogro": {
       "color": [
@@ -367,7 +369,8 @@
             "max": 1
           }
         ]
-      }
+      },
+      "mult_vida": 0.8
     },
     "susurro_umbral": {
       "color": [
