@@ -81,6 +81,7 @@ func _run() -> void:
 	_check(tscn.find("scripts/mundo/antorcha.gd") >= 0, "tscn incluye Antorchas")
 	_check(tscn.find("Goblin1") < 0, "tscn sin enemigos fijos (los da spawns.json)")
 	_check(tscn.find("far = 40000.0") >= 0, "cámara con far 40000 para el mundo")
-	# 5. El título arranca la demo vigente (fase 14: Moon Town).
+	# 5. El título arranca la demo vigente vía la fuente única Escenas
+	# (desde fase 18.1 las rutas viven en Escenas.JUEGO, no hardcodeadas).
 	var titulo: String = FileAccess.get_file_as_string("res://scripts/ui/pantalla_titulo.gd")
-	_check(titulo.find("fase14_demo.tscn") >= 0, "el título abre fase14_demo")
+	_check(titulo.find("Escenas.JUEGO") >= 0, "el título abre Escenas.JUEGO")
