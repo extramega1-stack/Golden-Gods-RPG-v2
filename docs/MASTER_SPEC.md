@@ -852,3 +852,11 @@ Karg abre la puerta bajo la Arena (canon: la Arena es la puerta al Tártaro).
 - Catálogo: 38 misiones. Tests: `tests/test_fase26_acto4.gd` — 17/17.
 
 *Fin del documento maestro v3.21 — Fase 26 (Acto IV).*
+
+## Fase 27 — Acto V: La Última Guerra + decisión (2026-09-24)
+
+Cierre del arco (canon: sendas del Arma y Liberty).
+- La Última Guerra (6 ogros, exige el Umbral), Senda del Arma (rematar al Campeón: oro de mercenario, final amargo), Senda Liberty (sellar con Elthar: Eco del Verdugo legendario, final canónico).
+- Catálogo: 41 misiones, 17 items. Tests: `tests/test_fase27_acto5.gd` — 22/22.
+
+*Fin del documento maestro v3.22 — Fase 27 (Acto V).*
