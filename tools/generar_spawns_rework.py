@@ -32,6 +32,12 @@ PACK DE PRUEBA (fase 18.2+): 6 mobs fijos cerca de la plaza de Moon Town
 (ver PACK_PRUEBA) para probar el combate; el total es 1127 = 1121 de
 distribucion + 6 del pack.
 
+PACK DE JEFES (fase 22, P2 contenido): 6 jefes de fragmento fijos, uno
+cerca de cada ciudad de su cadena (ver PACK_JEFES). Llevan
+"grupo": "jefe_fragmento" para eximirlos de la regla nivel -> arquetipo
+(son arquetipos unicos, no tiers del generador) y de los conteos por
+arquetipo. El total es 1133 = 1121 + 6 + 6.
+
 Determinista y re-ejecutable: dos corridas -> mismo SHA-256.
 
 Uso:
@@ -52,7 +58,7 @@ DESTINO = os.path.join(PROYECTO, "data", "spawns.json")
 REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
 
 SEMILLA = 20260922
-TOTAL = 1127
+TOTAL = 1133
 SPAWNS_MOON = 24            # en el anillo 800 < r < 1450 de Moon Town
 RADIO_SEGURO = 40.0         # m alrededor del centro de cada ciudad
 R_CIUDAD = 800.0            # disco de la ciudad (lo construye otro worker)
@@ -96,6 +102,26 @@ CIUDADES = [
     (9966.0, 9966.0),
 ]
 
+# Jefes de fragmento (fase 22, P2 contenido): un spawn fijo por jefe a
+# ~350 m del centro de su ciudad (fuera de la zona segura de 40 m y del
+# disco urbano, dentro del terreno). El "nivel" es informativo (dificultad
+# sugerida 9-10); el arquetipo es unico y exento de la regla nivel ->
+# arquetipo (ver "grupo"). Las misiones q_* lo cazan por arquetipo.
+PACK_JEFES = [
+    {"arquetipo": "devorador_dunas", "x": 10216.0, "z": 250.0, "nivel": 9,
+     "grupo": "jefe_fragmento"},
+    {"arquetipo": "fundidor_antiguo", "x": -9716.0, "z": 250.0, "nivel": 9,
+     "grupo": "jefe_fragmento"},
+    {"arquetipo": "aullido_pico", "x": 250.0, "z": -5108.0, "nivel": 9,
+     "grupo": "jefe_fragmento"},
+    {"arquetipo": "eco_cristal", "x": 250.0, "z": 10216.0, "nivel": 9,
+     "grupo": "jefe_fragmento"},
+    {"arquetipo": "susurro_umbral", "x": 10216.0, "z": -9716.0, "nivel": 10,
+     "grupo": "jefe_fragmento"},
+    {"arquetipo": "campeon_caido", "x": -9716.0, "z": -9716.0, "nivel": 10,
+     "grupo": "jefe_fragmento"},
+]
+
 
 def arquetipo_de(nivel: int) -> str:
     """REGLA NIVEL -> ARQUETIPO (ver docstring del modulo)."""
@@ -121,8 +147,8 @@ def main() -> int:
     resto = [r for r in regiones if r["id"] != "moon_town"]
 
     # Reparto por area (resto mayor) para que la suma sea exacta.
-    # El pack de prueba se suma aparte: no entra en el reparto.
-    objetivo = TOTAL - SPAWNS_MOON - len(PACK_PRUEBA)
+    # Los packs fijo (prueba + jefes) se suman aparte: no entran en el reparto.
+    objetivo = TOTAL - SPAWNS_MOON - len(PACK_PRUEBA) - len(PACK_JEFES)
     areas = [(r["x1"] - r["x0"]) * (r["z1"] - r["z0"]) for r in resto]
     area_total = sum(areas)
     cuotas = [objetivo * a / area_total for a in areas]
@@ -174,6 +200,9 @@ def main() -> int:
     # 3) Pack de prueba de combate: posiciones fijas, sin rng (el orden es
     # estable y no afecta al determinismo: dos corridas -> mismo SHA).
     spawns.extend(PACK_PRUEBA)
+
+    # 4) Pack de jefes de fragmento (fase 22): igual de fijo y estable.
+    spawns.extend(PACK_JEFES)
 
     assert len(spawns) == TOTAL, f"total={len(spawns)} != {TOTAL}"
 

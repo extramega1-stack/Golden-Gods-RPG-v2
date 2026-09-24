@@ -49,7 +49,7 @@ func _run() -> void:
 	var crudo: Variant = JSON.parse_string(texto)
 	_check(crudo is Array, "spawns.json es array")
 	var spawns: Array = crudo as Array
-	_check(spawns.size() == 1127, "1127 spawns (esperado %d, hay %d)" % [1127, spawns.size()])
+	_check(spawns.size() == 1133, "1133 spawns (esperado %d, hay %d)" % [1133, spawns.size()])
 	var sin_region: int = 0
 	var fuera: int = 0
 	var terr := Terreno.new() # dentro() es matemática pura; no necesita el bin

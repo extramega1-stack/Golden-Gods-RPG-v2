@@ -11,9 +11,10 @@ extends SceneTree
 ##     rework; moon_town [-1500,1500]^2 niveles 1-5; cobertura total del mapa
 ##     por muestreo (cada punto en exactamente 1 region, sin huecos ni
 ##     solapes); las 4 esquinas del mundo cubiertas.
-## (d) Spawns (data/spawns.json): 1121 entradas {arquetipo, x, z, nivel};
+## (d) Spawns (data/spawns.json): 1133 entradas {arquetipo, x, z, nivel};
 ##     todos dentro del terreno; ninguno en la zona segura de 40 m de (0,0);
 ##     la regla nivel -> arquetipo (<=30 goblin, 31-200 lobo, >200 ogro) se
+##     cumple salvo jefes fase 22 (grupo jefe_fragmento, exentos);
 ##     cumple en cada entrada; cada spawn cae en una region y su nivel esta
 ##     dentro de la banda de esa region; los spawns de moon_town estan fuera
 ##     del disco de la ciudad (r >= 800).
@@ -308,7 +309,7 @@ func _t_spawns() -> void:
 	if not (crudo is Array):
 		return
 	var lista: Array = crudo
-	_check(lista.size() == 1127, "spawns: 1127 entradas (1121 + 6 pack de prueba)",
+	_check(lista.size() == 1133, "spawns: 1133 entradas (1121 + 6 pack + 6 jefes fase 22)",
 		"hay %d" % lista.size())
 	var db := RegionDB.new()
 	_check(db.cargar(), "spawns: regiones cargadas")
@@ -328,12 +329,16 @@ func _t_spawns() -> void:
 		# es colocacion a mano pedida por Juan Diego: se exime de las reglas
 		# de DISTRIBUCION (disco de la ciudad y banda de nivel de region),
 		# pero sigue cumpliendo arquetipo valido y regla nivel->arquetipo.
+		# Fase 22: los jefes ("grupo": "jefe_fragmento") tambien son
+		# colocacion a mano y se eximen de distribucion Y de la regla
+		# nivel->arquetipo (arquetipos unicos; su "nivel" es dificultad).
 		var es_prueba: bool = str(sd.get("grupo", "")) == "prueba_combate"
+		var es_jefe: bool = str(sd.get("grupo", "")) == "jefe_fragmento"
 		if x < -LIMITE or x > LIMITE or z < -LIMITE or z > LIMITE:
 			fuera += 1
 		if Vector2(x, z).length() < RADIO_SEGURO:
 			en_segura += 1
-		if arq != _arquetipo_esperado(nivel):
+		if arq != _arquetipo_esperado(nivel) and not es_jefe:
 			mal_arq += 1
 		var r: Dictionary = db.region_en(x, z)
 		if r.is_empty():
@@ -341,7 +346,7 @@ func _t_spawns() -> void:
 		else:
 			var nmin: int = int(r.get("nivel_min", 0))
 			var nmax: int = int(r.get("nivel_max", 0))
-			if not es_prueba and (nivel < nmin or nivel > nmax):
+			if not es_prueba and not es_jefe and (nivel < nmin or nivel > nmax):
 				fuera_banda += 1
 			if not es_prueba and str(r.get("id", "")) == "moon_town" \
 					and Vector2(x, z).length() < R_DISCO:

@@ -25,9 +25,12 @@ extends SceneTree
 const RUTA_SPAWNS := "res://data/spawns.json"
 const LIMITE := 18432.0
 const RADIO_SEGURO := 40.0
-const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro"]
+const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro",
+	"devorador_dunas", "fundidor_antiguo", "aullido_pico", "eco_cristal",
+	"susurro_umbral", "campeon_caido"]
 ## Conteos esperados del generador determinista (semilla 20260922).
-const TOTAL_ESPERADO := 1127
+## Fase 22: 1133 = 1127 + 6 jefes de fragmento (grupo jefe_fragmento).
+const TOTAL_ESPERADO := 1133
 const GOBLIN_ESPERADO := 492
 const LOBO_ESPERADO := 634
 const OGRO_ESPERADO := 1
@@ -37,7 +40,7 @@ var _fallos: int = 0
 
 
 func _init() -> void:
-	print("[TEST] Fase 12 — spawns.json (rework 2026: 1127 = 1121 por region + 6 pack de prueba)")
+	print("[TEST] Fase 12 — spawns.json (rework 2026: 1133 = 1121 por region + 6 pack de prueba + 6 jefes fase 22)")
 
 
 var _empezo: bool = false
@@ -123,7 +126,10 @@ func _t_contrato_spawns() -> void:
 		if a not in ARQUETIPOS_VALIDOS:
 			arq_invalidos += 1
 		var nivel: int = int(d["nivel"])
-		if a != _arquetipo_esperado(nivel):
+		# Fase 22: los jefes de fragmento son arquetipos únicos exentos
+		# de la regla nivel->arquetipo (su "nivel" es dificultad sugerida).
+		if str(d.get("grupo", "")) != "jefe_fragmento" \
+				and a != _arquetipo_esperado(nivel):
 			regla_rota += 1
 		# Rango sensato: el legado tiene creeps de nivel 0 a 2000.
 		if nivel < 0 or nivel > 2000:

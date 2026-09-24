@@ -1,5 +1,190 @@
 {
   "arquetipos": {
+    "aullido_pico": {
+      "agilidad": 18.0,
+      "color": [
+        0.75,
+        0.8,
+        0.9
+      ],
+      "cooldown_ataque": 1.4,
+      "destreza": 12.0,
+      "fuerza": 26.0,
+      "inteligencia": 4.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Aullido del Pico",
+      "oro_max": 200,
+      "oro_min": 120,
+      "radio_aggro": 18.0,
+      "rango_ataque": 2.2,
+      "respawn_seg": 300,
+      "xp": 400
+    },
+    "campeon_caido": {
+      "agilidad": 8.0,
+      "color": [
+        0.6,
+        0.15,
+        0.15
+      ],
+      "cooldown_ataque": 2.0,
+      "destreza": 8.0,
+      "fuerza": 36.0,
+      "inteligencia": 3.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Campeón Caído",
+      "oro_max": 300,
+      "oro_min": 200,
+      "radio_aggro": 14.0,
+      "rango_ataque": 2.8,
+      "respawn_seg": 300,
+      "xp": 550
+    },
+    "devorador_dunas": {
+      "agilidad": 14.0,
+      "color": [
+        0.85,
+        0.7,
+        0.4
+      ],
+      "cooldown_ataque": 1.8,
+      "destreza": 10.0,
+      "fuerza": 28.0,
+      "inteligencia": 4.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Devorador de las Dunas",
+      "oro_max": 250,
+      "oro_min": 150,
+      "radio_aggro": 16.0,
+      "rango_ataque": 2.4,
+      "respawn_seg": 300,
+      "xp": 400
+    },
+    "eco_cristal": {
+      "agilidad": 10.0,
+      "color": [
+        0.55,
+        0.4,
+        0.9
+      ],
+      "cooldown_ataque": 1.8,
+      "destreza": 10.0,
+      "fuerza": 30.0,
+      "inteligencia": 12.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Eco del Cristal",
+      "oro_max": 250,
+      "oro_min": 150,
+      "radio_aggro": 14.0,
+      "rango_ataque": 2.4,
+      "respawn_seg": 300,
+      "xp": 450
+    },
+    "fundidor_antiguo": {
+      "agilidad": 6.0,
+      "color": [
+        0.5,
+        0.12,
+        0.08
+      ],
+      "cooldown_ataque": 2.2,
+      "destreza": 6.0,
+      "fuerza": 34.0,
+      "inteligencia": 4.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Fundidor Anciano",
+      "oro_max": 250,
+      "oro_min": 150,
+      "radio_aggro": 12.0,
+      "rango_ataque": 2.8,
+      "respawn_seg": 300,
+      "xp": 450
+    },
     "goblin": {
       "agilidad": 8.0,
       "color": [
@@ -34,8 +219,8 @@
       "oro_min": 5,
       "radio_aggro": 12.0,
       "rango_ataque": 2.2,
-      "xp": 40,
-      "respawn_seg": 15
+      "respawn_seg": 15,
+      "xp": 40
     },
     "lobo": {
       "agilidad": 12.0,
@@ -64,8 +249,8 @@
       "oro_min": 0,
       "radio_aggro": 14.0,
       "rango_ataque": 2.0,
-      "xp": 65,
-      "respawn_seg": 20
+      "respawn_seg": 20,
+      "xp": 65
     },
     "ogro": {
       "agilidad": 4.0,
@@ -101,8 +286,45 @@
       "oro_min": 20,
       "radio_aggro": 10.0,
       "rango_ataque": 2.6,
-      "xp": 120,
-      "respawn_seg": 30
+      "respawn_seg": 30,
+      "xp": 120
+    },
+    "susurro_umbral": {
+      "agilidad": 12.0,
+      "color": [
+        0.15,
+        0.1,
+        0.2
+      ],
+      "cooldown_ataque": 1.6,
+      "destreza": 12.0,
+      "fuerza": 32.0,
+      "inteligencia": 10.0,
+      "loot": {
+        "items": [
+          {
+            "item_id": "pocion_vida",
+            "max": 2,
+            "min": 1,
+            "nombre": "Poción de vida",
+            "prob": 0.3
+          },
+          {
+            "item_id": "colmillo",
+            "max": 3,
+            "min": 1,
+            "nombre": "Colmillo de lobo",
+            "prob": 0.25
+          }
+        ]
+      },
+      "nombre": "Susurro del Umbral",
+      "oro_max": 280,
+      "oro_min": 180,
+      "radio_aggro": 16.0,
+      "rango_ataque": 2.4,
+      "respawn_seg": 300,
+      "xp": 500
     }
   },
   "nota": "Arquetipos de enemigos de la fase 4. Data-driven: un enemigo nuevo = editar este archivo, no código.",

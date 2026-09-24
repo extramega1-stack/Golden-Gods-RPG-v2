@@ -809,3 +809,13 @@ No había ni un solo SFX (solo `TODO(audio)` en skills y "sin audio" en clima). 
 - Tests: `tests/test_fase20_audio.gd` — 23/23.
 
 *Fin del documento maestro v3.16 — Fase 21 (audio procedural).*
+
+## Fase 22 — P2 contenido: cadenas por ciudad + 6 jefes de fragmento (2026-09-24)
+
+De 3 a 25 misiones sin tocar el canon (prólogo local; los fragmentos verdaderos siguen en el Acto II).
+- Cadena por ciudad (2-3 misiones con `requiere`): Oasis, Volcán, Pico, Mística, Sombra (Culto del Velo), Arena (puerta del Tártaro), Tormenta y Dorada (laterales). Cada Q1 es local, Q2 cruza NPCs (Vex, Bram, Elthar, Sira, Ilya, Aurelio, Sella, Yasmina), Q3 es el jefe.
+- 6 jefes data-driven en `enemies.json` (stats/xp400-550/oro/respawn 300 s) + 6 fragmentos materiales en `items.json` + 6 spawns fijos (`grupo: jefe_fragmento`) vía el generador (`tools/generar_spawns_rework.py`, TOTAL 1133; el test lo regenera: lo manual se pierde).
+- `QuestDB.requiere()` + estado "bloqueada" en QuestLog (derivada, no guardada, sin bump de save; sin "!" ni oferta ni aceptar hasta entregar el prerrequisito).
+- Tests: `tests/test_fase22_cadenas.gd` — 67/67 (bloqueo, cadena oasis, jefe+fragmento, datos, round-trip). Tests viejos actualizados a los conteos (quests 25, items 16, spawns 1133, "!" en ambientales).
+
+*Fin del documento maestro v3.17 — Fase 22 (P2 contenido).*

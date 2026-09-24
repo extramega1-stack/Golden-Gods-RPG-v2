@@ -64,3 +64,9 @@ static func ids() -> Array[String]:
 ## misión no existe o no declara lore.
 static func lore(quest_id: String) -> String:
 	return str(obtener(quest_id).get("lore", ""))
+
+
+## Prerrequisito de cadena (fase 22): id de la misión que debe estar
+## "entregada" para que esta esté disponible. "" = sin prerrequisito.
+static func requiere(quest_id: String) -> String:
+	return str(obtener(quest_id).get("requiere", ""))

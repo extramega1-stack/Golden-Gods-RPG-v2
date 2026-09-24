@@ -6766,5 +6766,47 @@
     "z": 110.0,
     "nivel": 250,
     "grupo": "prueba_combate"
+  },
+  {
+    "arquetipo": "devorador_dunas",
+    "x": 10216.0,
+    "z": 250.0,
+    "nivel": 9,
+    "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "fundidor_antiguo",
+    "x": -9716.0,
+    "z": 250.0,
+    "nivel": 9,
+    "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "aullido_pico",
+    "x": 250.0,
+    "z": -5108.0,
+    "nivel": 9,
+    "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "eco_cristal",
+    "x": 250.0,
+    "z": 10216.0,
+    "nivel": 9,
+    "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "susurro_umbral",
+    "x": 10216.0,
+    "z": -9716.0,
+    "nivel": 10,
+    "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "campeon_caido",
+    "x": -9716.0,
+    "z": -9716.0,
+    "nivel": 10,
+    "grupo": "jefe_fragmento"
   }
 ]

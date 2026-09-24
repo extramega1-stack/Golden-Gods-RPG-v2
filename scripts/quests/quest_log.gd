@@ -5,6 +5,10 @@ extends RefCounted
 ##
 ## Estados por misión: disponible → activa → lista → entregada.
 ##  - disponible: aún no aceptada (no registrada en `_estados`).
+##  - bloqueada (fase 22): con `requiere` cuyo prerrequisito no está
+##    "entregada". No se ofrece, no muestra "!" y no se puede aceptar;
+##    es derivada (nunca se guarda: al entregar el prerrequisito pasa a
+##    disponible sola).
 ##  - activa: aceptada; los objetivos avanzan con `registrar_muerte`,
 ##    `sincronizar_recoleccion` o `registrar_dialogo`.
 ##  - lista: todos los objetivos completos; pendiente de entrega (el NPC de
@@ -44,10 +48,17 @@ var _progreso: Dictionary = {}
 
 
 ## Estado actual de una misión. Misiones desconocidas → "desconocida".
+## Sin registrar: "disponible", salvo `requiere` pendiente → "bloqueada".
 func estado(quest_id: String) -> String:
 	if not QuestDB.existe(quest_id):
 		return "desconocida"
-	return str(_estados.get(quest_id, "disponible"))
+	var reg: String = str(_estados.get(quest_id, ""))
+	if reg != "":
+		return reg
+	var req: String = QuestDB.requiere(quest_id)
+	if req != "" and str(_estados.get(req, "")) != "entregada":
+		return "bloqueada"
+	return "disponible"
 
 
 ## Acepta una misión disponible. Retorna "ok" / "desconocida" /

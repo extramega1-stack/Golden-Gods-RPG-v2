@@ -152,8 +152,9 @@ func _t_marcador_demo() -> void:
 			"al arrancar hay misión disponible: '!' visible (%s)" % str(k), "")
 	for k in ["yasmina", "durnan", "sella", "elthar", "vex", "karg", "maris", "aurelio"]:
 		_check(por_id.has(k), "demo: npc ambiental %s" % k)
-		_check(not (por_id[k] as NPC).marcador_visible(),
-			"el ambiental %s no tiene mision: sin '!'" % k)
+		# Fase 22: los ambientales abren cadena (q_*_1 disponible) → con '!'.
+		_check((por_id[k] as NPC).marcador_visible(),
+			"el ambiental %s tiene misión: con '!'" % k)
 	var log: QuestLog = demo.get("_misiones")
 	_check(log.aceptar("goblins_fuera") == "ok", "aceptar goblins_fuera → ok", "")
 	_check(not (por_id["ilya"] as NPC).marcador_visible(),
