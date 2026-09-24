@@ -94,6 +94,8 @@ var clase_id: String = "guerrero"
 var inventario: Inventario = null
 var equipo: Equipo = null
 var skills: SkillSystem = null
+## Fase 28 — talentos del héroe (1 punto por nivel; la UI los gasta).
+var talentos: Talentos = null
 
 var _rig: CameraRig = null
 var _tiene_destino: bool = false
@@ -128,6 +130,10 @@ func _ready() -> void:
 	inventario = Inventario.new()
 	equipo = Equipo.new()
 	skills = SkillSystem.new()
+	# Fase 28: talentos (1 punto por nivel subido).
+	talentos = Talentos.new()
+	if not subio_nivel.is_connected(_al_subir_nivel_talentos):
+		subio_nivel.connect(_al_subir_nivel_talentos)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -724,12 +730,22 @@ func ganar_oro(cantidad: int) -> void:
 	oro_cambiado.emit(oro)
 
 
+## Fase 28: cada nivel da 1 punto de talento (propio, no de Entity).
+func _al_subir_nivel_talentos(_nivel: int) -> void:
+	if talentos == null:
+		talentos = Talentos.new()
+	talentos.puntos += 1
+
+
 ## Fase 11 — identidad del héroe (nombre + clase visible en la UI).
 ## Asigna y emite `identidad_cambiada` para que el retrato y la UI futura
 ## se actualicen (solo lectura). No toca stats.
 func fijar_identidad(p_nombre: String, p_clase_id: String) -> void:
 	nombre = p_nombre
 	clase_id = p_clase_id
+	# Fase 28: al cambiar de clase se purgan los talentos ajenos.
+	if talentos != null:
+		talentos.purgar_clase(stats, clase_id)
 	identidad_cambiada.emit()
 
 

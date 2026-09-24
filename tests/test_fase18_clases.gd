@@ -177,11 +177,15 @@ func _t_cooldowns() -> void:
 		"cooldown: tras expirar se puede castear")
 
 
-## --- (d) save v7 ---
+## --- (d) save v8 ---
 
 func _t_save_v7() -> void:
 	var p: Player = _player_clase("mago", Vector3(1, 0, 2))
 	p.fijar_identidad("Ilya", "mago")
+	# Fase 28: 1 punto de talento gastado antes de guardar.
+	p.gain_xp(100000)
+	_check(p.talentos.subir("mente_arcana", p.stats, p.nivel, "mago") == "ok",
+		"save v8: talento comprado antes de guardar")
 	var s: SaveSystem = SV.new()
 	s.jugador = p
 	s.enemigos = []
@@ -189,18 +193,22 @@ func _t_save_v7() -> void:
 	s.tienda = null
 	s.misiones = null
 	s.barra_acciones = null
-	_check(s.guardar(), "save v7: guardar() true")
+	_check(s.guardar(), "save v8: guardar() true")
 	var crudo: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveSystem.RUTA))
 	var version: int = int((crudo as Dictionary).get("version", 0))
-	_check(version == 7, "save v7: version 7 en disco", "version=%d" % version)
+	_check(version == 8, "save v8: version 8 en disco", "version=%d" % version)
 	var dj: Dictionary = (crudo as Dictionary).get("jugador", {})
-	_check(str(dj.get("clase_id", "")) == "mago", "save v7: clase_id guardada")
+	_check(str(dj.get("clase_id", "")) == "mago", "save v8: clase_id guardada")
 	var p2: Player = PL.new()
 	var s2: SaveSystem = SV.new()
 	s2.jugador = p2
-	_check(s2.cargar(), "save v7: cargar() true")
-	_check(p2.clase_id == "mago", "save v7: clase_id restaurada", p2.clase_id)
-	_check(p2.nombre == "Ilya", "save v7: nombre restaurado")
+	_check(s2.cargar(), "save v8: cargar() true")
+	_check(p2.clase_id == "mago", "save v8: clase_id restaurada", p2.clase_id)
+	_check(p2.nombre == "Ilya", "save v8: nombre restaurado")
+	_check(p2.talentos.rango_de("mente_arcana") == 1,
+		"save v8: rango de talento restaurado")
+	_check(p2.stats.has_mod("talento:mente_arcana"),
+		"save v8: mod de talento aplicado")
 
 
 ## Partida v6 (sin clase_id) → "guerrero"; con clase_id se respeta;

@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 7
+const SAVE_VERSION: int = 8
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -47,6 +47,8 @@ func guardar() -> bool:
 			"clase_id": jugador.clase_id,
 			"inventario": jugador.inventario.to_dict() if jugador.inventario != null else {},
 			"equipo": jugador.equipo.to_dict() if jugador.equipo != null else {},
+			# Fase 28: talentos (puntos + rangos; los mods viajan en "entidad").
+			"talentos": jugador.talentos.to_dict() if jugador.talentos != null else {},
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
@@ -119,6 +121,7 @@ func _cargar_jugador(dj: Dictionary) -> void:
 	jugador.oro_cambiado.emit(jugador.oro)
 	_cargar_inventario(dj)
 	_cargar_equipo(dj)
+	_cargar_talentos(dj)
 	var pos: Array = dj.get("pos", [])
 	if pos.size() >= 3:
 		jugador.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
@@ -163,6 +166,19 @@ func _cargar_equipo(dj: Dictionary) -> void:
 			var md: Dictionary = m
 			jugador.stats.remove_mod("equipo:%s:%s" % [slot, str(md.get("stat", ""))])
 	jugador.equipo = Equipo.from_dict(dj_equipo, jugador.stats)
+
+
+## Fase 28 — Talentos. Los mods ya vinieron en el bloque "entidad": aquí
+## solo se restauran puntos+rangos (reaplicar es idempotente y cubre
+## rarezas). Sin bloque (partidas v7): puntos retroactivos nivel-1.
+func _cargar_talentos(dj: Dictionary) -> void:
+	if jugador.talentos == null:
+		jugador.talentos = Talentos.new()
+	if dj.has("talentos"):
+		jugador.talentos.cargar_estado(dj.get("talentos", {}))
+	else:
+		jugador.talentos.puntos = maxi(0, jugador.nivel - 1)
+	jugador.talentos.aplicar_todos(jugador.stats)
 
 
 func _cargar_enemigos(lista: Array) -> void:

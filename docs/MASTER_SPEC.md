@@ -860,3 +860,13 @@ Cierre del arco (canon: sendas del Arma y Liberty).
 - Catálogo: 41 misiones, 17 items. Tests: `tests/test_fase27_acto5.gd` — 22/22.
 
 *Fin del documento maestro v3.22 — Fase 27 (Acto V).*
+
+## Fase 28 — Talentos por clase (2026-09-24)
+
+Progresión: 1 punto por nivel, 3 talentos × 4 clases con 3 rangos.
+- `data/talentos.json` + `TalentoDB` (patrón SkillDB) + `Talentos` (lógica pura: puntos/rangos, `subir` valida clase/nivel/tope/puntos, mods ×rango con fuente `talento:id`, purga con devolución al cambiar de clase).
+- Player otorga el punto en `subio_nivel`; save v8 con bloque `talentos` (retroactivo nivel-1 en v7).
+- `PanelTalentos` (capa 30, tecla K, ESC cierra) en la escena principal.
+- Tests: `tests/test_fase28_talentos.gd` — 30/30.
+
+*Fin del documento maestro v3.23 — Fase 28 (talentos).*

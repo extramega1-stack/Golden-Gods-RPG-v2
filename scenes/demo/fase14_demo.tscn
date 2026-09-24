@@ -20,6 +20,7 @@
 [ext_resource type="Script" path="res://scripts/mundo/antorcha.gd" id="19_antorcha"]
 [ext_resource type="Script" path="res://scripts/ui/panel_viaje.gd" id="20_viaje"]
 [ext_resource type="Script" path="res://scripts/combate/game_feel.gd" id="21_gamefeel"]
+[ext_resource type="Script" path="res://scripts/ui/panel_talentos.gd" id="22_talentos"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_heroe"]
 radius = 0.4
@@ -101,6 +102,9 @@ script = ExtResource("14_misiones")
 
 [node name="PanelViaje" type="CanvasLayer" parent="."]
 script = ExtResource("20_viaje")
+
+[node name="PanelTalentos" type="CanvasLayer" parent="."]
+script = ExtResource("22_talentos")
 
 [node name="PanelInventario" type="CanvasLayer" parent="."]
 script = ExtResource("7_panel_inv")
