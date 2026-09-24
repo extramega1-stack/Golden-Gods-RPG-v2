@@ -2,7 +2,7 @@ extends SceneTree
 ## Tests headless de la Fase 28 (talentos por clase).
 ##
 ## Cubre:
-## (a) TalentoDB: 12 talentos (3 por clase jugable), ordenados por nivel;
+## (a) TalentoDB: 15 talentos (3 por clase jugable), ordenados por nivel;
 ## (b) subir(): valida clase/nivel/tope/puntos y aplica mods × rango;
 ## (c) Player: 1 punto por nivel; cambio de clase purga y devuelve;
 ## (d) round-trip de guardado (puntos+rangos; mods idempotentes);
@@ -67,8 +67,8 @@ func _stats_base() -> StatBlock:
 
 ## (a) Catálogo.
 func _test_db() -> void:
-	_chk(TDB.ids().size() == 12, "a: 12 talentos", str(TDB.ids().size()))
-	for c in ["guerrero", "mago", "arquero", "clerigo"]:
+	_chk(TDB.ids().size() == 15, "a: 15 talentos (fase 40)", str(TDB.ids().size()))
+	for c in ["guerrero", "mago", "arquero", "clerigo", "daguero"]:
 		_chk(TDB.talentos_por_clase(c).size() == 3,
 			"a: 3 talentos de " + c)
 	_chk(TDB.talentos_por_clase("guerrero")[0] == "filo_pesado",

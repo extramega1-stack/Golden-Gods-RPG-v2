@@ -85,7 +85,7 @@ func _entidad(fuerza: float, aguante: float, destreza: float, inteligencia: floa
 
 func _t_db() -> void:
 	var ids: Array[String] = SDB.lista()
-	_check(ids.size() == 32, "SkillDB tiene 32 skills (8 × 4 clases)", str(ids.size()))
+	_check(ids.size() == 40, "SkillDB tiene 40 skills (8 × 5 clases, fase 40)", str(ids.size()))
 	# Orden de hotbar = orden del JSON: primero los 8 del guerrero.
 	var esperado: Array[String] = ["golpe_heroico", "tajo_veloz", "embate",
 		"grito_guerra", "torbellino", "muro_escudo", "ejecucion", "ira_titan"]

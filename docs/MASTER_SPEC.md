@@ -1050,3 +1050,19 @@ eventos y anuncian el siguiente por toast. Nunca bloquea.
 - Tests: `tests/test_fase39_tutorial.gd` — 25/25. Suite 100% verde + smokes.
 
 *Fin del documento maestro v3.34 — Fase 39 (tutorial).*
+
+## Fase 40 — Daguero, quinta clase jugable (2026-09-24)
+
+Asesino DEX puro con datos, sin tocar código de sistemas (`rpg`).
+- Base 15/15/45/15: ataque 35, crit 23% ×1.95, vel.atq 1.36, 625 HP.
+  Tradeoff honesto: pega menos por golpe que el arquero (65) y es tan
+  de papel como el mago; compensa con crítico y cadencia cuerpo a cuerpo.
+- 8 skills rango corto (skills.json v3): puñalada, golpe_bajo y
+  filo_venenoso (debuffs a ataque), danza_dagas (aoe), evasion_sombra,
+  instinto_asesino y paso_sombra (buffs), golpe_gracia (2.4 +15% crit).
+- 3 talentos (talentos.json v2): sangre_fria, paso_letal, danza_mortal.
+- Creación: quinta tarjeta automática (lee `jugables()`); barra, libro,
+  save y paper-doll lo toman sin cambios.
+- Tests: `tests/test_fase40_daguero.gd` — 34/34. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.35 — Fase 40 (daguero).*

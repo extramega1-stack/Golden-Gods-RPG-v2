@@ -2,7 +2,7 @@ extends SceneTree
 ## Tests headless de la Fase 31 (skills nivel 1–20 estilo FlyFF).
 ##
 ## Cubre:
-## (a) skills.json: 32 skills con max_nivel=20, power_nivel, mana_nivel;
+## (a) skills.json: 40 skills con max_nivel=20, power_nivel, mana_nivel;
 ##     curación migrada a power (curacion_menor=80, luz_sanadora=200);
 ## (b) configurar_clase: skills de la clase en 1, ajenas en 0; al cambiar
 ##     de clase devuelve los puntos invertidos y es idempotente;
@@ -67,9 +67,9 @@ func _player(clase: String = "guerrero") -> Player:
 	return p
 
 
-## (a) JSON: campos de nivel en las 32 + migración de curación.
+## (a) JSON: campos de nivel en las 40 + migración de curación.
 func _test_json() -> void:
-	_chk(SkillDB.lista().size() == 32, "a: 32 skills en el JSON")
+	_chk(SkillDB.lista().size() == 40, "a: 40 skills en el JSON (fase 40)")
 	for sid in SkillDB.lista():
 		var sk: Dictionary = SkillDB.obtener(sid)
 		_chk(int(sk.get("max_nivel", 0)) == 20, "a: max_nivel 20 en " + sid)

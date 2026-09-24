@@ -1,6 +1,6 @@
 {
- "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}. Fase 31: max_nivel/power_nivel/mana_nivel (power_nivel = extra por nivel en unidades del efecto principal).",
- "version": 2,
+ "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo|daguero; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}. Fase 31: max_nivel/power_nivel/mana_nivel (power_nivel = extra por nivel en unidades del efecto principal).",
+ "version": 3,
  "skills": [
   {
    "id": "golpe_heroico",
@@ -672,6 +672,177 @@
    "max_nivel": 20,
    "power_nivel": 0.19,
    "mana_nivel": 2.2
+  },
+  {
+   "id": "punalada",
+   "nombre": "Puñalada",
+   "descripcion": "Daga directa al costado: rápida y certera.",
+   "clase": "daguero",
+   "mana": 8.0,
+   "cooldown": 3.0,
+   "rango": 2.6,
+   "power": 1.7,
+   "magica": false,
+   "bonus_crit": 0.05,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.13,
+   "mana_nivel": 0.6
+  },
+  {
+   "id": "golpe_bajo",
+   "nombre": "Golpe bajo",
+   "descripcion": "Frena al enemigo: -30% ataque 6 s.",
+   "clase": "daguero",
+   "mana": 10.0,
+   "cooldown": 8.0,
+   "rango": 2.6,
+   "power": 0.7,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.3,
+    "duracion": 6.0,
+    "stat": "ataque"
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.7
+  },
+  {
+   "id": "filo_venenoso",
+   "nombre": "Filo venenoso",
+   "descripcion": "Veneno en la hoja: -25% ataque 8 s.",
+   "clase": "daguero",
+   "mana": 12.0,
+   "cooldown": 10.0,
+   "rango": 2.6,
+   "power": 0.8,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "debuff",
+    "cantidad": 0.25,
+    "duracion": 8.0,
+    "stat": "ataque"
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.006,
+   "mana_nivel": 0.8
+  },
+  {
+   "id": "danza_dagas",
+   "nombre": "Danza de dagas",
+   "descripcion": "Giro con ambas dagas: daño en área.",
+   "clase": "daguero",
+   "mana": 20.0,
+   "cooldown": 10.0,
+   "rango": 3.0,
+   "power": 1.8,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "aoe",
+    "cantidad": 0.0,
+    "radio": 4.0
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.15,
+   "mana_nivel": 1.2
+  },
+  {
+   "id": "evasion_sombra",
+   "nombre": "Evasión sombra",
+   "descripcion": "El cuerpo se vuelve humo: +30% defensa 10 s.",
+   "clase": "daguero",
+   "mana": 15.0,
+   "cooldown": 20.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.3,
+    "duracion": 10.0,
+    "stat": "defensa"
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.01,
+   "mana_nivel": 0.8
+  },
+  {
+   "id": "instinto_asesino",
+   "nombre": "Instinto asesino",
+   "descripcion": "Ojos de depredador: +25% crítico 12 s.",
+   "clase": "daguero",
+   "mana": 15.0,
+   "cooldown": 25.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.25,
+    "duracion": 12.0,
+    "stat": "crit"
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.8
+  },
+  {
+   "id": "golpe_gracia",
+   "nombre": "Golpe de gracia",
+   "descripcion": "Ejecución a quemarropa con +15% crítico.",
+   "clase": "daguero",
+   "mana": 28.0,
+   "cooldown": 14.0,
+   "rango": 2.6,
+   "power": 2.4,
+   "magica": false,
+   "bonus_crit": 0.15,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "dano",
+    "cantidad": 0.0
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.19,
+   "mana_nivel": 1.6
+  },
+  {
+   "id": "paso_sombra",
+   "nombre": "Paso sombra",
+   "descripcion": "Pies silenciosos: +30% velocidad 8 s.",
+   "clase": "daguero",
+   "mana": 12.0,
+   "cooldown": 18.0,
+   "rango": 0.0,
+   "power": 0.0,
+   "magica": false,
+   "bonus_crit": 0.0,
+   "varianza": 0.1,
+   "efecto": {
+    "tipo": "buff",
+    "cantidad": 0.3,
+    "duracion": 8.0,
+    "stat": "velocidad"
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.01,
+   "mana_nivel": 0.7
   }
  ]
 }

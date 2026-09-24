@@ -15,10 +15,10 @@
    "color_primario": "5a2a6e",
    "color_secundario": "241a2a",
    "descripcion": "Sombra de los callejones de Piedraceniza. Donde los dioses miran hacia otro lado, sus dagas ya terminaron el trabajo.",
-   "destreza": 15.0,
+   "destreza": 45.0,
    "fuerza": 15.0,
    "inteligencia": 15.0,
-   "jugable": false,
+   "jugable": true,
    "nombre": "Daguero",
    "aguante": 15.0
   },

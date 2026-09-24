@@ -1,8 +1,8 @@
 extends SceneTree
 ## Tests headless de la Fase 11 (héroe y presentación).
 ##
-## (a) ClaseDB: 5 ids en orden, 4 jugables (guerrero, arquero, mago,
-##     clerigo; daguero no), stats base 30/30/15/15 del guerrero, colores que
+## (a) ClaseDB: 5 ids en orden, 5 jugables (guerrero, arquero, mago,
+##     clerigo, daguero), stats base 30/30/15/15 del guerrero, colores que
 ##     parsean a Color (default dorado).
 ## (b) validar_nombre: "" / "   " / 17 caracteres → error; "Ilya" / "A" /
 ##     16 caracteres → válido.
@@ -103,13 +103,13 @@ func _t_clasedb() -> void:
 	var ids: Array[String] = ClaseDB.ids()
 	_check(ids == ["guerrero", "arquero", "mago", "clerigo", "daguero"],
 		"clasedb: 5 ids en orden", str(ids))
-	_check(ClaseDB.jugables() == ["guerrero", "arquero", "mago", "clerigo"],
-		"clasedb: 4 jugables (daguero fuera)", str(ClaseDB.jugables()))
+	_check(ClaseDB.jugables() == ["guerrero", "arquero", "mago", "clerigo", "daguero"],
+		"clasedb: 5 jugables (fase 40)", str(ClaseDB.jugables()))
 	_check(ClaseDB.es_jugable("guerrero"), "clasedb: guerrero jugable")
 	_check(ClaseDB.es_jugable("mago"), "clasedb: mago jugable")
 	_check(ClaseDB.es_jugable("arquero"), "clasedb: arquero jugable")
 	_check(ClaseDB.es_jugable("clerigo"), "clasedb: clerigo jugable")
-	_check(not ClaseDB.es_jugable("daguero"), "clasedb: daguero no jugable")
+	_check(ClaseDB.es_jugable("daguero"), "clasedb: daguero jugable (fase 40)")
 	_check(not ClaseDB.es_jugable("inexistente"),
 		"clasedb: id desconocido no jugable")
 	var base: Dictionary = ClaseDB.stats_base("guerrero")

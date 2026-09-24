@@ -1,5 +1,5 @@
 extends SceneTree
-## Tests headless de la Fase 18 (4 clases: sistemas, UI, save).
+## Tests headless de la Fase 18 (4 clases: sistemas, UI, save; fase 40: 5).
 ##
 ## Cómo correrlos (un solo comando, ~3 segundos):
 ##   ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase18_clases.gd
@@ -8,7 +8,7 @@ extends SceneTree
 ##
 ## Cubre:
 ## (a) SkillDB.skills_por_clase: 8 skills por cada clase jugable y el campo
-##     "clase" del JSON coincide; "daguero" no es jugable.
+##     "clase" del JSON coincide; fase 40: daguero jugable.
 ## (b) Player: clase por defecto "guerrero"; skills_clase() = los 8 del
 ##     guerrero; lanzar_skill(i) usa la clase (mago: índice 0 =
 ##     descarga_arcana).
@@ -126,8 +126,8 @@ func _npc(pos: Vector3) -> NPC:
 
 func _t_por_clase() -> void:
 	var jugables: Array[String] = CDB.jugables()
-	_check(jugables == ["guerrero", "arquero", "mago", "clerigo"],
-		"jugables: 4 en orden (daguero fuera)",
+	_check(jugables == ["guerrero", "arquero", "mago", "clerigo", "daguero"],
+		"jugables: 5 en orden (fase 40)",
 		str(jugables))
 	for cid in jugables:
 		var ids: Array[String] = SDB.skills_por_clase(cid)
@@ -137,7 +137,7 @@ func _t_por_clase() -> void:
 			var c: String = str(sk.get("clase", ""))
 			_check(c == "" or c == cid,
 				"skill %s pertenece a %s" % [sid, cid], "clase='%s'" % c)
-	_check(not CDB.es_jugable("daguero"), "daguero no es jugable")
+	_check(CDB.es_jugable("daguero"), "daguero jugable (fase 40)")
 	_check(SDB.skills_por_clase("inexistente").is_empty(),
 		"clase desconocida → lista vacía")
 
