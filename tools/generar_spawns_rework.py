@@ -5,16 +5,15 @@ Reemplaza el port de fase 12 (1121 creeps del legado WC3) por spawns generados
 de forma determinista sobre las 10 regiones de data/regiones.json.
 
 Contrato de salida (igual que fase 12): data/spawns.json, array de
-{arquetipo, x, z, nivel} en coordenadas Godot.
+{arquetipo, x, z, nivel, region} en coordenadas Godot.
 
-REGLA NIVEL -> ARQUETIPO (misma que fase 12, tools/generar_spawns.py):
-    nivel <= 30          -> goblin
-    30 < nivel <= 200    -> lobo
-    nivel > 200          -> ogro
-Con las bandas actuales (1-70) todos los spawns son goblin: la variedad de
-arquetipo aparecera cuando se anadan bandas por encima de 30. La regla es
-estable y monotona: un nivel mas alto nunca mapea a un tier inferior. El
-`nivel` elegido se preserva intacto en cada entrada.
+REGION -> ARQUETIPO (fase 43; antes era NIVEL -> ARQUETIPO):
+    Cada región declara su fauna en `mobs` (data/regiones.json). El
+    arquetipo se sortea de ESA lista: el primero (el mob de identidad de la
+    zona) pesa ~62% y el resto comparte el 38%, así cada campo tiene su
+    firma sin perder la mezcla clásica (goblin/lobo). Con esto el mundo
+    deja de ser un campo llano: 10 regiones = 10 faunas distintas.
+    El `nivel` de la banda se preserva intacto en cada entrada.
 
 DISTRIBUCION (semilla fija SEMILLA = 20260922, random.Random determinista):
   - Moon Town: 24 spawns de nivel 1-5 en el anillo 800 < r < 1450 (fuera del
@@ -34,9 +33,9 @@ distribucion + 6 del pack.
 
 PACK DE JEFES (fase 22, P2 contenido): 6 jefes de fragmento fijos, uno
 cerca de cada ciudad de su cadena (ver PACK_JEFES). Llevan
-"grupo": "jefe_fragmento" para eximirlos de la regla nivel -> arquetipo
-(son arquetipos unicos, no tiers del generador) y de los conteos por
-arquetipo. El total es 1133 = 1121 + 6 + 6.
+"grupo": "jefe_fragmento" para eximirlos de la regla región -> arquetipo
+(son arquetipos unicos) y de los conteos por arquetipo. El total es
+1133 = 1121 + 6 + 6.
 
 Determinista y re-ejecutable: dos corridas -> mismo SHA-256.
 
@@ -123,13 +122,23 @@ PACK_JEFES = [
 ]
 
 
-def arquetipo_de(nivel: int) -> str:
-    """REGLA NIVEL -> ARQUETIPO (ver docstring del modulo)."""
-    if nivel <= 30:
-        return "goblin"
-    if nivel <= 200:
-        return "lobo"
-    return "ogro"
+# Fase 43: peso del mob de identidad de la región frente a la mezcla clásica.
+PESO_FAUNA_PRINCIPAL = 0.62
+
+
+def arquetipo_de_region(region: dict, rng: random.Random) -> str:
+    """REGLA REGION -> ARQUETIPO (fase 43).
+
+    Sortea de la fauna que declara la región (`mobs` en regiones.json): el
+    primero es el mob con identidad de la zona (~62%) y el resto comparte
+    el 38%. Determinista: consume el mismo rng sembrado.
+    """
+    fauna = region.get("mobs") or ["goblin"]
+    if len(fauna) == 1:
+        return fauna[0]
+    if rng.random() < PESO_FAUNA_PRINCIPAL:
+        return fauna[0]
+    return fauna[1 + int(rng.random() * (len(fauna) - 1))]
 
 
 def _en_zona_segura(x: float, z: float) -> bool:
@@ -174,10 +183,11 @@ def main() -> int:
                 break
         nivel = rng.randint(nmin, nmax)
         spawns.append({
-            "arquetipo": arquetipo_de(nivel),
+            "arquetipo": arquetipo_de_region(moon, rng),
             "x": round(x, 3),
             "z": round(z, 3),
             "nivel": nivel,
+            "region": "moon_town",
         })
 
     # 2) Resto de regiones: uniforme en rectangulo, nivel en su banda.
@@ -191,10 +201,11 @@ def main() -> int:
                     break
             nivel = rng.randint(nmin, nmax)
             spawns.append({
-                "arquetipo": arquetipo_de(nivel),
+                "arquetipo": arquetipo_de_region(r, rng),
                 "x": round(x, 3),
                 "z": round(z, 3),
                 "nivel": nivel,
+                "region": str(r["id"]),
             })
 
     # 3) Pack de prueba de combate: posiciones fijas, sin rng (el orden es
@@ -214,8 +225,8 @@ def main() -> int:
     for s in spawns:
         conteo[s["arquetipo"]] = conteo.get(s["arquetipo"], 0) + 1
     sha = hashlib.sha256(open(DESTINO, "rb").read()).hexdigest()
-    print(f"[SPAWNS] total={len(spawns)} " +
-          " ".join(f"{k}={conteo.get(k, 0)}" for k in ("goblin", "lobo", "ogro")))
+    print(f"[SPAWNS] total={len(spawns)}  " +
+          " ".join(f"{k}={v}" for k, v in sorted(conteo.items(), key=lambda kv: -kv[1])))
     print(f"[SPAWNS] escrito {DESTINO} sha256={sha}")
     return 0
 

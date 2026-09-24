@@ -472,6 +472,106 @@
    "precio": 90,
    "rareza": "raro",
    "apilable": false
+  },
+  {
+   "id": "escorpion_carina",
+   "nombre": "Carina de Escorpión",
+   "descripcion": "Placa quitinosa del desierto. Material de artesanía.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "ascua_viva",
+   "nombre": "Ascua Viva",
+   "descripcion": "Brasa que nunca enfría en la mano. Material de forja.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "nucleo_ascua",
+   "nombre": "Núcleo de Ascua",
+   "descripcion": "Corazón de un gólem de ceniza. Material de forja.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "nucleo_hielo",
+   "nombre": "Núcleo de Hielo",
+   "descripcion": "Núcleo de hielo eterno. Material prizeso.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "seda_venenosa",
+   "nombre": "Seda Venenosa",
+   "descripcion": "Hilo del Velo que sigue envenenando. Material.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "eco_umbral",
+   "nombre": "Eco del Umbral",
+   "descripcion": "Susurro que repite lo que oye. Material arcano.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "perla_rio",
+   "nombre": "Perla del Abismo",
+   "descripcion": "Perla negra del río sin nombre. Material.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "lamento_eco",
+   "nombre": "Eco del Lamento",
+   "descripcion": "El último canto de la costa. Material.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "lingote_oro",
+   "nombre": "Lingote Ancestral",
+   "descripcion": "Oro de la Corona Quebrada. Material de lujo.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "sello_vacio",
+   "nombre": "Sello Vacío",
+   "descripcion": "Cera negra sin nombre. Material del Velo.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
   }
  ],
  "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo.",

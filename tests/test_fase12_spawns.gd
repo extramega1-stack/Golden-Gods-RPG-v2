@@ -25,18 +25,26 @@ extends SceneTree
 const RUTA_SPAWNS := "res://data/spawns.json"
 const LIMITE := 18432.0
 const RADIO_SEGURO := 40.0
+## Fase 43: el arquetipo lo decide la REGIÓN (no el nivel) — 10 mobs
+## regionales nuevos + los 3WAS de siempre + 6 jefes de fragmento.
 const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro",
+	"escorpion_dunas", "slog_volcan", "golem_ascua", "yeti_hielo",
+	"arana_sombra", "espectro_velo", "carnicoro_rio", "mimo_hoja",
+	"centinela_oro", "sombra_vacia",
 	"devorador_dunas", "fundidor_antiguo", "aullido_pico", "eco_cristal",
 	"susurro_umbral", "campeon_caido"]
 ## Conteos esperados del generador determinista (semilla 20260922).
 ## Fase 22: 1133 = 1127 + 6 jefes de fragmento (grupo jefe_fragmento).
+## Fase 43: 795 spawns reasignados a la fauna de su región.
 const TOTAL_ESPERADO := 1133
-const GOBLIN_ESPERADO := 492
-const LOBO_ESPERADO := 634
+const GOBLIN_ESPERADO := 49
+const LOBO_ESPERADO := 292
 const OGRO_ESPERADO := 1
 
 var _ok: int = 0
 var _fallos: int = 0
+## Fase 43: la regla del spawn es REGIÓN → arquetipo (no nivel → arquetipo).
+var _region_db: RegionDB = null
 
 
 func _init() -> void:
@@ -50,6 +58,9 @@ func _process(_delta: float) -> bool:
 	if _empezo:
 		return false
 	_empezo = true
+	_region_db = RegionDB.new()
+	_region_db.cargar()
+	_check(_region_db.esta_cargado(), "regiones cargadas para el chequeo región→arquetipo")
 	_t_contrato_spawns()
 	print("[TEST] pasados=%d fallos=%d" % [_ok, _fallos])
 	quit(_fallos)
@@ -108,6 +119,16 @@ func _t_contrato_spawns() -> void:
 		"lobos == %d" % LOBO_ESPERADO, "hay %d" % int(por_arq.get("lobo", 0)))
 	_check(int(por_arq.get("ogro", 0)) == OGRO_ESPERADO,
 		"ogros == %d" % OGRO_ESPERADO, "hay %d" % int(por_arq.get("ogro", 0)))
+	# Fase 43: cada region aporta su mob de identidad (y no solo goblin/lobo).
+	var regionales: int = 0
+	for a in por_arq:
+		if a in ["goblin", "lobo", "ogro", "devorador_dunas", "fundidor_antiguo",
+				"aullido_pico", "eco_cristal", "susurro_umbral", "campeon_caido"]:
+			continue
+		if int(por_arq.get(a, 0)) > 0:
+			regionales += 1
+	_check(regionales == 10, "los 10 mobs regionales aparecen en el mundo",
+		"%d presentes" % regionales)
 
 	# 3. Barrido por entrada: claves, arquetipo válido, regla nivel->arquetipo,
 	#    nivel en rango sensato, dentro del terreno, fuera de la zona segura.
@@ -126,11 +147,15 @@ func _t_contrato_spawns() -> void:
 		if a not in ARQUETIPOS_VALIDOS:
 			arq_invalidos += 1
 		var nivel: int = int(d["nivel"])
-		# Fase 22: los jefes de fragmento son arquetipos únicos exentos
-		# de la regla nivel->arquetipo (su "nivel" es dificultad sugerida).
-		if str(d.get("grupo", "")) != "jefe_fragmento" \
-				and a != _arquetipo_esperado(nivel):
-			regla_rota += 1
+		# Fase 43: la regla es REGIÓN → arquetipo. Cada spawn trash debe
+		# tener un arquetipo de la fauna de la región donde está (los
+		# jefes de fragmento quedan exentos: son únicos por diseño).
+		var grupo: String = str(d.get("grupo", ""))
+		if grupo != "jefe_fragmento" and grupo != "prueba_combate":
+			var reg: Dictionary = _region_db.region_en(float(d["x"]), float(d["z"]))
+			var fauna: Array = reg.get("mobs", [])
+			if fauna.is_empty() or a not in fauna:
+				regla_rota += 1
 		# Rango sensato: el legado tiene creeps de nivel 0 a 2000.
 		if nivel < 0 or nivel > 2000:
 			nivel_raro += 1
@@ -142,9 +167,9 @@ func _t_contrato_spawns() -> void:
 			en_zona_segura += 1
 	_check(sin_claves == 0, "todas las entradas tienen {arquetipo, x, z, nivel}",
 		"%d incompletas" % sin_claves)
-	_check(arq_invalidos == 0, "arquetipos solo goblin/lobo/ogro",
+	_check(arq_invalidos == 0, "arquetipos conocidos (19: 13 trash + 6 jefes)",
 		"%d inválidos" % arq_invalidos)
-	_check(regla_rota == 0, "la regla nivel->arquetipo se cumple en todas",
+	_check(regla_rota == 0, "el arquetipo pertenece a la fauna de su región",
 		"%d violaciones" % regla_rota)
 	_check(nivel_raro == 0, "niveles preservados en rango sensato [0, 2000]",
 		"%d fuera de rango" % nivel_raro)

@@ -1130,4 +1130,31 @@ corregidas (con reproducción en la escena real + tests):
 - **Oleada vacía** (factory sin mobs) no se queda esperando: pasa a la
   siguiente. Los cadáveres vuelven al pool al cerrar cada oleada.
 
-*Fin del documento maestro v3.37 — Fase 42 (fixes playtest).*
+
+## Fase 43 — Contenido regional (2026-09-24)
+
+El mundo tenía 10 regiones con banda de nivel y 1133 spawns, pero TODOS de
+la misma fauna (goblin/lobo) y sin escala: "Nivel 45-70" era decorativo.
+Ahora cada región tiene su identidad y su poder.
+- **Escala por región** (`data/regiones.json` → `escala`): `stats`, `vida`,
+  `defensa`, `xp`, `oro`. La `defensa` crece MÁS LENTO que vida/ataque a
+  propósito: con mitigación por ratio, si todo escalara igual el TTK se
+  disparaba (114-132 golpes en el endgame). Curva validada con sonda:
+  TTK 4 → 23 golpes (3.6 s → 20 s), 4-7 kills por nivel, mobs de 31 a
+  146 dps. Hook: `Enemy.aplicar_escala()` la llama el streaming (la arena
+  conserva su curva propia).
+- **10 mobs regionales** (`data/enemies.json`): escorpión de dunas, slog y
+  gólem de ceniza, yeti, araña y espectro del velo, carnicoro, mimo,
+  centinela dorada y sombra vacía. Base stats deliberadamente 近 la del
+  goblin (la identidad viene del comportamiento: rango, cadencia, aggro,
+  loot y `stat_daño`); la potencia la pone la región.
+- **10 items de loot regional** (`material`): carina, ascua, núcleos,
+  seda, ecos, perla, lamento, lingote y sello.
+- **Generador actualizado** (`tools/generar_spawns_rework.py`): la regla
+  pasó de NIVEL→arquetipo a REGIÓN→arquetipo (62% mob de identidad + 38%
+  mezcla clásica), determinista (mismo SHA) y con el campo `region`.
+  Los tests de spawns/terreno ahora validan el contrato nuevo.
+- El banner de región dice a qué esperar: nivel + nombres de sus enemigos.
+- Tests: `tests/test_fase43_regional.gd` — 92/92. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.38 — Fase 43 (contenido regional).*

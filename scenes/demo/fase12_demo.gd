@@ -153,9 +153,16 @@ func _iniciar_streaming() -> void:
 		if not _arquetipos.has(arq_id):
 			push_warning("[Fase12] arquetipo desconocido en spawns: '%s'" % arq_id)
 			continue
+		var sx: float = float(sd.get("x", 0.0))
+		var sz: float = float(sd.get("z", 0.0))
+		# Fase 43: escala regional del spawn (stats/xp/oro de data/regiones.json).
+		# El mob se escala al instanciarse (StreamingMobs), no al cargar.
+		var region: Dictionary = _region_db.region_en(sx, sz) if _region_db != null else {}
 		registros.append({
 			"arquetipo": arq_id,
-			"origen": Vector3(float(sd.get("x", 0.0)), 0.0, float(sd.get("z", 0.0))),
+			"origen": Vector3(sx, 0.0, sz),
+			"escala": region.get("escala", {}),
+			"region_id": str(region.get("id", "")),
 		})
 	_streaming = StreamingMobs.new()
 	_streaming.name = "StreamingMobs"
@@ -256,6 +263,13 @@ func _al_descubrir_region(region: Dictionary) -> void:
 	if banner == null:
 		return
 	var nombre: String = str(region.get("nombre", "???"))
+	# Fase 43: la banda dice qué te espera ahí (nivel + enemigos regionales).
 	var sub: String = "Nivel recomendado %d–%d" % [
 		int(region.get("nivel_min", 1)), int(region.get("nivel_max", 99))]
+	var mobs: Array = region.get("mobs", [])
+	if not mobs.is_empty() and _arquetipos != null:
+		var nombres: Array[String] = []
+		for mid in mobs:
+			nombres.append(str((_arquetipos.get(mid, {}) as Dictionary).get("nombre", mid)))
+		sub += " · " + ", ".join(nombres)
 	banner.mostrar(nombre, sub)

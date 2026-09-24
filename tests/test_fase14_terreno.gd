@@ -13,8 +13,8 @@ extends SceneTree
 ##     solapes); las 4 esquinas del mundo cubiertas.
 ## (d) Spawns (data/spawns.json): 1133 entradas {arquetipo, x, z, nivel};
 ##     todos dentro del terreno; ninguno en la zona segura de 40 m de (0,0);
-##     la regla nivel -> arquetipo (<=30 goblin, 31-200 lobo, >200 ogro) se
-##     cumple salvo jefes fase 22 (grupo jefe_fragmento, exentos);
+##     fase 43: el arquetipo pertenece a la fauna de su region (mobs de
+##     data/regiones.json), exentos los packs de prueba y los jefes;
 ##     cumple en cada entrada; cada spawn cae en una region y su nivel esta
 ##     dentro de la banda de esa region; los spawns de moon_town estan fuera
 ##     del disco de la ciudad (r >= 800).
@@ -338,9 +338,11 @@ func _t_spawns() -> void:
 			fuera += 1
 		if Vector2(x, z).length() < RADIO_SEGURO:
 			en_segura += 1
-		if arq != _arquetipo_esperado(nivel) and not es_jefe:
-			mal_arq += 1
+		# Fase 43: el arquetipo viene de la fauna de la REGIÓN (no del nivel).
 		var r: Dictionary = db.region_en(x, z)
+		var fauna: Array = r.get("mobs", [])
+		if not es_jefe and not es_prueba and (fauna.is_empty() or arq not in fauna):
+			mal_arq += 1
 		if r.is_empty():
 			sin_region += 1
 		else:
@@ -355,7 +357,7 @@ func _t_spawns() -> void:
 		"fuera=%d" % fuera)
 	_check(en_segura == 0, "spawns: ninguno en la zona segura de 40 m",
 		"en_segura=%d" % en_segura)
-	_check(mal_arq == 0, "spawns: regla nivel -> arquetipo en todas",
+	_check(mal_arq == 0, "spawns: arquetipo de la fauna de su region en todas",
 		"mal=%d" % mal_arq)
 	_check(sin_region == 0, "spawns: todos caen en una region",
 		"sin_region=%d" % sin_region)

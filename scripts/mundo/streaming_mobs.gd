@@ -233,6 +233,11 @@ func _instanciar(rd: Dictionary) -> void:
 	# Fase 12.1: reparto del tick de IA para que no piensen todos a la vez.
 	e.reparto = _reparto_ia % 8
 	_reparto_ia += 1
+	# Fase 43: escala regional del spawn (stats/xp/oro). El registro la trae
+	# la demo (RegionDB) y solo el streaming la aplica: la arena usa su curva.
+	var esc: Dictionary = rd.get("escala", {})
+	if not esc.is_empty():
+		e.aplicar_escala(esc)
 	rd["nodo"] = e
 	rd["muerto"] = false
 	_marcar_vivos_sucia()

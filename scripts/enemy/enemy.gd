@@ -36,6 +36,9 @@ var radio_aggro: float = 10.0
 var rango_ataque: float = 2.2
 var cooldown_ataque: float = 1.6
 var xp_recompensa: int = 10
+## Fase 43: base del arquetipo (para escalar sin acumular) y XP sin escala.
+var xp_recompensa_base: int = 10
+var _base_arquetipo: Dictionary = {}
 ## A quién persigue/ataca (lo asigna la escena demo; si es null se busca
 ## el grupo "jugador" en _ready).
 var objetivo: Entity = null
@@ -99,6 +102,13 @@ func configurar(arquetipo: Dictionary) -> void:
 	rango_ataque = float(arquetipo.get("rango_ataque", 2.2))
 	cooldown_ataque = float(arquetipo.get("cooldown_ataque", 1.6))
 	xp_recompensa = int(arquetipo.get("xp", 10))
+	xp_recompensa_base = xp_recompensa
+	_base_arquetipo = {
+		"fuerza": float(arquetipo.get("fuerza", 5.0)),
+		"aguante": float(arquetipo.get("aguante", 0.0)),
+		"destreza": float(arquetipo.get("destreza", 5.0)),
+		"inteligencia": float(arquetipo.get("inteligencia", 5.0)),
+	}
 	var items: Array = []
 	var loot: Dictionary = arquetipo.get("loot", {})
 	if not loot.is_empty():
@@ -115,6 +125,50 @@ func configurar(arquetipo: Dictionary) -> void:
 		stats.add_mod("balance:vida", "vida_max", StatBlock.ModKind.PORCENTUAL, mv - 1.0)
 		vida_actual = stats.vida_max
 	_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
+
+
+## Fase 43 — escala regional (data/regiones.json → bloque `escala`):
+## multiplica los STATS BASE del arquetipo (stats) y sus recompensas
+## (xp, oro). Idempotente si se pasa el factor ABSOLUTO de la región
+## (no acumulado): llamar dos veces con 3.0 deja 3.0, no 9.0.
+## La aplica el streaming (la arena usa su propia curva y no la llama).
+func aplicar_escala(escala: Dictionary) -> void:
+	if escala.is_empty():
+		return
+	var ms: float = float(escala.get("stats", 1.0))
+	# Fase 43: la defensa crece MÁS LENTO que la vida/ataque. Si no, la
+	# mitigación (ratio) hace que el TTK se dispare en las bandas altas
+	# (el mobs aguanta 100+ golpes). `defensa` escala el aguante (placas).
+	var mdef: float = float(escala.get("defensa", ms))
+	if ms > 0.0 and not is_equal_approx(ms, 1.0):
+		stats.set_base("fuerza", float(arquetipo_base("fuerza")) * ms)
+		stats.set_base("destreza", float(arquetipo_base("destreza")) * ms)
+		stats.set_base("inteligencia", float(arquetipo_base("inteligencia")) * ms)
+	if mdef > 0.0 and not is_equal_approx(mdef, 1.0):
+		stats.set_base("aguante", float(arquetipo_base("aguante")) * mdef)
+	stats.recalc()
+	vida_actual = stats.vida_max
+	mana_actual = stats.mana_max
+	var mx: float = float(escala.get("xp", 1.0))
+	if mx > 0.0 and not is_equal_approx(mx, 1.0):
+		xp_recompensa = int(roundf(float(xp_recompensa_base) * mx))
+	var mo: float = float(escala.get("oro", 1.0))
+	if mo > 0.0 and not is_equal_approx(mo, 1.0):
+		_tabla_loot["oro_min"] = int(roundf(float(_tabla_loot.get("oro_min", 0)) * mo))
+		_tabla_loot["oro_max"] = int(roundf(float(_tabla_loot.get("oro_max", 0)) * mo))
+	# Fase 43: la vida crece MÁS que los stats (si no, el TTK queda plano en
+	# todas las bandas y el combate no escala). Va como MOD (id estable →
+	 # aplicarla dos veces no la acumula).
+	var mv: float = float(escala.get("vida", 1.0))
+	if mv > 0.0 and not is_equal_approx(mv, 1.0):
+		stats.add_mod("escala:vida", "vida_max", StatBlock.ModKind.PORCENTUAL, mv - 1.0)
+		vida_actual = stats.vida_max
+
+
+## Valor BASE del arquetipo (sin escala) para un stat. Lo guarda configurar()
+## para que aplicar_escala sea idempotente.
+func arquetipo_base(stat: String) -> float:
+	return float(_base_arquetipo.get(stat, 0.0))
 
 
 ## Fase 33 — probabilidad élite del arquetipo (0 sin bloque: jefes nunca).
@@ -301,10 +355,27 @@ func die(fuente: Entity = null) -> void:
 
 
 ## Al cargar partida: el estado se deduce de la vida (muerto → MUERTO).
+## Fase 43: restaura también la XP y la escala del arquetipo — sin esto un
+## mob guardado daba la XP por defecto (10) en vez de la regional escalada.
 func restaurar(d: Dictionary) -> void:
 	super.restaurar(d)
 	estado = Estado.MUERTO if not esta_vivo() else Estado.QUIETO
 	_cd = 0.0
+	xp_recompensa_base = int(d.get("xp_base", xp_recompensa_base))
+	xp_recompensa = int(d.get("xp_recompensa", xp_recompensa))
+	var ba: Dictionary = d.get("base_arquetipo", {})
+	if not ba.is_empty():
+		_base_arquetipo = ba
+
+
+## Fase 43 — añade el estado de recompensa/escala al save del enemigo
+## (override de Entity.to_dict; el resto del bloque se mantiene igual).
+func to_dict() -> Dictionary:
+	var d: Dictionary = super.to_dict()
+	d["xp_base"] = xp_recompensa_base
+	d["xp_recompensa"] = xp_recompensa
+	d["base_arquetipo"] = _base_arquetipo.duplicate()
+	return d
 
 
 ## Fase 20 — reutilización por pooling (PoolMobs): deja al enemigo como
