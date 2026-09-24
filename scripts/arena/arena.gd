@@ -13,10 +13,17 @@ extends Node
 
 const SAVE_VERSION_ARENA: int = 1
 const RADIO_SPAWN: float = 25.0
+## Fase 42: si una oleada se atasca (un mob vivo al que no llegas, o te
+## alejaste), los que quedan se teletransportan a tu lado tras este tiempo.
+## Una oleada SIEMPRE se puede terminar: nunca se queda colgada.
+const ESPERA_AYUDA_SEG: float = 12.0
+const RADIO_AYUDA: float = 9.0
 
 signal oleada_iniciada(n: int)
 signal oleada_superada(n: int, oro: int, xp: int)
 signal arena_terminada(victoria: bool, oleada: int)
+## Fase 42: los mobs supervivientes se acercaron al jugador (anti-stuck).
+signal ayuda_oleada(n: int)
 
 var _jugador: Player = null
 var _factory: Callable = Callable()
@@ -32,7 +39,14 @@ var _xp_base: int = 30
 var _activa: bool = false
 var _oleada: int = 0
 var _vivos: Array[Enemy] = []
+	## Fase 42: conexión de cada mob con _al_muerte (id → Callable) para
+	## desconectar limpio al reciclar el cadáver al pool.
+var _conectados: Dictionary = {}
 var _espera: float = 0.0
+var _tiempo_oleada: float = 0.0
+## Fase 42: la recompensa de la oleada se paga UNA vez (desde _al_muerte o
+## desde avanzar() si el último corpse se liberó sin pasar por die()).
+var _oleada_pagada: bool = false
 
 var mejor_oleada: int = 0
 var victorias: int = 0
@@ -104,16 +118,13 @@ func iniciar() -> void:
 	_siguiente()
 
 
-## Limpia mobs (de vuelta al pool) y apaga. Idempotente.
+## Limpia mobs (de vuelta al pool, desconectados) y apaga. Idempotente.
 func detener() -> void:
-	if _pool != null:
-		for e in _vivos:
-			if is_instance_valid(e):
-				_pool.devolver(e)
-	_vivos.clear()
 	_activa = false
 	_oleada = 0
 	_espera = 0.0
+	_tiempo_oleada = 0.0
+	_limpiar_vivos()
 
 
 func _process(delta: float) -> void:
@@ -121,14 +132,68 @@ func _process(delta: float) -> void:
 
 
 ## Descuenta el descanso y lanza la siguiente. Pública para tests.
+## Fase 42: poda referencias inválidas (un corpse liberado no puede dejar la
+## oleada colgada) y ayuda anti-stuck si quedan mobs tras ESPERA_AYUDA_SEG.
 func avanzar(dt: float) -> void:
 	if not _activa or dt <= 0.0:
 		return
-	if not _vivos.is_empty() or _espera <= 0.0:
+	var n: int = vivos()
+	if n > 0:
+		_tiempo_oleada += dt
+		if _tiempo_oleada >= ESPERA_AYUDA_SEG:
+			_acercar_vivos()
+			_tiempo_oleada = 0.0
+		return
+	# Fase 42: si no queda nadie vivo, la oleada se paga aquí aunque nadie
+	# haya pasado por die() (un corpse liberado desde el streaming/pool
+	# dejaba la arena colgada para siempre = "solo una oleada").
+	if not _oleada_pagada and _oleada > 0:
+		_pagar_oleada()
+	if _espera <= 0.0:
 		return
 	_espera -= dt
 	if _espera <= 0.0:
 		_siguiente()
+
+
+## Fase 42: recompensa de la oleada en un solo sitio e idempotente.
+func _pagar_oleada() -> void:
+	if _oleada_pagada:
+		return
+	_oleada_pagada = true
+	var oro: int = _oro_base * _oleada
+	var xp: int = _xp_base * _oleada
+	if _jugador != null and is_instance_valid(_jugador):
+		_jugador.ganar_oro(oro)
+		_jugador.gain_xp(xp)
+	mejor_oleada = maxi(mejor_oleada, _oleada)
+	oleada_superada.emit(_oleada, oro, xp)
+	_espera = _descanso_seg
+	_tiempo_oleada = 0.0
+
+
+## Fase 42: los mobs que quedan se teletransportan junto al jugador y le
+## entran en aggro. Garantiza que la oleada se pueda cerrar.
+func _acercar_vivos() -> void:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return
+	var n: int = 0
+	for i in _vivos.size():
+		var e: Enemy = _vivos[i]
+		if not is_instance_valid(e) or not e.esta_vivo():
+			continue
+		var ang: float = float(i) / float(maxi(_vivos.size(), 1)) * TAU
+		var pos := _jugador.global_position + Vector3(
+			cos(ang) * RADIO_AYUDA, 0.0, sin(ang) * RADIO_AYUDA)
+		pos.y = _jugador.global_position.y
+		e.global_position = pos
+		e.velocity = Vector3.ZERO
+		e._pegar_al_terreno()
+		e.objetivo = _jugador
+		e.estado = Enemy.Estado.PERSEGUIR
+		n += 1
+	if n > 0:
+		ayuda_oleada.emit(n)
 
 
 func _siguiente() -> void:
@@ -136,12 +201,14 @@ func _siguiente() -> void:
 	if _oleada > _oleadas.size():
 		_terminar(true)
 		return
+	_tiempo_oleada = 0.0
+	_oleada_pagada = false
 	_generar(_oleadas[_oleada - 1])
 	oleada_iniciada.emit(_oleada)
 
 
 func _generar(wave: Dictionary) -> void:
-	_vivos.clear()
+	_limpiar_vivos()
 	var mobs: Dictionary = wave.get("mobs", {})
 	var lista: Array[Enemy] = []
 	for arq_id in mobs:
@@ -162,9 +229,40 @@ func _generar(wave: Dictionary) -> void:
 		if not bloque.is_empty():
 			e.hacer_elite(bloque)
 	for e in lista:
-		if not e.murio.is_connected(_al_muerte.bind(e)):
-			e.murio.connect(_al_muerte.bind(e))
+		_conectar_muerte(e)
 		_vivos.append(e)
+	# Fase 42: una oleada que no logró spawnear NADA no puede dejar la arena
+	# colgada esperando una muerte que no existe → pasa a la siguiente.
+	if lista.is_empty():
+		_espera = 0.001
+
+
+## Conecta la muerte del mob guardando el Callable (id → Callable) para
+## poder desconectar limpio cuando el cadáver vuelve al pool.
+func _conectar_muerte(e: Enemy) -> void:
+	var id: int = e.get_instance_id()
+	if _conectados.has(id):
+		return
+	var c: Callable = _al_muerte.bind(e)
+	e.murio.connect(c)
+	_conectados[id] = c
+
+
+## Desconecta y devuelve al pool los corpses de la oleada anterior (limpia el
+## campo y evita que el recycled mob vine con una conexión vieja).
+func _limpiar_vivos() -> void:
+	for e in _vivos:
+		if not is_instance_valid(e):
+			continue
+		var id: int = e.get_instance_id()
+		if _conectados.has(id):
+			var c: Callable = _conectados[id]
+			if e.murio.is_connected(c):
+				e.murio.disconnect(c)
+			_conectados.erase(id)
+		if _pool != null:
+			_pool.devolver(e)
+	_vivos.clear()
 
 
 ## Bloque élite del arquetipo ({} si no tiene). El sorteo de respawn no
@@ -179,15 +277,11 @@ func _al_muerte(_fuente: Entity, e: Enemy) -> void:
 	if not _activa:
 		return
 	_vivos.erase(e)
-	if _vivos.is_empty():
-		var oro: int = _oro_base * _oleada
-		var xp: int = _xp_base * _oleada
-		if _jugador != null and is_instance_valid(_jugador):
-			_jugador.ganar_oro(oro)
-			_jugador.gain_xp(xp)
-		mejor_oleada = maxi(mejor_oleada, _oleada)
-		oleada_superada.emit(_oleada, oro, xp)
-		_espera = _descanso_seg
+	_conectados.erase(e.get_instance_id())
+	# Fase 42: `vivos()` poda referencias inválidas (no uses is_empty() aquí:
+	# un corpse liberado dejaría la oleada colgada para siempre).
+	if vivos() == 0:
+		_pagar_oleada()
 
 
 func _al_morir_jugador(_fuente: Entity) -> void:
@@ -202,8 +296,10 @@ func _terminar(victoria: bool) -> void:
 		mejor_oleada = maxi(mejor_oleada, int(_oleadas.size()))
 	_activa = false
 	_oleada = 0
-	_vivos.clear()
 	_espera = 0.0
+	_tiempo_oleada = 0.0
+	_oleada_pagada = false
+	_limpiar_vivos()
 	arena_terminada.emit(victoria, n)
 
 

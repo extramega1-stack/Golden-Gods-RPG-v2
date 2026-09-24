@@ -39,11 +39,12 @@ func _process(_delta: float) -> bool:
 	_test_victoria()
 	_test_save()
 	_test_maestro()
+	_test_anti_stuck()
+	_test_corpse_liberado()
 	print("[TEST] fase41_arena: %d ok, %d fallos" % [_ok, _fallos])
 	for n in _basura:
-		var nd: Node = n as Node
-		if nd != null and is_instance_valid(nd):
-			nd.queue_free()
+		if is_instance_valid(n):
+			(n as Node).queue_free()
 	quit(_fallos)
 	return true
 
@@ -203,3 +204,57 @@ func _test_maestro() -> void:
 	_chk(not Arena.es_maestro("ilya"), "f: Ilya no")
 	_chk(NpcDB.obtener("maestro_arena").get("nombre", "") != "",
 		"f: maestro en npcs.json")
+
+
+## (g) Fase 42: una oleada atascada (mobs vivos) se acerca al jugador tras
+## ESPERA_AYUDA_SEG → la arena SIEMPRE se puede terminar.
+func _test_anti_stuck() -> void:
+	var kit: Array = _kit()
+	var p: Player = kit[0]
+	var a: Arena = kit[1]
+	p.global_position = Vector3(500.0, 0.0, 500.0)
+	a.iniciar()
+	_chk(a.oleada() == 1, "g: setup oleada 1")
+	var esperado: int = a.vivos()
+	_chk(esperado > 0, "g: hay mobs vivos", str(esperado))
+	# El campo está a 1391+ m: sin ayuda, nadie llega nunca.
+	a.avanzar(Arena.ESPERA_AYUDA_SEG + 0.1)
+	var cercanos: int = 0
+	for e in a._vivos:
+		if is_instance_valid(e) and e.global_position.distance_to(p.global_position) <= Arena.RADIO_AYUDA + 1.0:
+			cercanos += 1
+	_chk(cercanos == esperado, "g: todos los mobs quedan junto al jugador",
+		"%d/%d" % [cercanos, esperado])
+	_chk(a.vivos() == esperado, "g: siguen vivos (la oleada no se saltó)")
+	var objetivo_ok: bool = true
+	for e in a._vivos:
+		if e.objetivo != p or e.estado != Enemy.Estado.PERSEGUIR:
+			objetivo_ok = false
+	_chk(objetivo_ok, "g: los mobs entran en aggro con el jugador")
+	# Mátalos: la oleada avanza (nada de quedarse colgada).
+	_matar_todo(p, a)
+	a.avanzar(999.0)
+	_chk(a.oleada() == 2, "g: tras limpiarla llega la oleada 2", str(a.oleada()))
+
+
+## (h) Fase 42: si un corpse se libera (lo recycle el streaming/pool), la
+## oleada no puede quedarse colgada — `vivos()` lo poda y el descanso corre.
+func _test_corpse_liberado() -> void:
+	var kit: Array = _kit()
+	var p: Player = kit[0]
+	var a: Arena = kit[1]
+	a.iniciar()
+	# Mata 2 de 3 y libera (free) el tercero sin pasar por die().
+	var vivos: Array = a._vivos.duplicate()
+	for i in range(vivos.size() - 1):
+		var e: Enemy = vivos[i] as Enemy
+		if is_instance_valid(e) and e.esta_vivo():
+			e.take_damage(99999.0, p)
+	var ultimo: Enemy = a._vivos[0] as Enemy
+	_chk(a.vivos() == 1, "h: queda 1 vivo tras matar 2", str(a.vivos()))
+	ultimo.free()
+	_chk(a.vivos() == 0, "h: vivos() poda el corpse liberado", str(a.vivos()))
+	a.avanzar(999.0)
+	_chk(a.oleada() == 2 and a.activa(),
+		"h: la oleada avanza aunque un corpse se haya liberado",
+		"oleada=%d activa=%s" % [a.oleada(), a.activa()])

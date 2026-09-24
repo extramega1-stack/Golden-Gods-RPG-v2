@@ -1113,4 +1113,21 @@ Tres reportes de Juan Diego, causa raíz verificada cada uno
   El panel de personaje marca el stat principal de tu clase.
 - Tests: `tests/test_fase42_dano.gd` — 44/44. Suite 100% verde + smokes.
 
+
+### Fase 42.1 — Arena: nunca se queda en una oleada (2026-09-24)
+
+Playtest: "solo aparece una oleada y no aparecen más mobs". Causas
+corregidas (con reproducción en la escena real + tests):
+- **Stall real**: si el último corpse se liberaba sin pasar por `die()` (lo
+  recycle el streaming/pool), `_espera` nunca se activaba y la arena
+  quedaba colgada para siempre. Ahora `avanzar()` poda referencias
+  inválidas (`vivos()`) y paga la recompensa desde un único sitio
+  (`_pagar_oleada`, idempotente) → la oleada siempre avanza.
+- **Oleada atascada con mobs vivos**: tras 12 s los supervivientes se
+  teletransportan junto al jugador y le entran en aggro (`ayuda_oleada`).
+- **Hueco de feedback**: los toasts dicen cuántos enemigos son y cuánto
+  falta para la siguiente (descanso 8 s → 5 s).
+- **Oleada vacía** (factory sin mobs) no se queda esperando: pasa a la
+  siguiente. Los cadáveres vuelven al pool al cerrar cada oleada.
+
 *Fin del documento maestro v3.37 — Fase 42 (fixes playtest).*

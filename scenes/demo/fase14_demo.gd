@@ -111,6 +111,7 @@ func _al_mundo_listo() -> void:
 	_arena.oleada_iniciada.connect(_al_arena_oleada)
 	_arena.oleada_superada.connect(_al_arena_superada)
 	_arena.arena_terminada.connect(_al_arena_terminada)
+	_arena.ayuda_oleada.connect(_al_arena_ayuda)
 	_dialogo.arena_solicitada.connect(_al_arena_dialogo)
 	_guardado.arena = _arena
 	super._al_mundo_listo()
@@ -180,11 +181,20 @@ func _crear_enemigo_arena(arquetipo_id: String, pos: Vector3) -> Enemy:
 
 
 func _al_arena_oleada(n: int) -> void:
-	_panel_misiones.toast("¡Oleada %d!" % n)
+	# Fase 42: dice cuántos enemigos son (antes solo el número y el jugador
+	# no sabía si quedaban vivos por los que no hadn't visto).
+	_panel_misiones.toast("Oleada %d — %d enemigos" % [n, _arena.vivos() if _arena != null else 0])
 
 
 func _al_arena_superada(n: int, oro: int, xp: int) -> void:
-	_panel_misiones.toast("¡Oleada %d superada! +%d oro, +%d XP" % [n, oro, xp])
+	var espera: int = int(round(_arena._descanso_seg)) if _arena != null else 0
+	_panel_misiones.toast("Oleada %d superada! +%d oro, +%d XP — siguiente en %ds" % [
+		n, oro, xp, espera])
+
+
+## Fase 42: los mobs que quedaban se acercaron (la oleada no puede atascarse).
+func _al_arena_ayuda(n: int) -> void:
+	_panel_misiones.toast("Te acerco a los %d enemigos restantes" % n)
 
 
 ## Victoria → de vuelta con el Maestro. Derrota: el flujo de muerte sigue
@@ -194,7 +204,7 @@ func _al_arena_terminada(victoria: bool, oleada: int) -> void:
 		_panel_misiones.toast("¡Campeón de la arena! Habla con Renn")
 		_teletransportar_arena(_retorno_arena)
 	else:
-		_panel_misiones.toast("Caíste en la oleada %d" % oleada)
+		_panel_misiones.toast("Caíste en la oleada %d — habla con Renn para repetir" % oleada)
 
 
 ## Teletransporte genérico (como el del viaje: sin damping de cámara).
