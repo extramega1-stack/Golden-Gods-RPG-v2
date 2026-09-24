@@ -220,7 +220,34 @@
       "radio_aggro": 12.0,
       "rango_ataque": 2.2,
       "respawn_seg": 15,
-      "xp": 40
+      "xp": 40,
+      "elite": {
+        "prob": 0.05,
+        "mult_fuerza": 1.5,
+        "mult_xp": 5.0,
+        "mult_oro": 5.0,
+        "tinte": [
+          1.0,
+          0.62,
+          0.12
+        ],
+        "loot_extra": [
+          {
+            "item_id": "espada_hierro",
+            "nombre": "Espada de hierro",
+            "prob": 0.1,
+            "min": 1,
+            "max": 1
+          },
+          {
+            "item_id": "collar_cobre",
+            "nombre": "Collar de cobre",
+            "prob": 0.06,
+            "min": 1,
+            "max": 1
+          }
+        ]
+      }
     },
     "lobo": {
       "agilidad": 12.0,
@@ -250,7 +277,34 @@
       "radio_aggro": 14.0,
       "rango_ataque": 2.0,
       "respawn_seg": 20,
-      "xp": 65
+      "xp": 65,
+      "elite": {
+        "prob": 0.06,
+        "mult_fuerza": 1.5,
+        "mult_xp": 5.0,
+        "mult_oro": 5.0,
+        "tinte": [
+          1.0,
+          0.62,
+          0.12
+        ],
+        "loot_extra": [
+          {
+            "item_id": "armadura_cuero",
+            "nombre": "Armadura de cuero",
+            "prob": 0.1,
+            "min": 1,
+            "max": 1
+          },
+          {
+            "item_id": "anillo_sabio",
+            "nombre": "Anillo del sabio",
+            "prob": 0.06,
+            "min": 1,
+            "max": 1
+          }
+        ]
+      }
     },
     "ogro": {
       "agilidad": 4.0,
@@ -287,7 +341,41 @@
       "radio_aggro": 10.0,
       "rango_ataque": 2.6,
       "respawn_seg": 30,
-      "xp": 120
+      "xp": 120,
+      "elite": {
+        "prob": 0.08,
+        "mult_fuerza": 1.5,
+        "mult_xp": 5.0,
+        "mult_oro": 5.0,
+        "tinte": [
+          1.0,
+          0.62,
+          0.12
+        ],
+        "loot_extra": [
+          {
+            "item_id": "escudo_madera",
+            "nombre": "Escudo de madera",
+            "prob": 0.1,
+            "min": 1,
+            "max": 1
+          },
+          {
+            "item_id": "anillo_poder",
+            "nombre": "Anillo de poder",
+            "prob": 0.08,
+            "min": 1,
+            "max": 1
+          },
+          {
+            "item_id": "botas_cuero",
+            "nombre": "Botas de cuero",
+            "prob": 0.08,
+            "min": 1,
+            "max": 1
+          }
+        ]
+      }
     },
     "susurro_umbral": {
       "agilidad": 12.0,

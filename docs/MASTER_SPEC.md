@@ -926,3 +926,17 @@ visual: lógica, APIs y saves intactos.
   búsqueda recursiva).
 
 *Fin del documento maestro v3.27 — Fase 32 (restyle FlyFF).*
+
+## Fase 33 — Élites y loot raro (2026-09-24)
+
+Caza de botín: los 3 mobs de basura pueden salir élites (los 6 jefes, nunca).
+- `data/enemies.json`: bloque `elite` en goblin (5%), lobo (6%) y ogro
+  (8%) — ×1.5 fuerza, ×5 XP/oro, tinte dorado y `loot_extra` con equipo
+  fase 31 (espada_hierro, armaduras, anillos…).
+- `Enemy`: `prob_elite()` / `hacer_elite()` (idempotente, sin mutar el
+  caché del JSON) / `sortear_elite()` con el RNG propio; `configurar()`
+  resetea (pool) y `reiniciar()` re-sortea cada reaparición. Sin bump de
+  save: el élite persiste vía stats.
+- Tests: `tests/test_fase33_elites.gd` — 58/58.
+
+*Fin del documento maestro v3.28 — Fase 33 (élites).*

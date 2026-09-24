@@ -45,6 +45,13 @@ var rng: RandomNumberGenerator = null
 
 var _tabla_loot: Dictionary = {}
 var _cd: float = 0.0
+## Fase 33 — élite data-driven (bloque "elite" del arquetipo): más fuerza,
+## ×5 XP/oro, tinte dorado, escala 1.3 y loot extra raro (equipo fase 31).
+## El sorteo vive en `sortear_elite()` (pool/respawn); `configurar()` siempre
+## resetea (reutilización del pool). Sin bloque: prob 0 (jefes nunca).
+var es_elite: bool = false
+const ESCALA_ELITE: float = 1.3
+const SUFIJO_ELITE: String = "élite"
 ## Fase 12.1: reparto del tick de IA (0..7, lo fija el streaming al
 ## instanciar) + contador de frames para escalonar el cerebro.
 var reparto: int = 0
@@ -72,7 +79,10 @@ func _ready() -> void:
 
 
 ## Aplica un arquetipo de datos (data/enemies.json): stats, IA, loot y color.
+## Fase 33: resetea el estado élite (el pool reutiliza nodos).
 func configurar(arquetipo: Dictionary) -> void:
+	es_elite = false
+	scale = Vector3.ONE
 	nombre_mostrado = str(arquetipo.get("nombre", "Enemigo"))
 	stats = StatBlock.new(
 		float(arquetipo.get("fuerza", 5.0)),
@@ -96,6 +106,47 @@ func configurar(arquetipo: Dictionary) -> void:
 		"items": items,
 	}
 	_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
+
+
+## Fase 33 — probabilidad élite del arquetipo (0 sin bloque: jefes nunca).
+static func prob_elite(arquetipo: Dictionary) -> float:
+	var bloque: Dictionary = arquetipo.get("elite", {})
+	return clampf(float(bloque.get("prob", 0.0)), 0.0, 1.0)
+
+
+## Convierte al mob en élite según el bloque: ×fuerza (recalcula vida y
+## ataque), vida/maná llenos, ×XP/oro, loot extra raro, "X élite", tinte
+## dorado y escala 1.3. Idempotente y con defaults (bloque parcial válido).
+## La lista de items se DUPLICA antes de añadir: la de configurar() es una
+## referencia al caché del JSON y no debe mutarse.
+func hacer_elite(bloque: Dictionary) -> void:
+	if es_elite:
+		return
+	es_elite = true
+	stats.set_base("fuerza", stats.fuerza * float(bloque.get("mult_fuerza", 1.5)))
+	vida_actual = stats.vida_max
+	mana_actual = stats.mana_max
+	xp_recompensa = int(roundf(float(xp_recompensa) * float(bloque.get("mult_xp", 5.0))))
+	var mo: float = float(bloque.get("mult_oro", 5.0))
+	_tabla_loot["oro_min"] = int(roundf(float(_tabla_loot.get("oro_min", 0)) * mo))
+	_tabla_loot["oro_max"] = int(roundf(float(_tabla_loot.get("oro_max", 0)) * mo))
+	var lista: Array = (_tabla_loot.get("items", []) as Array).duplicate()
+	for extra in bloque.get("loot_extra", []):
+		if extra is Dictionary:
+			lista.append((extra as Dictionary).duplicate())
+	_tabla_loot["items"] = lista
+	nombre_mostrado = "%s %s" % [nombre_mostrado, SUFIJO_ELITE]
+	_tintar(bloque.get("tinte", [1.0, 0.62, 0.12]))
+	scale = Vector3.ONE * ESCALA_ELITE
+
+
+## Sortea élite con el RNG propio (pool + respawn). Retorna si quedó élite.
+func sortear_elite(arquetipo: Dictionary) -> bool:
+	if rng == null:
+		return false
+	if rng.randf() < prob_elite(arquetipo):
+		hacer_elite(arquetipo.get("elite", {}))
+	return es_elite
 
 
 ## Color del cuerpo según el arquetipo (material COMPARTIDO por color:
@@ -254,6 +305,8 @@ func restaurar(d: Dictionary) -> void:
 ## llamarlo sobre un enemigo ya vivo solo lo reconfigura.
 func reiniciar(arquetipo: Dictionary) -> void:
 	configurar(arquetipo)
+	# Fase 33: cada reaparición re-sortea élite (con el RNG propio).
+	sortear_elite(arquetipo)
 	_muerto = false
 	estado = Estado.QUIETO
 	_cd = 0.0
