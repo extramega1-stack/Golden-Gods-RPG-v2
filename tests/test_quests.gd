@@ -128,7 +128,8 @@ func _t_db() -> void:
 	_check(not QDB.existe("mision_fantasma"), "db: no existe id inventado")
 	var ids: Array[String] = QDB.ids()
 	# Fase 22: 25 = 3 de Moon Town + 22 de las cadenas por ciudad.
-	_check(ids.size() == 25, "db: 25 misiones (3 + 22 fase 22)", str(ids.size()))
+	# Fase 23: 29 = 25 + 4 del Acto I.
+	_check(ids.size() == 29, "db: 29 misiones (3 + 22 + 4 acto I)", str(ids.size()))
 	var g: Dictionary = QDB.obtener("goblins_fuera")
 	_check(str(g.get("nombre", "")) == "Goblins fuera",
 		"db: nombre Goblins fuera")

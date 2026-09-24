@@ -80,7 +80,9 @@ func _completar_matar(q: QuestLog, qid: String, arq: String, n: int) -> void:
 
 ## (a) Catálogo.
 func _test_catalogo() -> void:
-	_chk(QD.ids().size() == 25, "a: 25 misiones", str(QD.ids().size()))
+	# Fase 23: 29 = 25 + 4 del Acto I (este test es de fase 22, solo
+	# verifica su parte + el total actualizado).
+	_chk(QD.ids().size() == 29, "a: 29 misiones", str(QD.ids().size()))
 	_chk(QD.requiere("q_oasis_agua") == "", "a: q1 sin prerrequisito")
 	_chk(QD.requiere("q_oasis_secreto") == "q_oasis_agua", "a: q2 requiere q1")
 	_chk(QD.requiere("q_oasis_devorador") == "q_oasis_secreto", "a: q3 requiere q2")

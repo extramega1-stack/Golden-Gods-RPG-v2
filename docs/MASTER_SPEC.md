@@ -819,3 +819,12 @@ De 3 a 25 misiones sin tocar el canon (prólogo local; los fragmentos verdaderos
 - Tests: `tests/test_fase22_cadenas.gd` — 67/67 (bloqueo, cadena oasis, jefe+fragmento, datos, round-trip). Tests viejos actualizados a los conteos (quests 25, items 16, spawns 1133, "!" en ambientales).
 
 *Fin del documento maestro v3.17 — Fase 22 (P2 contenido).*
+
+## Fase 23 — Acto I: cadena principal de Moon Town (2026-09-24)
+
+Cierra el prólogo con Ilya como hub (exige el trío vía `requiere: mensaje_sira`).
+- Presentación de armas (hablar Bram + Sira), Primera sangre (6 goblins), La grieta respira (2 ogros + informar), La caída de Piedraceniza (oleada de 6 lobos; el barrio viejo extramuros cae, Moon Town resiste; teaser de los seis ecos = Acto II).
+- Recompensas: cota de malla final + 300 oro + 400 XP. Catálogo: 29 misiones.
+- Tests: `tests/test_fase23_acto1.gd` — 28/28.
+
+*Fin del documento maestro v3.18 — Fase 23 (Acto I).*
