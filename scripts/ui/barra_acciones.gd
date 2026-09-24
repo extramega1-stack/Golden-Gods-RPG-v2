@@ -19,7 +19,14 @@ extends CanvasLayer
 ## no se consume: el clic-para-moverse sigue funcionando a través de él.
 
 const NUM_SLOTS: int = 8
-const TECLAS: Array[String] = ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8"]
+## Etiqueta por slot: los 5 primeros se disparan con número Y con F
+## (fase 37: vía única — el Player ya no escucha habilidad_*; el número
+## ejecuta el SLOT VISIBLE, no ids[N-1]).
+const TECLAS: Array[String] = ["1/F1", "2/F2", "3/F3", "4/F4", "5/F5", "F6", "F7", "F8"]
+## Teclas numéricas 1-5 → slots visibles 0-4 (lo que se ve es lo que suena).
+const TECLAS_NUMERO: Array[String] = [
+	"habilidad_1", "habilidad_2", "habilidad_3", "habilidad_4", "habilidad_5",
+]
 const SAVE_VERSION_BARRA: int = 1
 
 ## Etiqueta pequeña arrastrable (fuente de drag & drop). La usan el chip de
@@ -303,6 +310,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	for i in range(NUM_SLOTS):
 		if event.is_action_pressed("barra_%d" % [i + 1]):
 			ejecutar(i)
+			get_viewport().set_input_as_handled()
+			return
+	# Fase 37: las teclas numéricas disparan los slots visibles 1-5
+	# (vía única; el Player no escucha habilidad_* para no duplicar ni
+	# desfasar con el offset de ataque del slot 1).
+	for n in range(TECLAS_NUMERO.size()):
+		if event.is_action_pressed(TECLAS_NUMERO[n]):
+			ejecutar(n)
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("limpiar_slot"):

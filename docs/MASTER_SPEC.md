@@ -994,3 +994,26 @@ El equipo se ve en el héroe (skills `godot-3d-essentials` + `rpg`).
 - Tests: `tests/test_fase36_paperdoll.gd` — 38/38.
 
 *Fin del documento maestro v3.31 — Fase 36 (paper-doll).*
+
+## Fase 37 — Fixes playtest: barra, XP, HP (2026-09-24)
+
+Tres reportes de Juan Diego, cada uno con causa raíz verificada (skills
+`systematic-debugging` + `game-ui-ux` + `rpg`).
+- **Tecla 4 ejecutaba el 5**: doble vía desincronizada (el Player mapeaba
+  1-5 a `ids[]` directo; la barra muestra ataque en el slot 1 + offset).
+  Vía única: las numéricas las atiende `BarraAcciones` (disparan el SLOT
+  VISIBLE 1-5); el Player ya no escucha `habilidad_*` (`lanzar_skill`
+  queda como API). Etiquetas "1/F1".."5/F5".
+- **15 kills sin subir**: el mecanismo otorga bien (soda: 15 goblins →
+  Nv 4, 600 XP). Defectos reales: la barra XP pintaba acumulados (nunca
+  se reseteaba) → ahora muestra el tramo del nivel (`HUD.tramo_xp`,
+  puro y testeado); y no había ningún feedback de recompensa → toast
+  "+N XP" al matar (`_al_morir_enemigo`, solo asesino = jugador).
+- **Mago 1150 → 600**: `aplicar_clase` no emitía señales y el HUD
+  (event-driven) quedaba con el valor del guerrero hasta el primer golpe.
+  Ahora emite `vida_cambiada` + `mana_cambiado` con los máximos nuevos.
+- Extra: test fase35 flaky (sorteo élite 5% en el check de reiniciar) →
+  determinista sin bloque élite.
+- Tests: `tests/test_fase37_fixes.gd` — 11/11. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.32 — Fase 37 (fixes playtest).*

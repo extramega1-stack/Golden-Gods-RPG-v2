@@ -153,17 +153,10 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("habilidad_1"):
-		lanzar_skill(0)
-	elif event.is_action_pressed("habilidad_2"):
-		lanzar_skill(1)
-	elif event.is_action_pressed("habilidad_3"):
-		lanzar_skill(2)
-	elif event.is_action_pressed("habilidad_4"):
-		lanzar_skill(3)
-	elif event.is_action_pressed("habilidad_5"):
-		lanzar_skill(4)
-	elif event.is_action_pressed("atacar"):
+	# Fase 37: las teclas de skills las atiende la BarraAcciones (vía
+	# única: ejecuta el SLOT VISIBLE, con el offset de ataque incluido).
+	# lanzar_skill(i) queda como API (tests y otros sistemas).
+	if event.is_action_pressed("atacar"):
 		# Fase 5.1: tecla reasignable (Input Map, acción "atacar").
 		solicitar_ataque()
 	elif event.is_action_pressed("interactuar"):
@@ -810,6 +803,11 @@ func aplicar_clase(id: String) -> void:
 	stats.recalc()
 	vida_actual = stats.vida_max
 	mana_actual = stats.mana_max
+	# Fase 37: el HUD es event-driven — sin estos emits queda pintando la
+	# clase anterior (p. ej. 1150 del guerrero al elegir mago) hasta el
+	# primer golpe.
+	vida_cambiada.emit(vida_actual, stats.vida_max)
+	mana_cambiado.emit(mana_actual, stats.mana_max)
 
 
 ## Descuenta oro (lo usa la tienda, fase 7). Retorna false SIN TOCAR NADA

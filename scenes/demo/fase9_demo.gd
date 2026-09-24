@@ -475,6 +475,10 @@ func _al_recoger_botin(drop: Dictionary) -> void:
 
 func _al_morir_enemigo(_fuente: Entity, e: Enemy) -> void:
 	e.ocultar_cuerpo()
+	# Fase 37: feedback de la recompensa (el loop Earn del RPG debe VERSE:
+	# sin esto 15 kills a nivel alto se sienten como "no subo").
+	if _fuente != null and _fuente == _jugador and _panel_misiones != null:
+		_panel_misiones.toast("+%d XP" % e.xp_recompensa)
 	# Fase 19.1: el cadáver se reemplaza en la lista cuando el spawner lo
 	# reaparezca (se busca por cercanía en _al_reaparecer_enemigo).
 	# Fase 8: las muertes avanzan los objetivos "matar".

@@ -114,7 +114,11 @@ func _test_configurar() -> void:
 		"b: vida del jefe intacta", str(j.stats.vida_max))
 	# El pool re-aplica al reiniciar (configurar fresco, sin mods viejos).
 	g.stats.add_mod("externo", "ataque", StatBlock.ModKind.PLANO, 99.0)
-	g.reiniciar((aqs.get("goblin", {}) as Dictionary).duplicate(true))
+	# Fase 37: sin bloque élite (el sorteo 5% del goblin hacía este check
+	# flaky: un élite cambia la vida y el test falla sin que nada esté roto).
+	var aq_sin_elite: Dictionary = (aqs.get("goblin", {}) as Dictionary).duplicate(true)
+	aq_sin_elite.erase("elite")
+	g.reiniciar(aq_sin_elite)
 	_chk(is_equal_approx(g.stats.vida_max, 240.0)
 			and not g.stats.has_mod("externo"),
 		"b: reiniciar re-aplica limpio")

@@ -148,12 +148,34 @@ func _al_mana(actual: float, maxima: float) -> void:
 
 
 func _al_xp(actual: int, siguiente: int) -> void:
-	_barra_xp.max_value = float(maxi(siguiente, 1))
-	_barra_xp.value = float(actual)
+	# Fase 37: tramo dentro del nivel (antes se pintaban acumulados y la
+	# barra nunca se reseteaba al subir).
+	var t: Vector2 = tramo_xp(actual, _nivel_actual())
+	_barra_xp.max_value = t.y
+	_barra_xp.value = t.x
+
+
+## Tramo de XP del nivel dado, puro y testeable: x = valor, y = máximo.
+## Acotado (nunca negativo ni por encima del máximo).
+static func tramo_xp(actual: int, nivel: int) -> Vector2:
+	var base: int = Formulas.xp_for_level(maxi(nivel, 1))
+	var siguiente: int = Formulas.xp_for_level(maxi(nivel, 1) + 1)
+	var maximo: float = float(maxi(siguiente - base, 1))
+	var valor: float = clampf(float(actual - base), 0.0, maximo)
+	return Vector2(valor, maximo)
+
+
+func _nivel_actual() -> int:
+	if _jugador != null:
+		return _jugador.nivel
+	return 1
 
 
 func _al_nivel(nivel: int) -> void:
 	_etiqueta_nivel.text = "Nv %d" % nivel
+	# Fase 37: al subir cambia la base del tramo; se repinta con el XP actual.
+	if _jugador != null:
+		_al_xp(_jugador.xp_actual, Formulas.xp_for_level(nivel + 1))
 
 
 func _al_oro(oro: int) -> void:
