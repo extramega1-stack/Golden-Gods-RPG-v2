@@ -1066,3 +1066,19 @@ Asesino DEX puro con datos, sin tocar código de sistemas (`rpg`).
 - Tests: `tests/test_fase40_daguero.gd` — 34/34. Suite 100% verde + smokes.
 
 *Fin del documento maestro v3.35 — Fase 40 (daguero).*
+
+## Fase 41 — Arena PvE por oleadas (2026-09-24)
+
+10 oleadas data-driven en campo remoto + trofeos locales (`rpg`).
+- `data/arena.json` v1: centro (-2000,-8000, spawn salvaje más cercano a
+  1391 m), 10 oleadas (3→11 fieras, élites desde la 6), oro/XP extra ×N.
+- `scripts/arena/arena.gd`: factory inyectada (pool), descanso 8 s
+  (`avanzar(dt)` testeable), derrota al morir, victoria en la 10,
+  trofeos mejor_oleada/victorias (save v12).
+- Entrada: Maestro Renn en Moon Town (npcs.json v2 + spawn) → "Entrenar"
+  en el diálogo → teleport + oleadas; victoria devuelve a la plaza; al
+  cargar dentro del campo se vuelve a Moon (anti-atasco).
+- Los kills dan su XP/loot y cuentan para misiones de matar.
+- Tests: `tests/test_fase41_arena.gd` — 27/27. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.36 — Fase 41 (arena).*

@@ -111,8 +111,8 @@ func _test_save_v9() -> void:
 	_chk(s.guardar(), "c: guardar v9")
 	var crudo: Variant = JSON.parse_string(
 		FileAccess.get_file_as_string(SaveSystem.RUTA))
-	_chk(int((crudo as Dictionary).get("version", 0)) == 11,
-		"c: version 11 en disco (fase 39)")
+	_chk(int((crudo as Dictionary).get("version", 0)) == 12,
+		"c: version 12 en disco (fase 41)")
 	var dj: Dictionary = (crudo as Dictionary).get("jugador", {})
 	_chk(int(dj.get("puntos_atributo", -1)) == p.puntos_atributo,
 		"c: puntos guardados")

@@ -50,7 +50,7 @@ func _npcs() -> Array:
 ## (a) Conteos por NPC.
 func _test_conteos() -> void:
 	var lista: Array = _npcs()
-	_chk(lista.size() == 20, "a: 20 npcs", str(lista.size()))
+	_chk(lista.size() == 21, "a: 21 npcs (fase 41: +maestro)", str(lista.size()))
 	var por_id: Dictionary = {}
 	for x in lista:
 		por_id[str((x as Dictionary).get("id", ""))] = x

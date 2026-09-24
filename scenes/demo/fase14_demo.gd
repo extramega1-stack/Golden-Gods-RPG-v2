@@ -52,6 +52,10 @@ const _NPC_CIUDAD_SEC: Dictionary = {
 ## Fase 16: lógica del viaje rápido (sin UI; la UI solo lee).
 var _viaje: ViajeRapido = null
 @onready var _panel_viaje: PanelViaje = $PanelViaje
+## Fase 41: arena PvE (manager de oleadas; los trofeos viajan en el save).
+var _arena: Arena = null
+## Punto de retorno al salir de la arena (plaza del Maestro).
+var _retorno_arena: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -94,6 +98,21 @@ func _al_mundo_listo() -> void:
 	_viaje.cargar_datos()
 	_dialogo.viaje_solicitado.connect(_al_viaje_dialogo)
 	_panel_viaje.viaje_solicitado.connect(_al_destino_viaje)
+	# Fase 41: arena — "Entrenar" con el Maestro teletransporta al campo
+	# remoto y arranca las oleadas; los trofeos se guardan con la partida.
+	_arena = Arena.new()
+	_arena.name = "Arena"
+	add_child(_arena)
+	_arena.configurar(_cargar_arena_json())
+	_arena.fijar_factory(_crear_enemigo_arena)
+	_arena.fijar_pool(_pool)
+	_arena.fijar_arquetipos(_arquetipos)
+	_arena.fijar_jugador(_jugador)
+	_arena.oleada_iniciada.connect(_al_arena_oleada)
+	_arena.oleada_superada.connect(_al_arena_superada)
+	_arena.arena_terminada.connect(_al_arena_terminada)
+	_dialogo.arena_solicitada.connect(_al_arena_dialogo)
+	_guardado.arena = _arena
 	super._al_mundo_listo()
 
 
@@ -132,6 +151,93 @@ func _fraccion_ciudades() -> float:
 	if n <= 0:
 		return 1.0
 	return suma / float(n)
+
+
+## Fase 41 — entrada a la arena: guarda el retorno, teletransporta al
+## campo remoto y arranca las oleadas.
+func _al_arena_dialogo(_npc: NPC) -> void:
+	if _arena == null or _jugador == null:
+		return
+	_retorno_arena = _jugador.global_position
+	_teletransportar_arena(_arena.centro_campo())
+	_arena.iniciar()
+	_panel_misiones.toast("Arena: sobrevive a las 10 oleadas")
+
+
+## Factory de la arena: como el streaming pero sin vigilancia de respawn
+## (la arena cuenta sus muertes y limpia al detener).
+func _crear_enemigo_arena(arquetipo_id: String, pos: Vector3) -> Enemy:
+	var e: Enemy = _crear_enemigo(arquetipo_id, pos)
+	if e == null:
+		return null
+	if not e.botin_generado.is_connected(_al_botin_generado):
+		e.botin_generado.connect(_al_botin_generado)
+	if not e.murio.is_connected(_al_morir_enemigo.bind(e)):
+		e.murio.connect(_al_morir_enemigo.bind(e))
+	e.terreno = _terreno
+	e._pegar_al_terreno()
+	return e
+
+
+func _al_arena_oleada(n: int) -> void:
+	_panel_misiones.toast("¡Oleada %d!" % n)
+
+
+func _al_arena_superada(n: int, oro: int, xp: int) -> void:
+	_panel_misiones.toast("¡Oleada %d superada! +%d oro, +%d XP" % [n, oro, xp])
+
+
+## Victoria → de vuelta con el Maestro. Derrota: el flujo de muerte sigue
+## (el respawn existente devuelve al héroe; la arena ya registró el trofeo).
+func _al_arena_terminada(victoria: bool, oleada: int) -> void:
+	if victoria:
+		_panel_misiones.toast("¡Campeón de la arena! Habla con Renn")
+		_teletransportar_arena(_retorno_arena)
+	else:
+		_panel_misiones.toast("Caíste en la oleada %d" % oleada)
+
+
+## Teletransporte genérico (como el del viaje: sin damping de cámara).
+func _teletransportar_arena(dest: Vector3) -> void:
+	if _jugador == null:
+		return
+	var p := Vector3(dest.x, dest.y, dest.z)
+	if _terreno != null:
+		p.y = _terreno.altura_en(p.x, p.z)
+	_jugador.deseleccionar()
+	_jugador.global_position = p
+	_jugador._pegar_al_terreno()
+	if _rig != null:
+		_rig.global_position = _jugador.global_position
+
+
+func _cargar_arena_json() -> Dictionary:
+	var texto: String = FileAccess.get_file_as_string("res://data/arena.json")
+	if texto.is_empty():
+		push_warning("[Fase14] no se pudo leer res://data/arena.json")
+		return {}
+	var crudo: Variant = JSON.parse_string(texto)
+	if crudo is Dictionary:
+		return crudo
+	push_warning("[Fase14] JSON inválido en res://data/arena.json")
+	return {}
+
+
+## Cargar dentro del campo con la arena apagada te devolvía al vacío:
+## al cargar se vuelve a la plaza de Moon Town (la arena se detiene).
+func _cargar_partida_guardada() -> bool:
+	var cargo: bool = super._cargar_partida_guardada()
+	if cargo and _arena != null and _jugador != null:
+		_arena.detener()
+		var c: Vector3 = _arena.centro_campo()
+		var d: Vector2 = Vector2(_jugador.global_position.x - c.x,
+			_jugador.global_position.z - c.z)
+		if d.length() < 200.0 and _ciudad != null:
+			_jugador.global_position = _ciudad.punto_aparicion_jugador()
+			_jugador._pegar_al_terreno()
+			if _rig != null:
+				_rig.global_position = _jugador.global_position
+	return cargo
 
 
 ## Fase 16 — "Viajar" en el diálogo de un portero: abre el PanelViaje con

@@ -173,6 +173,11 @@
       "nota": "portero de viaje rápido (fase 16)",
       "x": 30.0,
       "z": -15.0
+    },
+    "maestro_arena": {
+      "nota": "maestro de arena (fase 41)",
+      "x": 20.0,
+      "z": 70.0
     }
   },
   "plaza_radio": 60.0,

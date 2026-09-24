@@ -161,7 +161,7 @@ func _test_save() -> void:
 	var s: SaveSystem = SS.new()
 	s.jugador = p
 	s.tutorial = t
-	_chk(SaveSystem.SAVE_VERSION == 11, "save: versión 11")
+	_chk(SaveSystem.SAVE_VERSION == 12, "save: versión 12 (fase 41)")
 	_chk(s.guardar(), "save: guarda con tutorial")
 	var crudo: Variant = JSON.parse_string(
 		FileAccess.get_file_as_string("user://partida.json"))

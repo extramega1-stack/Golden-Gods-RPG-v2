@@ -25,6 +25,9 @@ signal mision_solicitada(npc: NPC)
 ## Fase 16: el jugador pulsó "Viajar" con un NPC portero (la demo abre el
 ## PanelViaje; el diálogo se cierra solo).
 signal viaje_solicitado(npc: NPC)
+## Fase 41: el jugador pulsó "Entrenar" con el Maestro de arena (la demo
+## teletransporta al campo y arranca las oleadas; el diálogo se cierra).
+signal arena_solicitada(npc: NPC)
 
 var _npc: NPC = null
 var _lineas: Array[String] = []
@@ -44,6 +47,9 @@ var _desc_mision: Label = null
 ## Fase 16: "Viajar" solo si el NPC actual es portero (viaje_id en
 ## data/npcs.json; sin viaje_id no hay botón ni flujo).
 var _boton_viajar: Button = null
+## Fase 41: "Entrenar" solo si el NPC actual es maestro de arena
+## (flag `arena` en data/npcs.json; sin flag no hay botón ni flujo).
+var _boton_entrenar: Button = null
 
 
 func _ready() -> void:
@@ -162,6 +168,15 @@ func _construir() -> void:
 	fila.add_child(_boton_viajar)
 	_boton_viajar.visible = false
 
+	# Fase 41: "Entrenar" solo si el NPC es maestro de arena.
+	_boton_entrenar = Button.new()
+	_boton_entrenar.text = "Entrenar"
+	_boton_entrenar.focus_mode = Control.FOCUS_NONE
+	_boton_entrenar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton_entrenar.pressed.connect(_al_entrenar)
+	fila.add_child(_boton_entrenar)
+	_boton_entrenar.visible = false
+
 
 ## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
 func mostrar(npc: NPC) -> void:
@@ -176,6 +191,8 @@ func mostrar(npc: NPC) -> void:
 	_boton_comerciar.visible = TiendaDB.tienda_de_npc(npc.npc_id) != ""
 	# Fase 16: botón "Viajar" solo para NPCs portero.
 	_boton_viajar.visible = ViajeRapido.viaje_id_de_npc(npc.npc_id) != ""
+	# Fase 41: botón "Entrenar" solo para el Maestro de arena.
+	_boton_entrenar.visible = Arena.es_maestro(npc.npc_id)
 	# Fase 8: la misión se refresca desde fuera (la demo llama
 	# mostrar_mision()); aquí se oculta para no arrastrar estado viejo.
 	_boton_mision.visible = false
@@ -301,6 +318,15 @@ func _al_viajar() -> void:
 		return
 	var n: NPC = _npc
 	viaje_solicitado.emit(n)
+	cerrar()
+
+
+## Fase 41: pulsar "Entrenar" emite la señal y cierra el diálogo.
+func _al_entrenar() -> void:
+	if not esta_abierta() or _npc == null:
+		return
+	var n: NPC = _npc
+	arena_solicitada.emit(n)
 	cerrar()
 
 

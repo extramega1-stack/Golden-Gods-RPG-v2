@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 11
+const SAVE_VERSION: int = 12
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -30,6 +30,9 @@ var barra_acciones: BarraAcciones = null
 ## Fase 39: tutorial guiado (paso + hecho). Sin asignar, el bloque
 ## "tutorial" se guarda sin hacer y la carga avisa sin reventar.
 var tutorial: Tutorial = null
+## Fase 41: arena PvE (mejor oleada + victorias). Sin asignar, el bloque
+## "arena" se guarda a cero y la carga avisa sin reventar.
+var arena: Arena = null
 
 
 func hay_partida() -> bool:
@@ -64,6 +67,7 @@ func guardar() -> bool:
 		"misiones": misiones.to_dict() if misiones != null else {"version": QuestLog.SAVE_VERSION, "misiones": {}},
 		"barra_acciones": barra_acciones.to_dict() if barra_acciones != null else {},
 		"tutorial": tutorial.to_dict() if tutorial != null else {"version": Tutorial.SAVE_VERSION_TUTORIAL, "hecho": false, "paso": 0},
+		"arena": arena.to_dict() if arena != null else {"version": Arena.SAVE_VERSION_ARENA, "mejor_oleada": 0, "victorias": 0},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -96,6 +100,7 @@ func cargar() -> bool:
 	_cargar_misiones(datos.get("misiones", {}))
 	_cargar_barra(datos.get("barra_acciones", {}))
 	_cargar_tutorial(datos.get("tutorial", {}), version)
+	_cargar_arena(datos.get("arena", {}))
 	return true
 
 
@@ -265,14 +270,26 @@ func _cargar_barra(bloque: Dictionary) -> void:
 
 ## Fase 39 — tutorial. Tolerante: sin bloque o save anterior a v11 (era
 ## pre-tutorial) se marca hecho — un veterano que carga no recibe prompts.
+## Los saves v11+ respetan su bloque.
 func _cargar_tutorial(bloque: Dictionary, version_raiz: int) -> void:
 	if tutorial == null:
 		push_warning("[SaveSystem] sin tutorial asignado; el estado queda sin cargar")
 		return
-	if bloque.is_empty() or version_raiz < SAVE_VERSION:
+	if bloque.is_empty() or version_raiz < 11:
 		tutorial.cargar_estado({"hecho": true})
 		return
 	tutorial.cargar_estado(bloque)
+
+
+## Fase 41 — arena. Tolerante: sin bloque se queda a cero (trofeos frescos).
+func _cargar_arena(bloque: Dictionary) -> void:
+	if arena == null:
+		push_warning("[SaveSystem] sin arena asignada; los trofeos quedan sin cargar")
+		return
+	if bloque.is_empty():
+		arena.cargar_estado({})
+		return
+	arena.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que

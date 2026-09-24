@@ -8,7 +8,7 @@ extends SceneTree
 
 const INTERVALO_TP_MS: int = 900
 const TIMEOUT_MS: int = 180000
-const NPCS_ESPERADOS: int = 20  # 3 historia + 8 ambientales + 9 porteros (fase 16)
+const NPCS_ESPERADOS: int = 21  # 3 historia + 8 ambientales + 9 porteros (fase 16) + maestro arena (fase 41)
 
 var _demo: Node = null
 var _jugador: Node3D = null
