@@ -26,4 +26,8 @@ func _al_iniciar() -> void:
 		# (skills de la clase) y el libro de habilidades.
 		_barra.restablecer_defecto()
 		_barra.reconstruir_libro()
+		# Fase 39: nueva partida → arranca el tutorial (al continuar lo
+		# restaura el save y no se muestra).
+		if _tutorial != null:
+			_tutorial.empezar()
 	DatosSesion.limpiar()

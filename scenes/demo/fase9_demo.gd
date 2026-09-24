@@ -59,6 +59,8 @@ var _estados_mision: Dictionary = {}
 ## Fase 9.2: mientras se carga una partida se suprimen los banners (el
 ## progreso restaurado no es "recién completado").
 var _suprimir_banners: bool = false
+## Fase 39: tutorial guiado (nodo hijo; la demo hija decide empezar o no).
+var _tutorial: Tutorial = null
 
 
 func _ready() -> void:
@@ -121,6 +123,12 @@ func _ready() -> void:
 	_jugador.hablar_con.connect(_al_hablar_con)
 	_dialogo.mision_solicitada.connect(_al_mision_dialogo)
 	_panel_misiones.conectar(_jugador, _misiones)
+	# Fase 39: tutorial guiado (prompts por toast; la demo hija lo arranca
+	# solo en nueva partida — al continuar lo restaura el save).
+	_tutorial = Tutorial.new()
+	_tutorial.name = "Tutorial"
+	add_child(_tutorial)
+	_tutorial.conectar(_jugador, _misiones, Callable(_panel_misiones, "toast"))
 	# Fase 7: "Comerciar" en el diálogo abre el panel de la tienda.
 	_tienda = Tienda.new()
 	_dialogo.comerciar_solicitado.connect(_al_comerciar)
@@ -140,6 +148,8 @@ func _ready() -> void:
 	_guardado.misiones = _misiones
 	# Fase 17: las asignaciones de la barra de acciones se guardan/cargan.
 	_guardado.barra_acciones = _barra
+	# Fase 39: el estado del tutorial se guarda/carga con el SaveSystem.
+	_guardado.tutorial = _tutorial
 	# Pickups de prueba junto al spawn (el jugador arranca en el origen).
 	_colocar_pickup("espada_corta", Vector3(2.0, 0.0, 2.0))
 	_colocar_pickup("pocion_vida", Vector3(-2.0, 0.0, 2.0))
@@ -181,6 +191,8 @@ func _cargar_partida_guardada() -> bool:
 		_panel_eq.conectar(_jugador)
 		_panel_tienda.conectar(_jugador)
 		_panel_misiones.conectar(_jugador, _misiones)
+		if _tutorial != null and is_instance_valid(_tutorial):
+			_tutorial.refrescar_conexiones()
 		if _panel_habilidades != null and is_instance_valid(_panel_habilidades):
 			_panel_habilidades.conectar(_jugador)
 		if _panel_personaje != null and is_instance_valid(_panel_personaje):

@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 10
+const SAVE_VERSION: int = 11
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -27,6 +27,9 @@ var misiones: QuestLog = null
 ## Fase 17: barra de acciones (asignaciones de slots). Sin asignar, el
 ## bloque "barra_acciones" se guarda vacío y la carga avisa sin reventar.
 var barra_acciones: BarraAcciones = null
+## Fase 39: tutorial guiado (paso + hecho). Sin asignar, el bloque
+## "tutorial" se guarda sin hacer y la carga avisa sin reventar.
+var tutorial: Tutorial = null
 
 
 func hay_partida() -> bool:
@@ -60,6 +63,7 @@ func guardar() -> bool:
 		"tiendas": tienda.to_dict() if tienda != null else {"version": Tienda.SAVE_VERSION, "tiendas": {}},
 		"misiones": misiones.to_dict() if misiones != null else {"version": QuestLog.SAVE_VERSION, "misiones": {}},
 		"barra_acciones": barra_acciones.to_dict() if barra_acciones != null else {},
+		"tutorial": tutorial.to_dict() if tutorial != null else {"version": Tutorial.SAVE_VERSION_TUTORIAL, "hecho": false, "paso": 0},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -91,6 +95,7 @@ func cargar() -> bool:
 	_cargar_tiendas(datos.get("tiendas", {}))
 	_cargar_misiones(datos.get("misiones", {}))
 	_cargar_barra(datos.get("barra_acciones", {}))
+	_cargar_tutorial(datos.get("tutorial", {}), version)
 	return true
 
 
@@ -256,6 +261,18 @@ func _cargar_barra(bloque: Dictionary) -> void:
 		barra_acciones.restablecer_defecto()
 		return
 	barra_acciones.cargar_estado(bloque)
+
+
+## Fase 39 — tutorial. Tolerante: sin bloque o save anterior a v11 (era
+## pre-tutorial) se marca hecho — un veterano que carga no recibe prompts.
+func _cargar_tutorial(bloque: Dictionary, version_raiz: int) -> void:
+	if tutorial == null:
+		push_warning("[SaveSystem] sin tutorial asignado; el estado queda sin cargar")
+		return
+	if bloque.is_empty() or version_raiz < SAVE_VERSION:
+		tutorial.cargar_estado({"hecho": true})
+		return
+	tutorial.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que

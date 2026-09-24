@@ -1033,3 +1033,20 @@ Cierra el plan futuro del legado (§5.3) sobre la vía única de la Fase 37.
 - Tests: `tests/test_fase38_rebind.gd` — 24/24. Suite 100% verde + smokes.
 
 *Fin del documento maestro v3.33 — Fase 38 (rebind por slot).*
+
+## Fase 39 — Tutorial guiado (2026-09-24)
+
+Onboarding teach-then-test (skills `rpg` + `level-design`): 6 pasos como
+datos (mover → atacar → skill → poción → hablar → misión) que avanzan por
+eventos y anuncian el siguiente por toast. Nunca bloquea.
+- `scripts/tutorial/tutorial.gd`: escucha señales existentes
+  (`intencion_atacar`, `skill_usada`, `inventario.cambiado`, `hablar_con`,
+  `QuestLog.cambiada`) + posición para el mover. Poción y misión comparan
+  foto-antes/ahora (el loot no avanza; matar no acepta).
+- Save v11: bloque `tutorial` (paso + hecho). Sin bloque o save < v11 →
+  hecho (el veterano que carga no recibe prompts).
+- Demo: fase9 crea/conecta; fase11 lo arranca solo en nueva partida; al
+  cargar se re-suscribe el inventario nuevo (`refrescar_conexiones`).
+- Tests: `tests/test_fase39_tutorial.gd` — 25/25. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.34 — Fase 39 (tutorial).*
