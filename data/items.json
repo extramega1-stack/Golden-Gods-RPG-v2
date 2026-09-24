@@ -572,6 +572,276 @@
    "precio_venta": 45,
    "max_stack": 99,
    "mods": []
+  },
+  {
+   "id": "daga_carina",
+   "nombre": "Daga de Carina",
+   "descripcion": "Daga ligera del desierto: rápido y certero.",
+   "tipo": "arma",
+   "slot": "arma",
+   "rareza": "rara",
+   "precio_venta": 195,
+   "precio_compra": 78,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "ataque",
+     "valor": 14.0,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.06,
+     "kind": 0
+    },
+    {
+     "stat": "vel_ataque",
+     "valor": 0.04,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "lanza_hielo",
+   "nombre": "Lanza de Hielo",
+   "descripcion": "Acero del norte que no se deshace.",
+   "tipo": "arma",
+   "slot": "arma",
+   "rareza": "magico",
+   "precio_venta": 240,
+   "precio_compra": 96,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "ataque",
+     "valor": 20.0,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.08,
+     "kind": 0
+    },
+    {
+     "stat": "mana_max",
+     "valor": 15.0,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "daga_seda",
+   "nombre": "Daga de Seda",
+   "descripcion": "El filo sigue envenenado mucho después del golpe.",
+   "tipo": "arma",
+   "slot": "arma",
+   "rareza": "magico",
+   "precio_venta": 240,
+   "precio_compra": 96,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "ataque",
+     "valor": 16.0,
+     "kind": 0
+    },
+    {
+     "stat": "vel_ataque",
+     "valor": 0.06,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.04,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "guantes_umbral",
+   "nombre": "Guantes del Umbral",
+   "descripcion": "El Veloz se aferra a tus manos un instante más.",
+   "tipo": "armadura",
+   "slot": "guantes",
+   "rareza": "rara",
+   "precio_venta": 180,
+   "precio_compra": 72,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "defensa",
+     "valor": 6.0,
+     "kind": 0
+    },
+    {
+     "stat": "vel_ataque",
+     "valor": 0.1,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.04,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "amuleto_perla",
+   "nombre": "Amuleto de Perla",
+   "descripcion": "La perla del abismo late cuando te acercas al fin.",
+   "tipo": "accesorio",
+   "slot": "amuleto",
+   "rareza": "rara",
+   "precio_venta": 210,
+   "precio_compra": 84,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "vida_max",
+     "valor": 30.0,
+     "kind": 0
+    },
+    {
+     "stat": "mana_max",
+     "valor": 10.0,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.03,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "botas_lamento",
+   "nombre": "Botas del Lamento",
+   "descripcion": "Pisas donde cantó la costa.",
+   "tipo": "armadura",
+   "slot": "botas",
+   "rareza": "rara",
+   "precio_venta": 180,
+   "precio_compra": 72,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "defensa",
+     "valor": 6.0,
+     "kind": 0
+    },
+    {
+     "stat": "vel_mov",
+     "valor": 0.8,
+     "kind": 0
+    },
+    {
+     "stat": "vida_max",
+     "valor": 20.0,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "hoja_ascua",
+   "nombre": "Hoja de Ascua",
+   "descripcion": "Fuego del volcán tallado en acero.",
+   "tipo": "arma",
+   "slot": "arma",
+   "rareza": "magico",
+   "precio_venta": 255,
+   "precio_compra": 102,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "ataque",
+     "valor": 22.0,
+     "kind": 0
+    },
+    {
+     "stat": "ataque",
+     "valor": 0.12,
+     "kind": 1
+    }
+   ]
+  },
+  {
+   "id": "martillo_golem",
+   "nombre": "Martillo de Gólem",
+   "descripcion": "Pesado como su origen. Lento, demoledor.",
+   "tipo": "arma",
+   "slot": "arma",
+   "rareza": "magico",
+   "precio_venta": 240,
+   "precio_compra": 96,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "ataque",
+     "valor": 26.0,
+     "kind": 0
+    },
+    {
+     "stat": "vel_ataque",
+     "valor": -0.08,
+     "kind": 0
+    },
+    {
+     "stat": "vida_max",
+     "valor": 20.0,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "coraza_centinela",
+   "nombre": "Coraza de la Centinela",
+   "descripcion": "Oro de la Corona Quebrada en placas.",
+   "tipo": "armadura",
+   "slot": "armadura",
+   "rareza": "magico",
+   "precio_venta": 300,
+   "precio_compra": 120,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "defensa",
+     "valor": 26.0,
+     "kind": 0
+    },
+    {
+     "stat": "vida_max",
+     "valor": 60.0,
+     "kind": 0
+    }
+   ]
+  },
+  {
+   "id": "foco_vacio",
+   "nombre": "Foco Vacío",
+   "descripcion": "Un fragmento del Velo encendido desde dentro.",
+   "tipo": "accesorio",
+   "slot": "anillo",
+   "rareza": "magico",
+   "precio_venta": 300,
+   "precio_compra": 120,
+   "max_stack": 1,
+   "mods": [
+    {
+     "stat": "poder",
+     "valor": 8.0,
+     "kind": 0
+    },
+    {
+     "stat": "crit_prob",
+     "valor": 0.06,
+     "kind": 0
+    },
+    {
+     "stat": "mana_max",
+     "valor": 15.0,
+     "kind": 0
+    }
+   ]
   }
  ],
  "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo.",

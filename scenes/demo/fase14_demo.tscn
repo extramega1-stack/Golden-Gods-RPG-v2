@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://scripts/combate/game_feel.gd" id="21_gamefeel"]
 [ext_resource type="Script" path="res://scripts/ui/panel_habilidades.gd" id="22_talentos"]
 [ext_resource type="Script" path="res://scripts/ui/panel_personaje.gd" id="23_personaje"]
+[ext_resource type="Script" path="res://scripts/ui/panel_herreria.gd" id="24_herreria"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_heroe"]
 radius = 0.4
@@ -97,6 +98,9 @@ script = ExtResource("12_dialogo")
 
 [node name="PanelTienda" type="CanvasLayer" parent="."]
 script = ExtResource("13_tienda")
+
+[node name="PanelHerreria" type="CanvasLayer" parent="."]
+script = ExtResource("24_herreria")
 
 [node name="PanelMisiones" type="CanvasLayer" parent="."]
 script = ExtResource("14_misiones")

@@ -34,6 +34,8 @@ const PANEL_PERSONAJE: int = 31
 const VENTANA_DIALOGO: int = 81
 ## Fase 7: panel de tienda (rango 80–89 = tiendas/diálogos).
 const PANEL_TIENDA: int = 82
+## Fase 44: panel de herrería (rango 80–89, junto a la tienda).
+const PANEL_HERRERIA: int = 83
 ## Fase 11: pantalla de título (rango 90–99 = modales críticos).
 const TITULO: int = 90
 ## Fase 20: pantalla de carga del mundo (lo más alto: tapa todo).

@@ -1,0 +1,208 @@
+{
+ "version": 1,
+ "nota": "Fase 44 (herrería). Forja instantánea: consume materiales + oro y da el item. herrero = id del NPC herrero (bram general en Moon Town, durnan = fuego en el volcán). Sin XP de fabrico y sin bloque de save propio (los materiales y el equipo ya se guardan en el inventario).",
+ "recetas": [
+  {
+   "id": "daga_carina",
+   "nombre": "Daga de Carina",
+   "herrero": "bram",
+   "nivel": 5,
+   "resultado": {
+    "item_id": "daga_carina",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "escorpion_carina",
+     "cantidad": 3
+    },
+    {
+     "item_id": "colmillo",
+     "cantidad": 1
+    }
+   ],
+   "oro": 120
+  },
+  {
+   "id": "lanza_hielo",
+   "nombre": "Lanza de Hielo",
+   "herrero": "bram",
+   "nivel": 12,
+   "resultado": {
+    "item_id": "lanza_hielo",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "nucleo_hielo",
+     "cantidad": 2
+    },
+    {
+     "item_id": "fragmento_pico",
+     "cantidad": 1
+    }
+   ],
+   "oro": 260
+  },
+  {
+   "id": "daga_seda",
+   "nombre": "Daga de Seda",
+   "herrero": "bram",
+   "nivel": 18,
+   "resultado": {
+    "item_id": "daga_seda",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "seda_venenosa",
+     "cantidad": 2
+    },
+    {
+     "item_id": "eco_umbral",
+     "cantidad": 1
+    }
+   ],
+   "oro": 420
+  },
+  {
+   "id": "guantes_umbral",
+   "nombre": "Guantes del Umbral",
+   "herrero": "bram",
+   "nivel": 15,
+   "resultado": {
+    "item_id": "guantes_umbral",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "eco_umbral",
+     "cantidad": 2
+    }
+   ],
+   "oro": 300
+  },
+  {
+   "id": "amuleto_perla",
+   "nombre": "Amuleto de Perla",
+   "herrero": "bram",
+   "nivel": 25,
+   "resultado": {
+    "item_id": "amuleto_perla",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "perla_rio",
+     "cantidad": 2
+    },
+    {
+     "item_id": "fragmento_arena",
+     "cantidad": 1
+    }
+   ],
+   "oro": 560
+  },
+  {
+   "id": "botas_lamento",
+   "nombre": "Botas del Lamento",
+   "herrero": "bram",
+   "nivel": 22,
+   "resultado": {
+    "item_id": "botas_lamento",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "lamento_eco",
+     "cantidad": 2
+    }
+   ],
+   "oro": 480
+  },
+  {
+   "id": "hoja_ascua",
+   "nombre": "Hoja de Ascua",
+   "herrero": "durnan",
+   "nivel": 14,
+   "resultado": {
+    "item_id": "hoja_ascua",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "ascua_viva",
+     "cantidad": 2
+    },
+    {
+     "item_id": "nucleo_ascua",
+     "cantidad": 1
+    }
+   ],
+   "oro": 380
+  },
+  {
+   "id": "martillo_golem",
+   "nombre": "Martillo de Gólem",
+   "herrero": "durnan",
+   "nivel": 20,
+   "resultado": {
+    "item_id": "martillo_golem",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "nucleo_ascua",
+     "cantidad": 2
+    },
+    {
+     "item_id": "fragmento_volcan",
+     "cantidad": 1
+    }
+   ],
+   "oro": 520
+  },
+  {
+   "id": "coraza_centinela",
+   "nombre": "Coraza de la Centinela",
+   "herrero": "durnan",
+   "nivel": 28,
+   "resultado": {
+    "item_id": "coraza_centinela",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "lingote_oro",
+     "cantidad": 2
+    },
+    {
+     "item_id": "nucleo_ascua",
+     "cantidad": 1
+    }
+   ],
+   "oro": 900
+  },
+  {
+   "id": "foco_vacio",
+   "nombre": "Foco Vacío",
+   "herrero": "bram",
+   "nivel": 30,
+   "resultado": {
+    "item_id": "foco_vacio",
+    "cantidad": 1
+   },
+   "materiales": [
+    {
+     "item_id": "sello_vacio",
+     "cantidad": 3
+    },
+    {
+     "item_id": "eco_umbral",
+     "cantidad": 1
+    }
+   ],
+   "oro": 800
+  }
+ ]
+}

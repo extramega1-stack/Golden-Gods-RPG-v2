@@ -28,6 +28,9 @@ signal viaje_solicitado(npc: NPC)
 ## Fase 41: el jugador pulsó "Entrenar" con el Maestro de arena (la demo
 ## teletransporta al campo y arranca las oleadas; el diálogo se cierra).
 signal arena_solicitada(npc: NPC)
+## Fase 44: el jugador pulsó "Forjar" con un herrero (abre el PanelHerreria;
+## el diálogo se cierra, como Comerciar/Viajar).
+signal forjar_solicitado(npc: NPC)
 
 var _npc: NPC = null
 var _lineas: Array[String] = []
@@ -50,6 +53,8 @@ var _boton_viajar: Button = null
 ## Fase 41: "Entrenar" solo si el NPC actual es maestro de arena
 ## (flag `arena` en data/npcs.json; sin flag no hay botón ni flujo).
 var _boton_entrenar: Button = null
+## Fase 44: "Forjar" solo si el NPC es herrero (campo `herrero` con su id).
+var _boton_forjar: Button = null
 
 
 func _ready() -> void:
@@ -177,6 +182,15 @@ func _construir() -> void:
 	fila.add_child(_boton_entrenar)
 	_boton_entrenar.visible = false
 
+	# Fase 44: "Forjar" solo si el NPC es herrero.
+	_boton_forjar = Button.new()
+	_boton_forjar.text = "Forjar"
+	_boton_forjar.focus_mode = Control.FOCUS_NONE
+	_boton_forjar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boton_forjar.pressed.connect(_al_forjar)
+	fila.add_child(_boton_forjar)
+	_boton_forjar.visible = false
+
 
 ## Abre el diálogo con un NPC. Sin NPC (null) no hace nada (sin errores).
 func mostrar(npc: NPC) -> void:
@@ -193,6 +207,8 @@ func mostrar(npc: NPC) -> void:
 	_boton_viajar.visible = ViajeRapido.viaje_id_de_npc(npc.npc_id) != ""
 	# Fase 41: botón "Entrenar" solo para el Maestro de arena.
 	_boton_entrenar.visible = Arena.es_maestro(npc.npc_id)
+	# Fase 44: botón "Forjar" solo para herreros (bram, durnan).
+	_boton_forjar.visible = str(NpcDB.obtener(npc.npc_id).get("herrero", "")) != ""
 	# Fase 8: la misión se refresca desde fuera (la demo llama
 	# mostrar_mision()); aquí se oculta para no arrastrar estado viejo.
 	_boton_mision.visible = false
@@ -327,6 +343,15 @@ func _al_entrenar() -> void:
 		return
 	var n: NPC = _npc
 	arena_solicitada.emit(n)
+	cerrar()
+
+
+## Fase 44: pulsar "Forjar" emite la señal y cierra el diálogo.
+func _al_forjar() -> void:
+	if not esta_abierta() or _npc == null:
+		return
+	var n: NPC = _npc
+	forjar_solicitado.emit(n)
 	cerrar()
 
 

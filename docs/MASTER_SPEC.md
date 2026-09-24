@@ -1157,4 +1157,26 @@ Ahora cada región tiene su identidad y su poder.
 - El banner de región dice a qué esperar: nivel + nombres de sus enemigos.
 - Tests: `tests/test_fase43_regional.gd` — 92/92. Suite 100% verde + smokes.
 
-*Fin del documento maestro v3.38 — Fase 43 (contenido regional).*
+
+## Fase 44 — Herrería: profesiones (2026-09-24)
+
+Los 17 materiales que caían de la Fase 43 no servían para nada: primero
+profesión de la lista del legado, la que da un sumidero de oro y propósito
+al loot.
+- `data/recetas.json` (10 recetas): resultado + materiales + nivel de
+  herrero + oro. Forja **instantánea** (sin timers), consume materiales y
+  oro, **no da XP** y **no toca stats** (el equipo sigue aplicando sus mods).
+- `RecetasDB` (datos) + `Herreria` (lógica pura: `puede_forjar`/`forjar`/
+  `estado_materiales`) + `PanelHerreria` (UI que solo lee y llama a la API).
+- **Dos herreros con identidad**: Bram (Moon Town, 7 recetas generales) y
+  Durnan (volcán, 3 de fuego). Botón "Forjar" en el diálogo (solo ellos).
+- **10 piezas** que usan los materiales regionales: daga de carina, lanza
+  de hielo, daga de seda, guantes del umbral, amuleto de perla, botas del
+  lamento, hoja de ascua, martillo de gólem, coraza de la centinela y foco
+  vacío. Son **sidegrades**: empujan el stat principal de una clase
+  (crítico, vel. de ataque, maná) a cambio de menos ataque plano que el
+  `verdugo_eco` del élite (verificado por test: ninguna lo supera en todo).
+- Sin bloque de save nuevo: materiales y equipo ya viajan en el inventario.
+- Tests: `tests/test_fase44_herreria.gd` — 132/132. Suite 100% verde.
+
+*Fin del documento maestro v3.39 — Fase 44 (herrería).*

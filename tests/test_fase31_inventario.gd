@@ -65,8 +65,8 @@ func _todos_items() -> Array:
 ## (a) Filtrado lógico por pestaña.
 func _test_filtro() -> void:
 	var items: Array = _todos_items()
-	# Fase 43: +10 materiales regionales (37 items en total).
-	var esperados: Dictionary = {"Todos": 37, "Equipo": 18, "Consumibles": 2,
+	# Fase 43: +10 materiales regionales; Fase 44: +10 piezas forjadas (47).
+	var esperados: Dictionary = {"Todos": 47, "Equipo": 28, "Consumibles": 2,
 		"Materiales": 17, "Misión": 0}
 	for pestana in PanelInventario.PESTANAS:
 		var n: int = 0

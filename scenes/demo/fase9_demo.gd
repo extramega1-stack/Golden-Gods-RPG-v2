@@ -29,6 +29,8 @@ const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
 @onready var _panel_inv: PanelInventario = $PanelInventario
 @onready var _panel_eq: PanelEquipo = $PanelEquipo
 @onready var _panel_tienda: PanelTienda = $PanelTienda
+## Fase 44: panel de herrería (nodo propio; null en demos viejas).
+@onready var _panel_herreria: PanelHerreria = null
 @onready var _panel_misiones: PanelMisiones = $PanelMisiones
 
 var _guardado: SaveSystem = null
@@ -136,6 +138,11 @@ func _ready() -> void:
 	# Fase 8: comprar/vender también mueve el inventario (los objetivos
 	# "recolectar" se sincronizan solos, ida y vuelta).
 	_tienda.cambiada.connect(_al_tienda_cambiada)
+	# Fase 44: forja — "Forjar" en el diálogo del herrero abre el panel.
+	_panel_herreria = get_node_or_null("PanelHerreria") as PanelHerreria
+	if _panel_herreria != null:
+		_panel_herreria.conectar(_jugador)
+		_dialogo.forjar_solicitado.connect(_al_forjar_dialogo)
 	# Oro inicial para probar las compras (demo).
 	_jugador.ganar_oro(200)
 	_panel_inv.conectar(_jugador)
@@ -370,6 +377,13 @@ func _indice_cadaver_cercano(pos: Vector3) -> int:
 ## Fase 7: el diálogo pidió comerciar con un NPC vendedor.
 func _al_comerciar(npc: NPC) -> void:
 	_panel_tienda.mostrar(_tienda, npc)
+
+
+## Fase 44: "Forjar" en el diálogo abre el panel de herrería del NPC.
+func _al_forjar_dialogo(npc: NPC) -> void:
+	if _panel_herreria == null or npc == null:
+		return
+	_panel_herreria.mostrar(str(NpcDB.obtener(npc.npc_id).get("herrero", npc.npc_id)))
 
 
 ## Fase 8: hablar con un NPC abre el diálogo, registra el diálogo en las
