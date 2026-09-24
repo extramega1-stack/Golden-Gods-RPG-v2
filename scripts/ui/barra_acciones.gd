@@ -10,6 +10,9 @@ extends CanvasLayer
 ## Supr (acción `limpiar_slot`) limpia el slot bajo el cursor; arrastrar
 ## entre slots los intercambia. Overlay de cooldown por slot + contador
 ## de unidades en consumibles.
+## Fase 38: cada slot se dispara por su acción propia `slot_1..slot_8`
+## (defecto = F + número) y su tecla es reasignable: clic en la etiqueta
+## y pulsar la tecla; clic derecho en la etiqueta vuelve al defecto.
 ##
 ## REGLA DURA (directriz de Juan Diego): la UI solo LEE datos y ejecuta a
 ## través de la API del Player (solicitar_ataque, lanzar_skill_id,
@@ -19,15 +22,17 @@ extends CanvasLayer
 ## no se consume: el clic-para-moverse sigue funcionando a través de él.
 
 const NUM_SLOTS: int = 8
-## Etiqueta por slot: los 5 primeros se disparan con número Y con F
-## (fase 37: vía única — el Player ya no escucha habilidad_*; el número
-## ejecuta el SLOT VISIBLE, no ids[N-1]).
+## Etiqueta por defecto de cada slot (la reasignación la pisa).
 const TECLAS: Array[String] = ["1/F1", "2/F2", "3/F3", "4/F4", "5/F5", "F6", "F7", "F8"]
 ## Teclas numéricas 1-5 → slots visibles 0-4 (lo que se ve es lo que suena).
 const TECLAS_NUMERO: Array[String] = [
 	"habilidad_1", "habilidad_2", "habilidad_3", "habilidad_4", "habilidad_5",
 ]
-const SAVE_VERSION_BARRA: int = 1
+## Fase 38: acciones propias por slot (vía única de disparo). Se crean en
+## runtime si faltan; el rebind solo muta ESTAS acciones (nunca las del
+## proyecto). El gameplay lee acciones con nombre, no teclas (§9.3).
+const PREFIJO_SLOT: String = "slot_"
+const SAVE_VERSION_BARRA: int = 2
 
 ## Etiqueta pequeña arrastrable (fuente de drag & drop). La usan el chip de
 ## ataque, el libro de habilidades y las filas de consumibles del inventario.
@@ -116,6 +121,14 @@ var _libro: PanelContainer = null
 ## reconstruyen al filtrar por clase).
 var _libro_caja: VBoxContainer = null
 var _slot_bajo_raton: int = -1
+## Fase 38: etiquetas de tecla por slot (clic = reasignar) + override de
+## tecla por slot (physical_keycode; 0 = atajo por defecto).
+var _teclas: Array[Label] = []
+var _atajos: Array[int] = []
+## Slot en escucha de rebind (-1 = ninguno) + aviso temporal de conflicto.
+var _escuchando: int = -1
+var _aviso_slot: int = -1
+var _aviso_hasta: float = 0.0
 
 
 ## Los accesos públicos pueden llegar antes del _ready (tests, carga):
@@ -130,6 +143,8 @@ func _ready() -> void:
 	layer = UiLayers.BARRA_SKILLS
 	_construir()
 	restablecer_defecto()
+	_asegurar_acciones_slot()
+	_refrescar_teclas()
 
 
 func _construir() -> void:
@@ -196,7 +211,13 @@ func _nueva_casilla(i: int) -> Casilla:
 	marco.add_child(caja)
 	var tecla: Label = _etiqueta("[%s]" % TECLAS[i], 12, Color(0.7, 0.65, 0.55))
 	tecla.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Fase 38: la etiqueta es el botón de rebind (clic = escuchar tecla,
+	# clic derecho = volver al defecto). Solo ella usa STOP en la casilla.
+	tecla.mouse_filter = Control.MOUSE_FILTER_STOP
+	tecla.tooltip_text = "Clic: reasignar tecla · Clic derecho: defecto"
+	tecla.gui_input.connect(_al_tecla_gui.bind(i))
 	caja.add_child(tecla)
+	_teclas.append(tecla)
 	var nom: Label = _etiqueta("", 14, Color(0.95, 0.9, 0.75))
 	nom.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caja.add_child(nom)
@@ -307,17 +328,25 @@ func _clase_jugador() -> String:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	for i in range(NUM_SLOTS):
-		if event.is_action_pressed("barra_%d" % [i + 1]):
-			ejecutar(i)
+	_asegurar_acciones_slot()
+	# Fase 38: captura del rebind (ESC = acción cancelar_seleccion: aborta).
+	if _escuchando >= 0 and _escuchando < NUM_SLOTS:
+		if event.is_action_pressed("cancelar_seleccion"):
+			cancelar_escucha()
 			get_viewport().set_input_as_handled()
 			return
-	# Fase 37: las teclas numéricas disparan los slots visibles 1-5
-	# (vía única; el Player no escucha habilidad_* para no duplicar ni
-	# desfasar con el offset de ataque del slot 1).
-	for n in range(TECLAS_NUMERO.size()):
-		if event.is_action_pressed(TECLAS_NUMERO[n]):
-			ejecutar(n)
+		if event is InputEventKey:
+			var tecla: InputEventKey = event
+			if tecla.pressed and not tecla.echo:
+				_al_tecla_rebind(tecla)
+				get_viewport().set_input_as_handled()
+			return
+		return
+	# Vía única de disparo (fase 37): los slots se escuchan por sus
+	# acciones propias slot_1..8 (defecto = barra_N + habilidad_N).
+	for i in range(NUM_SLOTS):
+		if event.is_action_pressed(PREFIJO_SLOT + str(i + 1)):
+			ejecutar(i)
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("limpiar_slot"):
@@ -333,6 +362,188 @@ func _al_raton_entra(i: int) -> void:
 func _al_raton_sale(i: int) -> void:
 	if _slot_bajo_raton == i:
 		_slot_bajo_raton = -1
+
+
+## --- Rebind por slot (fase 38) ---
+##
+## Cada slot se dispara por su acción propia `slot_1..slot_8` (creadas en
+## runtime; el proyecto no se toca). El defecto copia los eventos de
+## `barra_N` (+ `habilidad_N` en 1-5, herencia de la fase 37). Reasignar
+## reemplaza los eventos del slot; el physical queda en `_atajos` y se
+## persiste en el save (0 = defecto). Con conflicto (otra acción u otro
+## slot usa la tecla) se rechaza con "conflicto" y aviso en la etiqueta.
+
+func _accion_slot(i: int) -> String:
+	return PREFIJO_SLOT + str(i + 1)
+
+
+## Crea las 8 acciones si faltan y siembra el defecto donde no hay eventos
+## (no pisa rebinds: un slot con eventos se deja intacto).
+func _asegurar_acciones_slot() -> void:
+	while _atajos.size() < NUM_SLOTS:
+		_atajos.append(0)
+	for i in range(NUM_SLOTS):
+		var acc: String = _accion_slot(i)
+		if not InputMap.has_action(acc):
+			InputMap.add_action(acc)
+		if InputMap.action_get_events(acc).is_empty():
+			for ev in _eventos_defecto(i):
+				InputMap.action_add_event(acc, ev)
+
+
+## Eventos por defecto del slot i: barra_{i+1} + habilidad_{i+1} (si existe).
+func _eventos_defecto(i: int) -> Array[InputEvent]:
+	var res: Array[InputEvent] = []
+	var acc_barra: String = "barra_%d" % [i + 1]
+	if InputMap.has_action(acc_barra):
+		for ev in InputMap.action_get_events(acc_barra):
+			res.append(ev)
+	if i < TECLAS_NUMERO.size():
+		var acc_num: String = TECLAS_NUMERO[i]
+		if InputMap.has_action(acc_num):
+			for ev in InputMap.action_get_events(acc_num):
+				res.append(ev)
+	return res
+
+
+## Reasigna el slot i a la tecla del evento. Retorna "ok", "conflicto",
+## "tipo" (no es tecla) o "indice". Pública para UI y tests.
+func fijar_atajo(i: int, evento: InputEvent) -> String:
+	if i < 0 or i >= NUM_SLOTS:
+		return "indice"
+	if not (evento is InputEventKey):
+		return "tipo"
+	var tecla: InputEventKey = evento
+	var codigo: int = int(tecla.physical_keycode)
+	if codigo == 0:
+		return "tipo"
+	var choque: String = _conflicto(i, codigo)
+	if choque != "":
+		_mostrar_aviso(i)
+		return "conflicto"
+	_asegurar_acciones_slot()
+	var acc: String = _accion_slot(i)
+	InputMap.action_erase_events(acc)
+	var nuevo: InputEventKey = InputEventKey.new()
+	nuevo.physical_keycode = codigo
+	InputMap.action_add_event(acc, nuevo)
+	_atajos[i] = codigo
+	_refrescar_teclas()
+	return "ok"
+
+
+## ¿Qué usa ya este physical? "" = libre. Revisa otros slots y el resto
+## de acciones del proyecto (moverse con la misma tecla sería un doble).
+func _conflicto(i: int, codigo: int) -> String:
+	for j in range(NUM_SLOTS):
+		if j == i:
+			continue
+		for ev in InputMap.action_get_events(_accion_slot(j)):
+			var k: InputEventKey = ev as InputEventKey
+			if k != null and int(k.physical_keycode) == codigo:
+				return _accion_slot(j)
+	for acc in InputMap.get_actions():
+		var nombre: String = str(acc)
+		if nombre.begins_with(PREFIJO_SLOT):
+			continue
+		if nombre == "barra_%d" % [i + 1]:
+			continue
+		if i < TECLAS_NUMERO.size() and nombre == TECLAS_NUMERO[i]:
+			continue
+		for ev in InputMap.action_get_events(nombre):
+			var k2: InputEventKey = ev as InputEventKey
+			if k2 != null and int(k2.physical_keycode) == codigo:
+				return nombre
+	return ""
+
+
+## Vuelve el slot i a su defecto (eventos + etiqueta). Siempre funciona.
+func restablecer_atajo(i: int) -> void:
+	if i < 0 or i >= NUM_SLOTS:
+		return
+	_asegurar_acciones_slot()
+	var acc: String = _accion_slot(i)
+	InputMap.action_erase_events(acc)
+	for ev in _eventos_defecto(i):
+		InputMap.action_add_event(acc, ev)
+	_atajos[i] = 0
+	if _escuchando == i:
+		_escuchando = -1
+	_refrescar_teclas()
+
+
+## Todos los slots al defecto (nunca falla; no toca el contenido).
+func restablecer_atajos() -> void:
+	for i in range(NUM_SLOTS):
+		restablecer_atajo(i)
+	_escuchando = -1
+
+
+## Texto de la etiqueta: override ([Q]) o defecto ([1/F1]).
+func atajo_texto(i: int) -> String:
+	if i < 0 or i >= NUM_SLOTS:
+		return ""
+	if i < _atajos.size() and _atajos[i] != 0:
+		return OS.get_keycode_string(_atajos[i])
+	return TECLAS[i]
+
+
+## Slot en escucha (-1 = ninguno). Pública para tests.
+func escuchando() -> int:
+	return _escuchando
+
+
+func cancelar_escucha() -> void:
+	_escuchando = -1
+	_refrescar_teclas()
+
+
+func _empezar_escucha(i: int) -> void:
+	if i < 0 or i >= NUM_SLOTS:
+		return
+	_escuchando = i
+	_aviso_slot = -1
+	_refrescar_teclas()
+
+
+func _al_tecla_gui(event: InputEvent, i: int) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if not mb.pressed:
+			return
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			_empezar_escucha(i)
+			get_viewport().set_input_as_handled()
+		elif mb.button_index == MOUSE_BUTTON_RIGHT:
+			restablecer_atajo(i)
+			get_viewport().set_input_as_handled()
+
+
+func _al_tecla_rebind(tecla: InputEventKey) -> void:
+	var i: int = _escuchando
+	_escuchando = -1
+	if i < 0 or i >= NUM_SLOTS:
+		_refrescar_teclas()
+		return
+	fijar_atajo(i, tecla)
+	_refrescar_teclas()
+
+
+func _mostrar_aviso(i: int) -> void:
+	_aviso_slot = i
+	_aviso_hasta = Time.get_ticks_msec() / 1000.0 + 1.2
+	_refrescar_teclas()
+
+
+func _refrescar_teclas() -> void:
+	for i in range(mini(_teclas.size(), NUM_SLOTS)):
+		var lab: Label = _teclas[i]
+		if _escuchando == i:
+			lab.text = "[…]"
+		elif _aviso_slot == i and Time.get_ticks_msec() / 1000.0 < _aviso_hasta:
+			lab.text = "[¡En uso!]"
+		else:
+			lab.text = "[%s]" % atajo_texto(i)
 
 
 ## --- Asignación / limpieza / ejecución (públicas para tests y save) ---
@@ -526,6 +737,11 @@ func _process(_delta: float) -> void:
 			cant.text = "x%d" % n if n > 0 else ""
 		else:
 			cant.text = ""
+	# Fase 38: el aviso de conflicto vuelve solo a la etiqueta real.
+	if _aviso_slot >= 0 and _aviso_slot < NUM_SLOTS \
+			and Time.get_ticks_msec() / 1000.0 >= _aviso_hasta:
+		_aviso_slot = -1
+		_refrescar_teclas()
 
 
 ## --- Persistencia versionada (la guarda/carga el SaveSystem) ---
@@ -533,7 +749,12 @@ func _process(_delta: float) -> void:
 func to_dict() -> Dictionary:
 	if not _slots_ok():
 		return {}
-	return {"version": SAVE_VERSION_BARRA, "slots": _slots.duplicate(true)}
+	_asegurar_acciones_slot()
+	return {
+		"version": SAVE_VERSION_BARRA,
+		"slots": _slots.duplicate(true),
+		"atajos": _atajos.duplicate(),
+	}
 
 
 func cargar_estado(d: Dictionary) -> void:
@@ -551,12 +772,28 @@ func cargar_estado(d: Dictionary) -> void:
 			if str(slot["tipo"]) != "ataque":
 				slot["id"] = str(sd.get("id", ""))
 			_slots[i] = slot
+	# Fase 38: atajos v2 (array de physicals, 0 = defecto). Un save v1
+	# (sin clave) conserva el defecto intacto.
+	restablecer_atajos()
+	var version: int = int(d.get("version", 1))
+	if version >= 2:
+		var guardados: Array = d.get("atajos", [])
+		for i in range(mini(guardados.size(), NUM_SLOTS)):
+			var codigo: int = int(guardados[i])
+			if codigo == 0:
+				continue
+			var ev: InputEventKey = InputEventKey.new()
+			ev.physical_keycode = codigo
+			if fijar_atajo(i, ev) != "ok":
+				restablecer_atajo(i)
 	_refrescar_nombres()
+	_refrescar_teclas()
 
 
 ## Layout por defecto: ataque en F1 y los skills DE LA CLASE DEL JUGADOR
 ## en F2..F8 (fase 18: `skills_por_clase`; antes eran los primeros del
-## JSON global).
+## JSON global). Fase 38: no toca los atajos de tecla (son preferencia
+## del jugador y sobreviven a la nueva partida).
 func restablecer_defecto() -> void:
 	_slots.clear()
 	for i in range(NUM_SLOTS):

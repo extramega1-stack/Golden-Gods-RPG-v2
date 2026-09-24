@@ -1017,3 +1017,19 @@ Tres reportes de Juan Diego, cada uno con causa raíz verificada (skills
 - Tests: `tests/test_fase37_fixes.gd` — 11/11. Suite 100% verde + smokes.
 
 *Fin del documento maestro v3.32 — Fase 37 (fixes playtest).*
+
+## Fase 38 — Rebind de teclas por slot (2026-09-24)
+
+Cierra el plan futuro del legado (§5.3) sobre la vía única de la Fase 37.
+- Cada slot se dispara por su acción propia `slot_1..slot_8` (creadas en
+  runtime; el `project.godot` no se toca). Defecto = F + número.
+- Clic en la etiqueta de tecla → escucha y asigna la siguiente tecla;
+  clic derecho → vuelve al defecto; ESC aborta. Aviso "¡En uso!" 1.2 s.
+- Conflictos: se rechaza la tecla si la usa otro slot u otra acción del
+  proyecto (p. ej. WASD). El gameplay sigue leyendo acciones con nombre.
+- Persiste en el save (bloque barra v2: `atajos` con physicals, 0 =
+  defecto). Saves v1 cargan con el defecto; overrides en conflicto se
+  descartan al defecto. Los atajos sobreviven a la nueva partida.
+- Tests: `tests/test_fase38_rebind.gd` — 24/24. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.33 — Fase 38 (rebind por slot).*

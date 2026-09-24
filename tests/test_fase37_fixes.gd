@@ -58,11 +58,20 @@ func _chk(cond: bool, nombre: String, detalle: String = "") -> void:
 		printerr("[FALLO] " + nombre + extra)
 
 
-func _evento_accion(accion: String) -> InputEventAction:
-	var ev := InputEventAction.new()
-	ev.action = accion
-	ev.pressed = true
-	return ev
+func _evento_accion(accion: String) -> InputEventKey:
+	# Fase 38: la barra escucha sus acciones slot_* por tecla física; un
+	# InputEventAction solo casa por nombre exacto. Se traduce la acción
+	# a su tecla física (como llega del juego real).
+	var codigo: int = 0
+	for ev in InputMap.action_get_events(accion):
+		var k: InputEventKey = ev as InputEventKey
+		if k != null:
+			codigo = int(k.physical_keycode)
+			break
+	var tecla := InputEventKey.new()
+	tecla.physical_keycode = codigo
+	tecla.pressed = true
+	return tecla
 
 
 ## (a) Tecla 4 → slot visible 4.

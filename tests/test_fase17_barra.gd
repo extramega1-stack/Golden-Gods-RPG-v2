@@ -164,7 +164,7 @@ func _t_persistencia() -> void:
 	b.asignar(6, {"tipo": "item", "id": "pocion_mana"})
 	b.limpiar(0)
 	var d: Dictionary = b.to_dict()
-	_check(int(d.get("version", 0)) == 1, "save: version 1")
+	_check(int(d.get("version", 0)) == 2, "save: version 2 (fase 38: atajos)")
 	_check((d.get("slots", []) as Array).size() == 8, "save: 8 slots")
 	var b2: BarraAcciones = _nueva_barra()
 	b2.cargar_estado(d)
