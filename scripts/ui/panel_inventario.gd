@@ -39,6 +39,8 @@ func _construir_cromo() -> void:
 	fondo.position = Vector2(-280.0, -260.0)
 	fondo.size = Vector2(560.0, 520.0)
 	fondo.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Fase 32: marco FlyFF compartido (dorado sobre fondo oscuro).
+	fondo.add_theme_stylebox_override("panel", TemaFlyFF.marco())
 	add_child(fondo)
 	var margen := MarginContainer.new()
 	margen.add_theme_constant_override("margin_left", 16)
@@ -53,7 +55,10 @@ func _construir_cromo() -> void:
 	titulo.text = "Inventario (I)"
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	titulo.add_theme_font_size_override("font_size", 20)
-	titulo.add_theme_color_override("font_color", Color(0.85, 0.68, 0.25))
+	titulo.add_theme_color_override("font_color", TemaFlyFF.DORADO_CLARO)
+	titulo.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	titulo.add_theme_constant_override("shadow_offset_x", 1)
+	titulo.add_theme_constant_override("shadow_offset_y", 1)
 	caja.add_child(titulo)
 	var tabs := TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -182,9 +187,14 @@ func _celda(entrada: Dictionary, item: Dictionary) -> Button:
 	btn.button_pressed = (iid == _sel_id)
 	var estilo := StyleBoxFlat.new()
 	estilo.bg_color = color_tipo(str(item.get("tipo", "")))
-	estilo.border_color = Color(0.85, 0.68, 0.25) if iid == _sel_id else Color(0.1, 0.1, 0.12)
-	estilo.set_border_width_all(2)
-	estilo.set_corner_radius_all(4)
+	# Fase 32: selección dorada gruesa (FlyFF); resto filo oscuro fino.
+	if iid == _sel_id:
+		estilo.border_color = TemaFlyFF.DORADO_CLARO
+		estilo.set_border_width_all(3)
+	else:
+		estilo.border_color = Color(0.08, 0.08, 0.10)
+		estilo.set_border_width_all(1)
+	estilo.set_corner_radius_all(6)
 	btn.add_theme_stylebox_override("normal", estilo)
 	btn.add_theme_stylebox_override("hover", estilo)
 	btn.add_theme_stylebox_override("pressed", estilo)
@@ -192,6 +202,9 @@ func _celda(entrada: Dictionary, item: Dictionary) -> Button:
 	inicial.text = str(item.get("nombre", "?")).left(1).to_upper()
 	inicial.add_theme_font_size_override("font_size", 28)
 	inicial.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
+	inicial.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	inicial.add_theme_constant_override("shadow_offset_x", 1)
+	inicial.add_theme_constant_override("shadow_offset_y", 2)
 	inicial.set_anchors_preset(Control.PRESET_FULL_RECT)
 	inicial.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	inicial.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

@@ -1,7 +1,9 @@
 class_name HUD
 extends CanvasLayer
-## HUD mínimo de la fase 4: barras de vida/maná/XP + nivel + oro.
-## Fase 11: + retrato del héroe (emblema + nombre + nivel) arriba-izquierda.
+## HUD estilo FlyFF Universe (fase 32): bloque de estado arriba-izquierda
+## (retrato + barras HP/MP con valores "actual/máx" + Nv/Oro) y barra de XP
+## fina de ancho completo al filo inferior. Fase 4/11: variables y señales
+## intactas; solo cambia el cromo (TemaFlyFF).
 ##
 ## REGLA DURA (directriz de Juan Diego): la UI solo LEE el StatBlock y las
 ## señales del Player; nunca escribe stats ni llama a take_damage/gain_xp.
@@ -14,6 +16,8 @@ var _conectado: bool = false
 var _barra_vida: ProgressBar = null
 var _barra_mana: ProgressBar = null
 var _barra_xp: ProgressBar = null
+var _valor_vida: Label = null
+var _valor_mana: Label = null
 var _etiqueta_nivel: Label = null
 var _etiqueta_oro: Label = null
 ## Fase 11: retrato del héroe (emblema + nombre + nivel), arriba-izquierda.
@@ -25,46 +29,66 @@ func _ready() -> void:
 
 
 func _construir() -> void:
-	# Fase 11: el retrato va en (16, 12); la caja de Nv/Oro baja debajo
-	# para no solaparse (el oro se conserva).
+	# Bloque de estado FlyFF: marco dorado con retrato + barras.
+	var marco := PanelContainer.new()
+	marco.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	marco.position = Vector2(16, 12)
+	marco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marco.add_theme_stylebox_override("panel", TemaFlyFF.marco())
+	add_child(marco)
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 10)
+	fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marco.add_child(fila)
 	_retrato = RetratoHeroe.new()
 	_retrato.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_retrato.position = Vector2(16, 12)
-	add_child(_retrato)
-	var caja_inf: VBoxContainer = VBoxContainer.new()
-	caja_inf.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	caja_inf.position = Vector2(16, -96)
-	caja_inf.custom_minimum_size = Vector2(300, 80)
-	caja_inf.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	caja_inf.add_theme_constant_override("separation", 4)
-	add_child(caja_inf)
-	_barra_vida = _nueva_barra(Color(0.75, 0.16, 0.16), Vector2(300, 20))
-	_barra_mana = _nueva_barra(Color(0.16, 0.35, 0.8), Vector2(300, 16))
-	caja_inf.add_child(_barra_vida)
-	caja_inf.add_child(_barra_mana)
+	fila.add_child(_retrato)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.add_child(col)
+	var sup := HBoxContainer.new()
+	sup.add_theme_constant_override("separation", 12)
+	sup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(sup)
+	_etiqueta_nivel = _nueva_etiqueta("Nv 1")
+	_etiqueta_oro = _nueva_etiqueta("Oro: 0")
+	sup.add_child(_etiqueta_nivel)
+	sup.add_child(_etiqueta_oro)
+	_barra_vida = _nueva_barra(TemaFlyFF.HP, Vector2(240, 18))
+	_valor_vida = _nuevo_valor()
+	col.add_child(_fila_barra(_barra_vida, _valor_vida))
+	_barra_mana = _nueva_barra(TemaFlyFF.MP, Vector2(240, 14))
+	_valor_mana = _nuevo_valor()
+	col.add_child(_fila_barra(_barra_mana, _valor_mana))
 
-	_barra_xp = _nueva_barra(Color(0.25, 0.65, 0.25), Vector2(1, 8))
+	# XP: fina, de ancho completo al filo inferior (como antes).
+	_barra_xp = _nueva_barra(TemaFlyFF.XP, Vector2(1, 10))
 	_barra_xp.anchor_left = 0.0
 	_barra_xp.anchor_right = 1.0
 	_barra_xp.anchor_top = 1.0
 	_barra_xp.anchor_bottom = 1.0
 	_barra_xp.offset_left = 0.0
 	_barra_xp.offset_right = 0.0
-	_barra_xp.offset_top = -12.0
+	_barra_xp.offset_top = -14.0
 	_barra_xp.offset_bottom = -4.0
 	add_child(_barra_xp)
 
-	var caja_sup: VBoxContainer = VBoxContainer.new()
-	caja_sup.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	# Fase 11: debajo del retrato (que ocupa (16,12)–(~200,76)).
-	caja_sup.position = Vector2(16, 92)
-	caja_sup.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	caja_sup.add_theme_constant_override("separation", 2)
-	add_child(caja_sup)
-	_etiqueta_nivel = _nueva_etiqueta("Nv 1")
-	_etiqueta_oro = _nueva_etiqueta("Oro: 0")
-	caja_sup.add_child(_etiqueta_nivel)
-	caja_sup.add_child(_etiqueta_oro)
+
+## Fila barra + valor "actual/máx" a la derecha (FlyFF).
+func _fila_barra(barra: ProgressBar, valor: Label) -> HBoxContainer:
+	var fila := HBoxContainer.new()
+	fila.add_theme_constant_override("separation", 8)
+	fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fila.add_child(barra)
+	fila.add_child(valor)
+	return fila
+
+
+func _nuevo_valor() -> Label:
+	var l: Label = TemaFlyFF.etiqueta("0/0", 12, TemaFlyFF.APAGADO)
+	l.custom_minimum_size = Vector2(110, 0)
+	return l
 
 
 func _nueva_barra(color: Color, tam: Vector2) -> ProgressBar:
@@ -75,22 +99,13 @@ func _nueva_barra(color: Color, tam: Vector2) -> ProgressBar:
 	b.show_percentage = false
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.custom_minimum_size = tam
-	var fondo: StyleBoxFlat = StyleBoxFlat.new()
-	fondo.bg_color = Color(0.05, 0.05, 0.08, 0.85)
-	var relleno: StyleBoxFlat = StyleBoxFlat.new()
-	relleno.bg_color = color
-	b.add_theme_stylebox_override("background", fondo)
-	b.add_theme_stylebox_override("fill", relleno)
+	b.add_theme_stylebox_override("background", TemaFlyFF.fondo_barra())
+	b.add_theme_stylebox_override("fill", TemaFlyFF.relleno(color))
 	return b
 
 
 func _nueva_etiqueta(texto: String) -> Label:
-	var l: Label = Label.new()
-	l.text = texto
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
-	l.add_theme_font_size_override("font_size", 18)
-	return l
+	return TemaFlyFF.etiqueta(texto, 18)
 
 
 ## Conecta el HUD al jugador (solo lectura: señales + StatBlock).
@@ -123,11 +138,13 @@ func refrescar() -> void:
 func _al_vida(actual: float, maxima: float) -> void:
 	_barra_vida.max_value = maxima
 	_barra_vida.value = actual
+	_valor_vida.text = "%d/%d" % [int(actual), int(maxima)]
 
 
 func _al_mana(actual: float, maxima: float) -> void:
 	_barra_mana.max_value = maxima
 	_barra_mana.value = actual
+	_valor_mana.text = "%d/%d" % [int(actual), int(maxima)]
 
 
 func _al_xp(actual: int, siguiente: int) -> void:

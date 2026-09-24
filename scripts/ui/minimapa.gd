@@ -105,10 +105,17 @@ func _construir_etiqueta() -> void:
 	_etiqueta.size = Vector2(TAM_MAPA, 22.0)
 	_etiqueta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_etiqueta.add_theme_font_size_override("font_size", 13)
-	_etiqueta.add_theme_color_override("font_color", Color(0.95, 0.82, 0.45))
+	_etiqueta.add_theme_color_override("font_color", TemaFlyFF.DORADO_CLARO)
 	_etiqueta.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	_etiqueta.add_theme_constant_override("shadow_offset_x", 1)
 	_etiqueta.add_theme_constant_override("shadow_offset_y", 1)
+	# Fase 32: pastilla oscura detrás del nombre de región (FlyFF).
+	var pastilla := StyleBoxFlat.new()
+	pastilla.bg_color = Color(0.02, 0.02, 0.04, 0.85)
+	pastilla.set_corner_radius_all(4)
+	pastilla.content_margin_left = 6.0
+	pastilla.content_margin_right = 6.0
+	_etiqueta.add_theme_stylebox_override("normal", pastilla)
 	add_child(_etiqueta)
 
 
@@ -381,8 +388,10 @@ func _draw() -> void:
 	_dibujar_mobs()
 	_dibujar_npcs()
 	_dibujar_jugador()
-	# Borde dorado fino estilo L2/MU, encima de todo.
-	draw_rect(rect, DORADO, false, 1.0)
+	# Fase 32: marco FlyFF — borde dorado exterior (2 px) + filo interior
+	# oscuro, encima de todo.
+	draw_rect(rect, TemaFlyFF.DORADO, false, 2.0)
+	draw_rect(rect.grow(-2.0), Color(0.02, 0.02, 0.04, 0.9), false, 1.0)
 
 
 func _dibujar_pings() -> void:

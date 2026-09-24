@@ -304,9 +304,14 @@ func _t_hud_retrato() -> void:
 	_basura.append(hud)
 	hud.conectar(j)
 	hud.refrescar()
+	# Fase 32: el retrato vive dentro del marco FlyFF (búsqueda recursiva).
 	var n_retratos: int = 0
-	for h in hud.get_children():
-		if h is RetratoHeroe:
+	var pila: Array = [hud]
+	while not pila.is_empty():
+		var n: Node = pila.pop_back()
+		if n is RetratoHeroe:
 			n_retratos += 1
+		for h in n.get_children():
+			pila.append(h)
 	_check(n_retratos == 1,
 		"hud: el retrato esta integrado", str(n_retratos))

@@ -174,10 +174,12 @@ func _nueva_casilla(i: int) -> Casilla:
 	marco.barra = self
 	marco.custom_minimum_size = Vector2(76, 68)
 	marco.mouse_filter = Control.MOUSE_FILTER_STOP
+	# Fase 32: casilla FlyFF — fondo oscuro + borde dorado + esquinas.
 	var estilo: StyleBoxFlat = StyleBoxFlat.new()
-	estilo.bg_color = Color(0.06, 0.06, 0.09, 0.85)
-	estilo.border_color = Color(0.75, 0.62, 0.3)
+	estilo.bg_color = Color(0.05, 0.05, 0.09, 0.92)
+	estilo.border_color = TemaFlyFF.DORADO
 	estilo.set_border_width_all(2)
+	estilo.set_corner_radius_all(4)
 	marco.add_theme_stylebox_override("panel", estilo)
 	var caja: VBoxContainer = VBoxContainer.new()
 	caja.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -239,12 +241,8 @@ func _construir_libro() -> void:
 	_libro.offset_right = 140.0
 	_libro.mouse_filter = Control.MOUSE_FILTER_STOP
 	_libro.visible = false
-	var estilo: StyleBoxFlat = StyleBoxFlat.new()
-	estilo.bg_color = Color(0.07, 0.07, 0.1, 0.97)
-	estilo.border_color = Color(0.75, 0.62, 0.3)
-	estilo.set_border_width_all(2)
-	estilo.set_corner_radius_all(6)
-	_libro.add_theme_stylebox_override("panel", estilo)
+	# Fase 32: marco FlyFF compartido.
+	_libro.add_theme_stylebox_override("panel", TemaFlyFF.marco())
 	add_child(_libro)
 	var caja: VBoxContainer = VBoxContainer.new()
 	caja.add_theme_constant_override("separation", 4)

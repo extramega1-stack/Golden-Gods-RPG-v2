@@ -909,3 +909,20 @@ H intacto (Fase 30). K/I/C rehechos al estilo FlyFF Universe.
 - Tests: `tests/test_fase31_skills.gd` — 115/115; `tests/test_fase31_equipo.gd` — 55/55; `tests/test_fase31_inventario.gd` — 55/55. Suite completa: 57 suites, 0 fallos.
 
 *Fin del documento maestro v3.26 — Fase 31.*
+
+## Fase 32 — Restyle visual FlyFF (2026-09-24)
+
+Cromo estilo FlyFF Universe en HUD, minimapa, inventario y barra. Solo
+visual: lógica, APIs y saves intactos.
+- `TemaFlyFF` (`scripts/ui/tema_flyff.gd`): paleta compartida (dorado,
+  fondo oscuro, HP rosa-rojo / MP azul / XP lima, marfil) + fábricas
+  `marco()`, `fondo_barra()`, `relleno()` y `etiqueta()`.
+- HUD: bloque de estado arriba-izquierda (marco dorado con retrato +
+  barras HP/MP con valores "actual/máx" + Nv/Oro); XP fina full-width.
+- Minimapa: marco dorado doble + pastilla oscura en la etiqueta de región.
+- Inventario: marco FlyFF, título dorado claro, celdas con borde dorado
+  grueso al seleccionar; barra y libro con el mismo marco.
+- Tests: `tests/test_fase32_restyle.gd` — 39/39 (test_fase11: retrato por
+  búsqueda recursiva).
+
+*Fin del documento maestro v3.27 — Fase 32 (restyle FlyFF).*
