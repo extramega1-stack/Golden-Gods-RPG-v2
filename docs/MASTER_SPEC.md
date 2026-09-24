@@ -940,3 +940,14 @@ Caza de botín: los 3 mobs de basura pueden salir élites (los 6 jefes, nunca).
 - Tests: `tests/test_fase33_elites.gd` — 58/58.
 
 *Fin del documento maestro v3.28 — Fase 33 (élites).*
+
+## Fix 33.1 — STA base 15 + creación FlyFF (2026-09-24)
+
+La STA nacía en 0 porque `ClaseDB`/`aplicar_clase` no la plombeaban.
+- `data/clases.json`: `aguante: 15.0` en las 5 clases (picos intactos:
+  guerrero 45, mago 40, arquero 35 AGI…).
+- `ClaseDB.stats_base()` + `Player.aplicar_clase()` con aguante.
+- Creación de personaje: "STR %d · STA %d · DEX %d · INT %d" (fuera agilidad).
+- Tests fase 11: base/jugador con STA 15 + pantalla de creación.
+
+*Fin del fix 33.1.*

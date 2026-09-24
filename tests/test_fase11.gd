@@ -62,6 +62,7 @@ func _process(_delta: float) -> bool:
 	_t_puede_continuar()
 	_t_retrato()
 	_t_hud_retrato()
+	_t_creacion_stats()
 	DatosSesion.limpiar()
 	print("[TEST] pasados=%d fallos=%d" % [_ok, _fallos])
 	for n in _basura:
@@ -115,8 +116,9 @@ func _t_clasedb() -> void:
 	_check(float(base.get("fuerza", -1.0)) == 45.0
 			and float(base.get("agilidad", -1.0)) == 10.0
 			and float(base.get("destreza", -1.0)) == 0.0
-			and float(base.get("inteligencia", -1.0)) == 0.0,
-		"clasedb: stats base del guerrero 45/10/0/0", str(base))
+			and float(base.get("inteligencia", -1.0)) == 0.0
+			and float(base.get("aguante", -1.0)) == 15.0,
+		"clasedb: stats base del guerrero 45/10/0/0 + STA 15", str(base))
 	_check(ClaseDB.color_primario("guerrero") == Color("b03a2e"),
 		"clasedb: color primario del guerrero",
 		str(ClaseDB.color_primario("guerrero")))
@@ -146,8 +148,9 @@ func _t_validar_nombre() -> void:
 func _t_identidad() -> void:
 	var j: Player = _player()
 	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0
-			and j.stats.destreza == 0.0 and j.stats.inteligencia == 0.0,
-		"player: _ready aplica la clase guerrero desde datos (45/10/0/0)")
+			and j.stats.destreza == 0.0 and j.stats.inteligencia == 0.0
+			and j.stats.aguante == 15.0,
+		"player: _ready aplica la clase guerrero desde datos (45/10/0/0 + STA 15)")
 	_check(j.nombre == "Héroe" and j.clase_id == "guerrero",
 		"player: identidad por defecto Heroe/guerrero")
 	_identidades = 0
@@ -162,8 +165,9 @@ func _t_identidad() -> void:
 	j.stats.destreza = 0.0
 	j.stats.inteligencia = 0.0
 	j.aplicar_clase("guerrero")
-	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0,
-		"player: aplicar_clase pone 45/10")
+	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0
+			and j.stats.aguante == 15.0,
+		"player: aplicar_clase pone 45/10 + STA 15")
 	_check(j.vida_actual == j.stats.vida_max
 			and j.mana_actual == j.stats.mana_max,
 		"player: aplicar_clase llena vida y mana")
@@ -315,3 +319,21 @@ func _t_hud_retrato() -> void:
 			pila.append(h)
 	_check(n_retratos == 1,
 		"hud: el retrato esta integrado", str(n_retratos))
+
+
+## Fase 30.1: la creación muestra STR/STA/DEX/INT (sin agilidad) con
+## STA 15 de base en todas las clases.
+func _t_creacion_stats() -> void:
+	var cp: Control = CP.new()
+	root.add_child(cp)
+	_basura.append(cp)
+	cp._al_elegir_clase("guerrero")
+	var texto: String = (cp.get("_desc_stats") as Label).text
+	_check(texto == "STR 45 · STA 15 · DEX 0 · INT 0",
+		"creacion: guerrero en FlyFF", texto)
+	_check(not texto.contains("gil") and not texto.contains("Agilidad"),
+		"creacion: sin agilidad")
+	cp._al_elegir_clase("mago")
+	var texto_m: String = (cp.get("_desc_stats") as Label).text
+	_check(texto_m.contains("STA 15"),
+		"creacion: el mago también parte con STA 15", texto_m)

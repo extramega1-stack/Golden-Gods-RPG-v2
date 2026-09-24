@@ -211,8 +211,10 @@ func _actualizar_descripcion(cid: String) -> void:
 	_desc_nombre.text = str(datos.get("nombre", cid))
 	_desc_texto.text = str(datos.get("descripcion", ""))
 	var base: Dictionary = ClaseDB.stats_base(cid)
-	_desc_stats.text = "Fuerza %d · Agilidad %d · Destreza %d · Inteligencia %d" % [
-		int(base.get("fuerza", 0.0)), int(base.get("agilidad", 0.0)),
+	# Fase 30.1: etiquetas FlyFF (STR/STA/DEX/INT); la agilidad la fija la
+	# clase y no se muestra.
+	_desc_stats.text = "STR %d · STA %d · DEX %d · INT %d" % [
+		int(base.get("fuerza", 0.0)), int(base.get("aguante", 0.0)),
 		int(base.get("destreza", 0.0)), int(base.get("inteligencia", 0.0))]
 
 
