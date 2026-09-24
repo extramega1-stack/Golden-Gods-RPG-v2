@@ -82,7 +82,8 @@ func _trio_listo(q: QuestLog, p: Player) -> void:
 
 ## (a) Catálogo.
 func _test_catalogo() -> void:
-	_chk(QD.ids().size() == 29, "a: 29 misiones", str(QD.ids().size()))
+	# Fase 24: 32 = 29 + 3 del Acto II.
+	_chk(QD.ids().size() == 32, "a: 32 misiones", str(QD.ids().size()))
 	_chk(QD.requiere("q_acto1_presentacion") == "mensaje_sira",
 		"a: el Acto I exige el trío (mensaje_sira)")
 

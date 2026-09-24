@@ -828,3 +828,11 @@ Cierra el prólogo con Ilya como hub (exige el trío vía `requiere: mensaje_sir
 - Tests: `tests/test_fase23_acto1.gd` — 28/28.
 
 *Fin del documento maestro v3.18 — Fase 23 (Acto I).*
+
+## Fase 24 — Acto II: los seis fragmentos (2026-09-24)
+
+La caza con los jefes ya puestos (sin tocar el canon: son ecos, no los fragmentos verdaderos).
+- La llamada del Cristal (hablar Elthar, exige la caída), Los seis ecos (recolectar los 6 fragmentos; se consumen al entregar: Elthar los estudia), Rumbo a la Forja (avisar a Durnan + Bram; teaser del Acto III).
+- Catálogo: 32 misiones. Tests: `tests/test_fase24_acto2.gd` — 26/26.
+
+*Fin del documento maestro v3.19 — Fase 24 (Acto II).*
