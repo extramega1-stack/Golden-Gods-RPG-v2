@@ -75,8 +75,8 @@ func _al_usada(skill_id: String) -> void:
 
 
 ## Entity con stats dados, metida al árbol en la posición indicada.
-func _entidad(fuerza: float, agilidad: float, destreza: float, inteligencia: float, pos: Vector3) -> Entity:
-	var e: Entity = ENT.new(SB.new(fuerza, agilidad, destreza, inteligencia))
+func _entidad(fuerza: float, aguante: float, destreza: float, inteligencia: float, pos: Vector3) -> Entity:
+	var e: Entity = ENT.new(SB.new(fuerza, aguante, destreza, inteligencia))
 	root.add_child(e)
 	e.position = pos
 	_basura.append(e)

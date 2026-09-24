@@ -60,7 +60,7 @@ func _player() -> Player:
 
 ## (a) Aguante en StatBlock.
 func _test_aguante() -> void:
-	var s: StatBlock = SB.new(0.0, 0.0, 0.0, 0.0, 10.0)
+	var s: StatBlock = SB.new(0.0, 10.0, 0.0, 0.0)
 	_basura.append(s)
 	_chk(absf(s.vida_max - 250.0) < 0.01,
 		"a: 10 aguante = +150 vida", str(s.vida_max))

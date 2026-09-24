@@ -1,14 +1,13 @@
 {
   "arquetipos": {
     "aullido_pico": {
-      "agilidad": 18.0,
       "color": [
         0.75,
         0.8,
         0.9
       ],
       "cooldown_ataque": 1.4,
-      "destreza": 12.0,
+      "destreza": 30.0,
       "fuerza": 26.0,
       "inteligencia": 4.0,
       "loot": {
@@ -38,14 +37,13 @@
       "xp": 400
     },
     "campeon_caido": {
-      "agilidad": 8.0,
       "color": [
         0.6,
         0.15,
         0.15
       ],
       "cooldown_ataque": 2.0,
-      "destreza": 8.0,
+      "destreza": 16.0,
       "fuerza": 36.0,
       "inteligencia": 3.0,
       "loot": {
@@ -75,14 +73,13 @@
       "xp": 550
     },
     "devorador_dunas": {
-      "agilidad": 14.0,
       "color": [
         0.85,
         0.7,
         0.4
       ],
       "cooldown_ataque": 1.8,
-      "destreza": 10.0,
+      "destreza": 24.0,
       "fuerza": 28.0,
       "inteligencia": 4.0,
       "loot": {
@@ -112,14 +109,13 @@
       "xp": 400
     },
     "eco_cristal": {
-      "agilidad": 10.0,
       "color": [
         0.55,
         0.4,
         0.9
       ],
       "cooldown_ataque": 1.8,
-      "destreza": 10.0,
+      "destreza": 20.0,
       "fuerza": 30.0,
       "inteligencia": 12.0,
       "loot": {
@@ -149,14 +145,13 @@
       "xp": 450
     },
     "fundidor_antiguo": {
-      "agilidad": 6.0,
       "color": [
         0.5,
         0.12,
         0.08
       ],
       "cooldown_ataque": 2.2,
-      "destreza": 6.0,
+      "destreza": 12.0,
       "fuerza": 34.0,
       "inteligencia": 4.0,
       "loot": {
@@ -186,14 +181,13 @@
       "xp": 450
     },
     "goblin": {
-      "agilidad": 8.0,
       "color": [
         0.35,
         0.75,
         0.35
       ],
       "cooldown_ataque": 1.6,
-      "destreza": 4.0,
+      "destreza": 12.0,
       "fuerza": 10.0,
       "inteligencia": 2.0,
       "loot": {
@@ -250,14 +244,13 @@
       }
     },
     "lobo": {
-      "agilidad": 12.0,
       "color": [
         0.55,
         0.55,
         0.62
       ],
       "cooldown_ataque": 1.3,
-      "destreza": 6.0,
+      "destreza": 18.0,
       "fuerza": 10.0,
       "inteligencia": 2.0,
       "loot": {
@@ -307,14 +300,13 @@
       }
     },
     "ogro": {
-      "agilidad": 4.0,
       "color": [
         0.72,
         0.42,
         0.25
       ],
       "cooldown_ataque": 2.2,
-      "destreza": 3.0,
+      "destreza": 7.0,
       "fuerza": 10.0,
       "inteligencia": 2.0,
       "loot": {
@@ -378,14 +370,13 @@
       }
     },
     "susurro_umbral": {
-      "agilidad": 12.0,
       "color": [
         0.15,
         0.1,
         0.2
       ],
       "cooldown_ataque": 1.6,
-      "destreza": 12.0,
+      "destreza": 24.0,
       "fuerza": 32.0,
       "inteligencia": 10.0,
       "loot": {

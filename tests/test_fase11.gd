@@ -2,11 +2,11 @@ extends SceneTree
 ## Tests headless de la Fase 11 (héroe y presentación).
 ##
 ## (a) ClaseDB: 5 ids en orden, 4 jugables (guerrero, arquero, mago,
-##     clerigo; daguero no), stats base 45/10/0/0 del guerrero, colores que
+##     clerigo; daguero no), stats base 30/30/15/15 del guerrero, colores que
 ##     parsean a Color (default dorado).
 ## (b) validar_nombre: "" / "   " / 17 caracteres → error; "Ilya" / "A" /
 ##     16 caracteres → válido.
-## (c) Player: _ready aplica la clase guerrero desde datos (45/10);
+## (c) Player: _ready aplica la clase guerrero desde datos (30/30/15/15);
 ##     fijar_identidad emite identidad_cambiada; aplicar_clase pone stats y
 ##     llena vida; aplicar_clase("inexistente") no toca nada ni revienta.
 ## (d) DatosSesion: nueva_partida / pedir_continuar / limpiar / aplicar_a
@@ -113,12 +113,11 @@ func _t_clasedb() -> void:
 	_check(not ClaseDB.es_jugable("inexistente"),
 		"clasedb: id desconocido no jugable")
 	var base: Dictionary = ClaseDB.stats_base("guerrero")
-	_check(float(base.get("fuerza", -1.0)) == 45.0
-			and float(base.get("agilidad", -1.0)) == 10.0
-			and float(base.get("destreza", -1.0)) == 0.0
-			and float(base.get("inteligencia", -1.0)) == 0.0
-			and float(base.get("aguante", -1.0)) == 15.0,
-		"clasedb: stats base del guerrero 45/10/0/0 + STA 15", str(base))
+	_check(float(base.get("fuerza", -1.0)) == 30.0
+			and float(base.get("aguante", -1.0)) == 30.0
+			and float(base.get("destreza", -1.0)) == 15.0
+			and float(base.get("inteligencia", -1.0)) == 15.0,
+		"clasedb: stats base del guerrero 30/30/15/15 (fase 34)", str(base))
 	_check(ClaseDB.color_primario("guerrero") == Color("b03a2e"),
 		"clasedb: color primario del guerrero",
 		str(ClaseDB.color_primario("guerrero")))
@@ -147,10 +146,9 @@ func _t_validar_nombre() -> void:
 
 func _t_identidad() -> void:
 	var j: Player = _player()
-	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0
-			and j.stats.destreza == 0.0 and j.stats.inteligencia == 0.0
-			and j.stats.aguante == 15.0,
-		"player: _ready aplica la clase guerrero desde datos (45/10/0/0 + STA 15)")
+	_check(j.stats.fuerza == 30.0 and j.stats.aguante == 30.0
+			and j.stats.destreza == 15.0 and j.stats.inteligencia == 15.0,
+		"player: _ready aplica la clase guerrero desde datos (30/30/15/15)")
 	_check(j.nombre == "Héroe" and j.clase_id == "guerrero",
 		"player: identidad por defecto Heroe/guerrero")
 	_identidades = 0
@@ -161,13 +159,12 @@ func _t_identidad() -> void:
 	_check(j.nombre == "Ilya" and j.clase_id == "guerrero",
 		"player: fijar_identidad asigna nombre y clase")
 	j.stats.fuerza = 0.0
-	j.stats.agilidad = 0.0
+	j.stats.aguante = 0.0
 	j.stats.destreza = 0.0
 	j.stats.inteligencia = 0.0
 	j.aplicar_clase("guerrero")
-	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0
-			and j.stats.aguante == 15.0,
-		"player: aplicar_clase pone 45/10 + STA 15")
+	_check(j.stats.fuerza == 30.0 and j.stats.aguante == 30.0,
+		"player: aplicar_clase pone 30/30/15/15")
 	_check(j.vida_actual == j.stats.vida_max
 			and j.mana_actual == j.stats.mana_max,
 		"player: aplicar_clase llena vida y mana")
@@ -196,7 +193,7 @@ func _t_datos_sesion() -> void:
 	DatosSesion.aplicar_a(j)
 	_check(j.nombre == "Ilya" and j.clase_id == "guerrero",
 		"sesion: aplicar_a fija la identidad", j.nombre)
-	_check(j.stats.fuerza == 45.0 and j.stats.agilidad == 10.0,
+	_check(j.stats.fuerza == 30.0 and j.stats.aguante == 30.0,
 		"sesion: aplicar_a aplica los stats de la clase")
 	DatosSesion.pedir_continuar()
 	_check(DatosSesion.continuar, "sesion: pedir_continuar()")
@@ -329,7 +326,7 @@ func _t_creacion_stats() -> void:
 	_basura.append(cp)
 	cp._al_elegir_clase("guerrero")
 	var texto: String = (cp.get("_desc_stats") as Label).text
-	_check(texto == "STR 45 · STA 15 · DEX 0 · INT 0",
+	_check(texto == "STR 30 · STA 30 · DEX 15 · INT 15",
 		"creacion: guerrero en FlyFF", texto)
 	_check(not texto.contains("gil") and not texto.contains("Agilidad"),
 		"creacion: sin agilidad")

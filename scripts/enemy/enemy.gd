@@ -86,7 +86,7 @@ func configurar(arquetipo: Dictionary) -> void:
 	nombre_mostrado = str(arquetipo.get("nombre", "Enemigo"))
 	stats = StatBlock.new(
 		float(arquetipo.get("fuerza", 5.0)),
-		float(arquetipo.get("agilidad", 5.0)),
+		float(arquetipo.get("aguante", 0.0)),
 		float(arquetipo.get("destreza", 5.0)),
 		float(arquetipo.get("inteligencia", 5.0))
 	)

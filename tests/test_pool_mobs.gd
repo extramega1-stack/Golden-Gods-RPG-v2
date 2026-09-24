@@ -51,9 +51,9 @@ func _chk(cond: bool, nombre: String) -> void:
 
 func _arqs() -> Dictionary:
 	return {
-		"goblin": {"nombre": "Goblin", "fuerza": 8.0, "agilidad": 6.0,
+		"goblin": {"nombre": "Goblin", "fuerza": 8.0,
 			"destreza": 5.0, "inteligencia": 3.0, "color": [0.8, 0.25, 0.25]},
-		"lobo": {"nombre": "Lobo", "fuerza": 10.0, "agilidad": 9.0,
+		"lobo": {"nombre": "Lobo", "fuerza": 10.0,
 			"destreza": 6.0, "inteligencia": 2.0, "color": [0.2, 0.5, 0.9]},
 	}
 

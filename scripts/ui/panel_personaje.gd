@@ -120,11 +120,11 @@ func _fila_atributo(atributo: String) -> HBoxContainer:
 static func _descripcion_atributo(atributo: String) -> String:
 	match atributo:
 		"fuerza":
-			return "Daño físico y vida"
+			return "Daño físico"
 		"aguante":
 			return "Vida y defensa"
 		"destreza":
-			return "Crítico"
+			return "Crítico y velocidad de ataque"
 		"inteligencia":
 			return "Maná y poder"
 	return ""

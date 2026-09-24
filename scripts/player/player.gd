@@ -99,7 +99,7 @@ var talentos: Talentos = null
 ## Fase 30 — puntos de atributo estilo FlyFF (2 por nivel; se reparten en
 ## STR/fuerza, STA/aguante, DEX/destreza e INT/inteligencia).
 var puntos_atributo: int = 0
-## Atributos repartibles (fuente única; la agilidad la fija la clase).
+## Atributos repartibles (fuente única; fase 34: STR/STA/DEX/INT, sin agilidad).
 const ATRIBUTOS_REPARTIBLES: Array[String] = ["fuerza", "aguante", "destreza", "inteligencia"]
 ## Etiquetas FlyFF para la UI.
 const ETIQUETA_ATRIBUTO: Dictionary = {"fuerza": "STR", "aguante": "STA",
@@ -129,7 +129,7 @@ func _ready() -> void:
 	# única vía de datos. Solo si el bloque viene por defecto (sin stats
 	# explícitos): no pisa los stats que alguien pasó al constructor
 	# (tests, save/load).
-	if stats.fuerza == 0.0 and stats.agilidad == 0.0 \
+	if stats.fuerza == 0.0 and stats.aguante == 0.0 \
 			and stats.destreza == 0.0 and stats.inteligencia == 0.0:
 		aplicar_clase("guerrero")
 	if ruta_rig != NodePath(""):
@@ -789,7 +789,7 @@ func fijar_identidad(p_nombre: String, p_clase_id: String) -> void:
 
 
 ## Fase 11 — aplica los atributos base de una clase desde datos (ClaseDB):
-## pone los 5 atributos (fuerza, agilidad, destreza, inteligencia, aguante),
+## pone los 4 atributos (fuerza, aguante, destreza, inteligencia),
 ## recalcula derivados y llena vida/maná.
 ## Idempotente y tolerante: un id desconocido no toca nada ni revienta.
 ## NO emite `identidad_cambiada` (son stats, no identidad).
@@ -798,10 +798,9 @@ func aplicar_clase(id: String) -> void:
 		return
 	var base: Dictionary = ClaseDB.stats_base(id)
 	stats.fuerza = float(base.get("fuerza", 0.0))
-	stats.agilidad = float(base.get("agilidad", 0.0))
+	stats.aguante = float(base.get("aguante", 0.0))
 	stats.destreza = float(base.get("destreza", 0.0))
 	stats.inteligencia = float(base.get("inteligencia", 0.0))
-	stats.aguante = float(base.get("aguante", 0.0))
 	stats.recalc()
 	vida_actual = stats.vida_max
 	mana_actual = stats.mana_max

@@ -109,9 +109,9 @@ func _t_usar() -> void:
 	inv.agregar("pocion_vida", 2)
 	inv.agregar("pocion_mana", 1)
 	inv.agregar("daga_gastada", 1)
-	e.take_damage(100.0, null)  # vida: 300 → 200
+	e.take_damage(100.0, null)  # vida: 450 → 350
 	_check(inv.usar("pocion_vida", e), "usar pocion_vida")
-	_check(is_equal_approx(e.vida_actual, 260.0), "cura 60 (200 → 260)", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 410.0), "cura 60 (350 → 410)", str(e.vida_actual))
 	_check(inv.contar("pocion_vida") == 1, "descuenta 1 pocion")
 	e.gastar_mana(30.0)  # maná: 200 → 170
 	_check(inv.usar("pocion_mana", e), "usar pocion_mana")
@@ -141,7 +141,7 @@ func _t_equipo() -> void:
 	inv.agregar("armadura_cuero", 1)
 	_check(eq.equipar("armadura_cuero", stats, inv), "equipar armadura_cuero")
 	_check(is_equal_approx(stats.defensa, base_defensa + 12.0), "defensa +12 plano", str(stats.defensa))
-	_check(is_equal_approx(stats.vida_max, 300.0 + 20.0), "vida_max +20 plano", str(stats.vida_max))
+	_check(is_equal_approx(stats.vida_max, 450.0 + 20.0), "vida_max +20 plano", str(stats.vida_max))
 	# Otra arma en el mismo slot: devuelve la anterior y quita sus mods.
 	inv.agregar("espada_hierro", 1)
 	_check(eq.equipar("espada_hierro", stats, inv), "equipar segunda arma (reemplaza)")
@@ -185,6 +185,6 @@ func _t_roundtrip() -> void:
 	var eq2: Equipo = EQ.from_dict(deq, stats2)
 	_check(eq2.equipado_en("arma") == "espada_hierro", "round-trip equipo: arma", eq2.equipado_en("arma"))
 	_check(eq2.equipado_en("armadura") == "cota_malla", "round-trip equipo: armadura", eq2.equipado_en("armadura"))
-	_check(is_equal_approx(stats2.ataque, 30.0 + 14.0), "round-trip equipo: mods reaplicados", str(stats2.ataque))
+	_check(is_equal_approx(stats2.ataque, 25.0 + 14.0), "round-trip equipo: mods reaplicados", str(stats2.ataque))
 	var eq3: Equipo = EQ.from_dict({}, stats2)
 	_check(eq3.equipado_en("arma") == "", "equipo from_dict({}) = vacío")

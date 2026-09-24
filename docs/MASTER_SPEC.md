@@ -951,3 +951,19 @@ La STA nacía en 0 porque `ClaseDB`/`aplicar_clase` no la plombeaban.
 - Tests fase 11: base/jugador con STA 15 + pantalla de creación.
 
 *Fin del fix 33.1.*
+
+## Fase 34 — StatBlock STR/STA/DEX/INT sin agilidad (2026-09-24)
+
+Reescritura del modelo de stats (pedido de Juan Diego): 15 base en todo
++ 15 de rol por clase, presupuestos iguales de 90 pts.
+- Clases: guerrero 30/30/15/15 (frontline: 1150 HP, 45 def, atq 65),
+  arquero 30/15/30/15 (DPS: atq 65, crit 17% ×1.8, vel.atq 1.24),
+  mago 15/15/15/45 (burst: poder 117.5, 725 maná, 625 HP),
+  clérigo 15/30/15/30 (soporte-tanque: 850 HP, 37.5 def, poder 80).
+- Fórmulas: ataque 5+STR×2, defensa STR×0.5+STA×1.0, vel.mov plana 6.0,
+  vel.ataque por DEX (era AGI); mobs fusionan su AGI en DEX.
+- Balance: el DPS físico baja ~28% (ataque 100→65); la defensa de mobs
+  también cae. Reequilibrio fino de HP de mobs tras playtest (Fase 35).
+  Pendiente: curas escalando con poder (el INT del clérigo hoy solo da maná).
+
+*Fin del documento maestro v3.29 — Fase 34 (stats 4-atributo).*

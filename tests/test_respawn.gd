@@ -78,7 +78,6 @@ func _arquetipo(respawn: Variant) -> Dictionary:
 	var a: Dictionary = {
 		"nombre": "Goblin",
 		"fuerza": 10.0,
-		"agilidad": 8.0,
 		"destreza": 4.0,
 		"inteligencia": 2.0,
 	}

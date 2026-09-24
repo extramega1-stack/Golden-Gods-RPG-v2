@@ -49,7 +49,7 @@ func _check(cond: bool, nombre: String, detalle: String = "") -> void:
 		printerr("  FAIL " + nombre + extra)
 
 
-## Entidad de referencia: fuerza=10 → vida_max 300; inteligencia=4 → mana_max 110.
+## Entidad de referencia (fase 34): F10/STA8 → vida_max 420; INT4 → mana_max 110.
 func _nueva_ref() -> Entity:
 	var sb: StatBlock = SB.new(10.0, 8.0, 6.0, 4.0)
 	var e: Entity = EN.new(sb)
@@ -67,7 +67,7 @@ func _desde_dict(d: Dictionary) -> Entity:
 func _t_nueva_entidad() -> void:
 	var e: Entity = _nueva_ref()
 	_check(e.esta_vivo(), "nueva entidad viva", "")
-	_check(is_equal_approx(e.vida_actual, 300.0), "vida_actual = vida_max", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 420.0), "vida_actual = vida_max", str(e.vida_actual))
 	_check(is_equal_approx(e.mana_actual, 110.0), "mana_actual = mana_max", str(e.mana_actual))
 	_check(e.nivel == 1, "nivel 1", str(e.nivel))
 	_check(e.xp_actual == 0, "xp 0", str(e.xp_actual))
@@ -81,13 +81,13 @@ func _t_dano_y_senales() -> void:
 	e.daniado.connect(func(c, f): danios.append([c, f]))
 	e.vida_cambiada.connect(func(v, m): vidas.append([v, m]))
 	e.take_damage(30.0, fuente)
-	_check(is_equal_approx(e.vida_actual, 270.0), "vida 300-30=270", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 390.0), "vida 420-30=390", str(e.vida_actual))
 	_check(danios.size() == 1, "senal daniado x1", str(danios.size()))
 	_check(is_equal_approx(float(danios[0][0]), 30.0), "daniado con cantidad 30", str(danios[0][0]))
 	_check(danios[0][1] == fuente, "daniado con la fuente correcta", "")
 	_check(vidas.size() == 1, "senal vida_cambiada x1", str(vidas.size()))
-	var vc: bool = is_equal_approx(float(vidas[0][0]), 270.0) and is_equal_approx(float(vidas[0][1]), 300.0)
-	_check(vc, "vida_cambiada(270, 300)", str(vidas[0]))
+	var vc: bool = is_equal_approx(float(vidas[0][0]), 390.0) and is_equal_approx(float(vidas[0][1]), 420.0)
+	_check(vc, "vida_cambiada(390, 420)", str(vidas[0]))
 	_check(e.esta_vivo(), "sigue viva", "")
 
 
@@ -109,9 +109,9 @@ func _t_heal() -> void:
 	var e: Entity = _nueva_ref()
 	e.take_damage(100.0, null)
 	e.heal(40.0)
-	_check(is_equal_approx(e.vida_actual, 240.0), "heal 200+40=240", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 360.0), "heal 320+40=360", str(e.vida_actual))
 	e.heal(999.0)
-	_check(is_equal_approx(e.vida_actual, 300.0), "heal no pasa del max", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 420.0), "heal no pasa del max", str(e.vida_actual))
 	var m: Entity = _nueva_ref()
 	m.take_damage(9999.0, null)
 	m.heal(100.0)
@@ -145,7 +145,7 @@ func _t_xp_un_nivel() -> void:
 	_check(xps.size() == 1, "xp_cambiada x1", str(xps.size()))
 	_check(int(xps[0][0]) == 100, "xp_cambiada con xp 100", str(xps[0][0]))
 	_check(int(xps[0][1]) == FM.xp_for_level(3), "xp_cambiada con xp del siguiente nivel", str(xps[0][1]))
-	_check(is_equal_approx(e.vida_actual, 300.0), "al subir de nivel se rellena la vida", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 420.0), "al subir de nivel se rellena la vida", str(e.vida_actual))
 
 
 func _t_xp_varios_niveles() -> void:
@@ -172,14 +172,14 @@ func _t_dano_sin_fuente() -> void:
 	var danios: Array = []
 	e.daniado.connect(func(c, f): danios.append(f))
 	e.take_damage(10.0, null) # daño ambiental
-	_check(is_equal_approx(e.vida_actual, 290.0), "daño sin fuente reduce vida", str(e.vida_actual))
+	_check(is_equal_approx(e.vida_actual, 410.0), "daño sin fuente reduce vida", str(e.vida_actual))
 	_check(danios.size() == 1 and danios[0] == null, "fuente null en la señal", "")
 
 
 func _t_guardado() -> void:
 	var e: Entity = _nueva_ref()
 	e.stats.add_mod("espada", "ataque", SB.ModKind.PLANO, 10.0)
-	e.take_damage(50.0, null) # vida 250 (sin subir de nivel)
+	e.take_damage(50.0, null) # vida 370 (sin subir de nivel)
 	e.gain_xp(50) # no alcanza nivel 2 (necesita 100)
 	var d: Dictionary = e.to_dict()
 	var e2: Entity = _desde_dict(d)
@@ -187,7 +187,7 @@ func _t_guardado() -> void:
 	_check(e2.nivel == e.nivel, "round-trip: nivel", str(e2.nivel))
 	_check(e2.xp_actual == e.xp_actual, "round-trip: xp", str(e2.xp_actual))
 	_check(is_equal_approx(e2.vida_actual, e.vida_actual), "round-trip: vida", str(e2.vida_actual))
-	_check(is_equal_approx(e2.stats.ataque, 39.0), "round-trip: mods de stats", str(e2.stats.ataque))
+	_check(is_equal_approx(e2.stats.ataque, 35.0), "round-trip: mods de stats", str(e2.stats.ataque))
 	_check(e2.esta_vivo(), "round-trip: sigue viva", "")
 
 

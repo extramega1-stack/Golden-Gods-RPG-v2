@@ -82,17 +82,16 @@ static func es_jugable(clase_id: String) -> bool:
 	return bool(obtener(clase_id).get("jugable", false))
 
 
-## Atributos base de la clase: {fuerza, agilidad, destreza, inteligencia,
-## aguante}. Fase 30.1: STA base 15 en todas las clases (el reparto FlyFF
-## parte de 15, no de 0). Clase desconocida → todo 0.0 (tolerante).
+## Atributos base de la clase: {fuerza, aguante, destreza, inteligencia}
+## (fase 34: sin agilidad; 15 base + 15 de rol, presupuesto 90).
+## Clase desconocida → todo 0.0 (tolerante).
 static func stats_base(clase_id: String) -> Dictionary:
 	var c: Dictionary = obtener(clase_id)
 	return {
 		"fuerza": float(c.get("fuerza", 0.0)),
-		"agilidad": float(c.get("agilidad", 0.0)),
+		"aguante": float(c.get("aguante", 0.0)),
 		"destreza": float(c.get("destreza", 0.0)),
 		"inteligencia": float(c.get("inteligencia", 0.0)),
-		"aguante": float(c.get("aguante", 0.0)),
 	}
 
 

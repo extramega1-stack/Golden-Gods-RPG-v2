@@ -63,7 +63,7 @@ func _arquetipo() -> Dictionary:
 	return {
 		"nombre": "Dummy",
 		"color": [0.8, 0.2, 0.2],
-		"fuerza": 8.0, "agilidad": 6.0, "destreza": 4.0, "inteligencia": 2.0,
+		"fuerza": 8.0, "destreza": 4.0, "inteligencia": 2.0,
 		"radio_aggro": 10.0, "rango_ataque": 2.2, "cooldown_ataque": 1.5,
 		"xp": 50,
 		"oro_min": 5, "oro_max": 10,

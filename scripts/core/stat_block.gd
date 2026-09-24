@@ -8,16 +8,21 @@ extends RefCounted
 ## aportan MODIFICADORES identificados por fuente (ver add_mod), y la UI solo
 ## LEE estos valores, nunca los escribe.
 ##
-## Fórmulas de derivados (documentadas para balance):
-## - vida_max   = 100 + fuerza * 20
+## Fórmulas de derivados (documentadas para balance, fase 34):
+## - vida_max   = 100 + fuerza * 20 + aguante * 15   (tanques viven más)
 ## - mana_max   = 50 + inteligencia * 15
-## - ataque     = 5 + fuerza * 2 + agilidad * 0.5      (daño físico)
-## - poder      = 5 + inteligencia * 2.5               (daño mágico)
-## - defensa    = fuerza * 0.5 + agilidad * 1.5
-## - crit_prob  = 0.05 + destreza * 0.004              (tope 0.60)
-## - crit_dmg   = 1.50 + destreza * 0.010              (multiplicador)
-## - vel_ataque = 1.0 + agilidad * 0.008               (tope 2.0)
-## - vel_mov    = 6.0 + agilidad * 0.05                (tope 10.0)
+## - ataque     = 5 + fuerza * 2                     (daño físico puro)
+## - poder      = 5 + inteligencia * 2.5             (daño mágico)
+## - defensa    = fuerza * 0.5 + aguante * 1.0       (placas resisten más)
+## - crit_prob  = 0.05 + destreza * 0.004            (tope 0.60)
+## - crit_dmg   = 1.50 + destreza * 0.010            (multiplicador)
+## - vel_ataque = 1.0 + destreza * 0.008             (tope 2.0; el arquero
+##   pega más rápido por DEX, no por AGI)
+## - vel_mov    = 6.0                                (plano para todos)
+##
+## Fase 34: la agilidad SE ELIMINÓ. El modelo es STR/STA/DEX/INT (FlyFF):
+## cada clase parte de 15 en todo + 15 extra en sus stats de rol
+## (presupuestos iguales de 90 pts).
 ##
 ## Los coeficientes lineales viven en DERIVACION (datos, no constantes regadas);
 ## los topes y bases especiales, en consts con nombre.
@@ -37,10 +42,10 @@ const STATS_DERIVADOS: Array[String] = [
 const DERIVACION: Dictionary = {
 	"vida_max": {"base": 100.0, "fuerza": 20.0, "aguante": 15.0},
 	"mana_max": {"base": 50.0, "inteligencia": 15.0},
-	"ataque": {"base": 5.0, "fuerza": 2.0, "agilidad": 0.5},
+	"ataque": {"base": 5.0, "fuerza": 2.0},
 	"poder": {"base": 5.0, "inteligencia": 2.5},
-	"defensa": {"base": 0.0, "fuerza": 0.5, "agilidad": 1.5, "aguante": 1.0},
-	"vel_mov": {"base": 6.0, "agilidad": 0.05},
+	"defensa": {"base": 0.0, "fuerza": 0.5, "aguante": 1.0},
+	"vel_mov": {"base": 6.0},
 }
 
 const CRIT_PROB_BASE: float = 0.05
@@ -49,18 +54,15 @@ const CRIT_PROB_MAX: float = 0.60
 const CRIT_DMG_BASE: float = 1.50
 const CRIT_DMG_POR_DESTREZA: float = 0.010
 const VEL_ATAQUE_BASE: float = 1.0
-const VEL_ATAQUE_POR_AGILIDAD: float = 0.008
+const VEL_ATAQUE_POR_DESTREZA: float = 0.008
 const VEL_ATAQUE_MAX: float = 2.0
-const VEL_MOV_MAX: float = 10.0
 
 # --- Atributos base (los escribe el dueño del bloque; luego llama a recalc) ---
-# Fase 30: "aguante" (STA de FlyFF: vida y defensa). Default 0: enemigos,
-# clases viejas y partidas viejas no lo traen y no cambian.
+# Fase 34: STR/STA/DEX/INT. Sin agilidad.
 var fuerza: float = 0.0
-var agilidad: float = 0.0
+var aguante: float = 0.0
 var destreza: float = 0.0
 var inteligencia: float = 0.0
-var aguante: float = 0.0
 
 # --- Derivados (SOLO los escribe recalc(); el resto del código los LEE) ---
 var vida_max: float = 0.0
@@ -79,28 +81,26 @@ var _mods: Dictionary = {}
 var _base: Dictionary = {}
 
 
-func _init(p_fuerza: float = 0.0, p_agilidad: float = 0.0, p_destreza: float = 0.0, p_inteligencia: float = 0.0, p_aguante: float = 0.0) -> void:
+## Orden FlyFF: STR, STA, DEX, INT (fase 34).
+func _init(p_fuerza: float = 0.0, p_aguante: float = 0.0, p_destreza: float = 0.0, p_inteligencia: float = 0.0) -> void:
 	fuerza = p_fuerza
-	agilidad = p_agilidad
+	aguante = p_aguante
 	destreza = p_destreza
 	inteligencia = p_inteligencia
-	aguante = p_aguante
 	recalc()
 
 
-## Cambia un atributo base y recalcula. nombre: fuerza|agilidad|destreza|inteligencia|aguante.
+## Cambia un atributo base y recalcula. nombre: fuerza|aguante|destreza|inteligencia.
 func set_base(nombre: String, valor: float) -> void:
 	match nombre:
 		"fuerza":
 			fuerza = valor
-		"agilidad":
-			agilidad = valor
+		"aguante":
+			aguante = valor
 		"destreza":
 			destreza = valor
 		"inteligencia":
 			inteligencia = valor
-		"aguante":
-			aguante = valor
 		_:
 			push_warning("[StatBlock] atributo base desconocido: %s" % nombre)
 			return
@@ -148,10 +148,8 @@ func recalc() -> void:
 	_base["crit_prob"] = cp
 	var cd: float = CRIT_DMG_BASE + destreza * CRIT_DMG_POR_DESTREZA
 	_base["crit_dmg"] = cd
-	var va: float = clampf(VEL_ATAQUE_BASE + agilidad * VEL_ATAQUE_POR_AGILIDAD, 0.0, VEL_ATAQUE_MAX)
+	var va: float = clampf(VEL_ATAQUE_BASE + destreza * VEL_ATAQUE_POR_DESTREZA, 0.0, VEL_ATAQUE_MAX)
 	_base["vel_ataque"] = va
-	var vm: float = float(_base["vel_mov"])
-	_base["vel_mov"] = clampf(vm, 0.0, VEL_MOV_MAX)
 	_aplicar_mods()
 
 
@@ -162,10 +160,9 @@ func _derivar_lineal(nombre: String) -> float:
 		return 0.0
 	var total: float = float(coefs.get("base", 0.0))
 	total += float(coefs.get("fuerza", 0.0)) * fuerza
-	total += float(coefs.get("agilidad", 0.0)) * agilidad
+	total += float(coefs.get("aguante", 0.0)) * aguante
 	total += float(coefs.get("destreza", 0.0)) * destreza
 	total += float(coefs.get("inteligencia", 0.0)) * inteligencia
-	total += float(coefs.get("aguante", 0.0)) * aguante
 	return total
 
 
@@ -201,10 +198,9 @@ func to_dict() -> Dictionary:
 		"version": SAVE_VERSION,
 		"base": {
 			"fuerza": fuerza,
-			"agilidad": agilidad,
+			"aguante": aguante,
 			"destreza": destreza,
 			"inteligencia": inteligencia,
-			"aguante": aguante,
 		},
 		"mods": mods,
 	}
@@ -214,10 +210,9 @@ static func from_dict(d: Dictionary) -> StatBlock:
 	var b: Dictionary = d.get("base", {})
 	var sb: StatBlock = StatBlock.new(
 		float(b.get("fuerza", 0.0)),
-		float(b.get("agilidad", 0.0)),
+		float(b.get("aguante", 0.0)),
 		float(b.get("destreza", 0.0)),
-		float(b.get("inteligencia", 0.0)),
-		float(b.get("aguante", 0.0))
+		float(b.get("inteligencia", 0.0))
 	)
 	var mods: Array = d.get("mods", [])
 	for m in mods:
