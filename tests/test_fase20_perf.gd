@@ -14,6 +14,8 @@ extends SceneTree
 
 const CD: GDScript = preload("res://scripts/mundo/ciclo_dia.gd")
 const CL: GDScript = preload("res://scripts/mundo/clima.gd")
+const EN: GDScript = preload("res://scripts/enemy/enemy.gd")
+const BV: GDScript = preload("res://scripts/combate/barra_vida_mob.gd")
 
 var _ok: int = 0
 var _fallos: int = 0
@@ -34,6 +36,7 @@ func _process(_delta: float) -> bool:
 	_test_fijar_jugador()
 	_test_tope_gotas()
 	_test_monitor_fps()
+	_test_barra_compartida()
 	print("[TEST] fase20_perf: %d ok, %d fallos" % [_ok, _fallos])
 	for n in _basura:
 		(n as Node).queue_free()
@@ -148,3 +151,36 @@ func _test_monitor_fps() -> void:
 	_chk(m.text != "…", "e: el texto se refresca")
 	_chk(m.text.find("FPS") >= 0 and m.text.find("mobs") >= 0,
 		"e: formato 'FPS · ms · mobs'", m.text)
+
+
+## (f) Barra de vida: quad + materiales compartidos entre instancias.
+func _test_barra_compartida() -> void:
+	var e1: Enemy = EN.new()
+	root.add_child(e1)
+	_basura.append(e1)
+	var b1: BarraVidaMob = BV.new()
+	e1.add_child(b1)
+	var e2: Enemy = EN.new()
+	root.add_child(e2)
+	_basura.append(e2)
+	var b2: BarraVidaMob = BV.new()
+	e2.add_child(b2)
+	var fg1: MeshInstance3D = b1.get("_fg") as MeshInstance3D
+	var fg2: MeshInstance3D = b2.get("_fg") as MeshInstance3D
+	var fo1: MeshInstance3D = b1.get("_fondo") as MeshInstance3D
+	var fo2: MeshInstance3D = b2.get("_fondo") as MeshInstance3D
+	_chk(fg1.mesh == fg2.mesh and fo1.mesh == fg2.mesh,
+		"f: un solo QuadMesh compartido")
+	_chk(fo1.material_override == fo2.material_override,
+		"f: fondo con material compartido")
+	e1.take_damage(e1.stats.vida_max * 0.5, null, false)
+	e2.take_damage(e2.stats.vida_max * 0.5, null, false)
+	_chk(fg1.material_override == fg2.material_override,
+		"f: mismo pct = mismo peldaño")
+	e2.take_damage(e2.stats.vida_max * 0.4, null, false)
+	_chk(fg1.material_override != fg2.material_override,
+		"f: distinto pct = distinto peldaño")
+	# Reset para el pool: oculta y sin reloj.
+	e1.take_damage(999999.0, null, false)
+	(b1 as BarraVidaMob).reiniciar()
+	_chk(not b1.visible, "f: reiniciar oculta la barra")

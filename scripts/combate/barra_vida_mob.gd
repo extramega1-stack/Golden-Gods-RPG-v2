@@ -5,12 +5,28 @@ extends Node3D
 ## Solo LEE: señales `vida_cambiada` y `murio` del padre.
 ## Aparece al recibir daño; se oculta a vida llena tras una pausa corta
 ## y al morir. Dos quads con billboard (barato para muchos mobs).
+##
+## Fase 20 (P0-4): recursos compartidos. Antes cada barra creaba su propio
+## QuadMesh + 2 StandardMaterial3D (con 50-100 mobs = 100-200 recursos y
+## draw calls extra). Ahora el quad, el fondo y 10 peldaños de color del
+## frente son estáticos compartidos (mismo patrón que Enemy._mats_cache);
+## por instancia solo quedan los 2 MeshInstance3D. El color verde→rojo va
+## por peldaños del 10% (invisible en una barra de 1.4 u).
 
 const ANCHO: float = 1.4
 const ALTO: float = 0.14
 const ALTURA: float = 2.2
 const TIEMPO_VISIBLE: float = 5.0
 const PAUSA_LLENA: float = 0.5
+## Peldaños del degradado verde→rojo del frente.
+const PELDANOS: int = 10
+const COLOR_LLENO: Color = Color(0.35, 0.9, 0.35)
+const COLOR_VACIO: Color = Color(0.9, 0.25, 0.2)
+const COLOR_FONDO: Color = Color(0.12, 0.04, 0.04)
+
+static var _quad: QuadMesh = null
+static var _mat_fondo: StandardMaterial3D = null
+static var _mats_frente: Array = []
 
 var _dueno: Entity = null
 var _fg: MeshInstance3D = null
@@ -24,8 +40,8 @@ func _ready() -> void:
 		set_process(false)
 		return
 	position = Vector3(0.0, ALTURA, 0.0)
-	_fondo = _hacer_barra(Color(0.12, 0.04, 0.04))
-	_fg = _hacer_barra(Color(0.35, 0.9, 0.35))
+	_fondo = _hacer_barra(false)
+	_fg = _hacer_barra(true)
 	add_child(_fondo)
 	add_child(_fg)
 	visible = false
@@ -34,17 +50,49 @@ func _ready() -> void:
 	_actualizar(1.0)
 
 
-func _hacer_barra(color: Color) -> MeshInstance3D:
-	var quad: QuadMesh = QuadMesh.new()
-	quad.size = Vector2(ANCHO, ALTO)
+func _hacer_barra(es_frente: bool) -> MeshInstance3D:
+	var mi: MeshInstance3D = MeshInstance3D.new()
+	mi.mesh = _quad_compartido()
+	if es_frente:
+		mi.material_override = _mat_frente_para(1.0)
+	else:
+		mi.material_override = _mat_fondo_compartido()
+	return mi
+
+
+## Quad único compartido por todas las barras (fondo y frente).
+static func _quad_compartido() -> QuadMesh:
+	if _quad == null or not is_instance_valid(_quad):
+		_quad = QuadMesh.new()
+		_quad.size = Vector2(ANCHO, ALTO)
+	return _quad
+
+
+## Material de fondo único compartido.
+static func _mat_fondo_compartido() -> StandardMaterial3D:
+	if _mat_fondo == null or not is_instance_valid(_mat_fondo):
+		_mat_fondo = _nuevo_material(COLOR_FONDO)
+	return _mat_fondo
+
+
+## Peldaño de color del frente para `pct` (0..1): 10 materiales
+## compartidos verde→rojo. Sin allocs tras el primer uso.
+static func _mat_frente_para(pct: float) -> StandardMaterial3D:
+	if _mats_frente.size() != PELDANOS:
+		_mats_frente.clear()
+		for i in range(PELDANOS):
+			var p: float = float(i) / float(PELDANOS - 1)
+			_mats_frente.append(_nuevo_material(COLOR_VACIO.lerp(COLOR_LLENO, p)))
+	var idx: int = clampi(int(round(clampf(pct, 0.0, 1.0) * float(PELDANOS - 1))), 0, PELDANOS - 1)
+	return _mats_frente[idx] as StandardMaterial3D
+
+
+static func _nuevo_material(color: Color) -> StandardMaterial3D:
 	var mat: StandardMaterial3D = StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	mat.albedo_color = color
-	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.mesh = quad
-	mi.material_override = mat
-	return mi
+	return mat
 
 
 func _al_vida_cambiada(vida: float, vida_max: float) -> void:
@@ -62,12 +110,19 @@ func _al_vida_cambiada(vida: float, vida_max: float) -> void:
 func _actualizar(pct: float) -> void:
 	if _fg == null:
 		return
+	pct = clampf(pct, 0.0, 1.0)
 	_fg.scale.x = maxf(pct, 0.001)
 	# El QuadMesh está centrado: se recorre para que crezca desde la izquierda.
 	_fg.position.x = -ANCHO * (1.0 - pct) * 0.5
-	var mat: StandardMaterial3D = _fg.material_override as StandardMaterial3D
-	if mat != null:
-		mat.albedo_color = Color(0.9, 0.25, 0.2).lerp(Color(0.35, 0.9, 0.35), pct)
+	# Fase 20: peldaño compartido en vez de mutar un material propio.
+	_fg.material_override = _mat_frente_para(pct)
+
+
+## Resetea la barra para reutilizar el mob (PoolMobs): oculta y sin reloj.
+func reiniciar() -> void:
+	_reloj = 0.0
+	visible = false
+	set_process(true)
 
 
 func _al_morir(_fuente: Entity) -> void:

@@ -263,5 +263,9 @@ func reiniciar(arquetipo: Dictionary) -> void:
 	collision_layer = CAPA_VIVA
 	collision_mask = MASCARA_VIVA
 	mostrar_cuerpo()
+	# Fase 20: la barra de vida se resetea con el mob (oculta, sin reloj).
+	var barra: BarraVidaMob = get_node_or_null("BarraVida") as BarraVidaMob
+	if barra != null:
+		barra.reiniciar()
 	set_process(true)
 	set_physics_process(true)
