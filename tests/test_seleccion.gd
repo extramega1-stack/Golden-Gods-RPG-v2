@@ -120,8 +120,10 @@ func _npc(pos: Vector3) -> NPC:
 	return n
 
 
-func _player(pos: Vector3) -> Player:
+func _player(pos: Vector3, clase: String = "guerrero") -> Player:
 	var p: Player = PL.new()
+	# Fase 31: la clase antes del add_child (_ready configura las skills).
+	p.clase_id = clase
 	p.add_to_group("jugador")
 	root.add_child(p)
 	p.global_position = pos
@@ -261,7 +263,7 @@ func _accion_tiene(fisica: int) -> bool:
 ## (Coordenadas lejanas: los grupos "enemigos"/"npcs" son globales y los
 ## nodos de tests anteriores siguen vivos hasta el final del archivo.)
 func _t_skill_acercamiento() -> void:
-	var p: Player = _player(Vector3(500, 0, 500))
+	var p: Player = _player(Vector3(500, 0, 500), "mago")
 	var en: Enemy = _enemigo(Vector3(500, 0, 520))
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
@@ -295,7 +297,7 @@ func _t_skill_acercamiento() -> void:
 
 ## El pendiente se cancela si el objetivo muere antes de llegar.
 func _t_skill_pendiente_cancel_muerte() -> void:
-	var p: Player = _player(Vector3(600, 0, 600))
+	var p: Player = _player(Vector3(600, 0, 600), "mago")
 	var en: Enemy = _enemigo(Vector3(600, 0, 620))
 	p.skills.skill_usada.connect(_al_usada)
 	_usadas.clear()
@@ -313,7 +315,7 @@ func _t_skill_pendiente_cancel_muerte() -> void:
 
 ## El pendiente se cancela si se deselecciona el objetivo.
 func _t_skill_pendiente_cancel_deseleccion() -> void:
-	var p: Player = _player(Vector3(700, 0, 700))
+	var p: Player = _player(Vector3(700, 0, 700), "mago")
 	var en: Enemy = _enemigo(Vector3(700, 0, 720))
 	p.seleccionar(en)
 	p.lanzar_skill_id("bola_fuego")
@@ -325,7 +327,7 @@ func _t_skill_pendiente_cancel_deseleccion() -> void:
 
 ## Las curaciones se aplican al lanzador sin moverse ni pendientes.
 func _t_curacion_sin_moverse() -> void:
-	var p: Player = _player(Vector3.ZERO)
+	var p: Player = _player(Vector3.ZERO, "clerigo")
 	p.take_damage(30.0, null)
 	var vida_daniada: float = p.vida_actual
 	# curacion_menor por id (fase 17). Sin objetivo: va al lanzador.
@@ -354,7 +356,7 @@ func _t_ataque_sin_seleccion_no_engancha() -> void:
 ## Skill hostil sin selección: no fija objetivo, no camina, no gasta maná
 ## (fase 18.4: se eliminó el fallback al mob más cercano).
 func _t_skill_sin_seleccion_no_engancha() -> void:
-	var p: Player = _player(Vector3(800, 0, 800))
+	var p: Player = _player(Vector3(800, 0, 800), "mago")
 	_enemigo(Vector3(800, 0, 805))
 	var mana0: float = p.mana_actual
 	p.lanzar_skill_id("bola_fuego")
@@ -375,7 +377,7 @@ func _t_autoataque_movil_guardado() -> void:
 	p.solicitar_ataque()
 	_check(p.objetivo_ataque == en, "modo móvil: atacar engancha al más cercano", "")
 	_check(p.seleccion == en, "modo móvil: también lo selecciona", "")
-	var p2: Player = _player(Vector3(450, 0, 450))
+	var p2: Player = _player(Vector3(450, 0, 450), "mago")
 	var en2: Enemy = _enemigo(Vector3(450, 0, 470))
 	p2.lanzar_skill_id("bola_fuego")
 	_check(p2.objetivo_ataque == en2, "modo móvil: skill engancha al más cercano", "")

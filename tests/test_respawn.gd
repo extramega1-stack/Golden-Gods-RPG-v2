@@ -265,7 +265,10 @@ func _t_save_sin_timers() -> void:
 	_check(s.guardar(), "save: guardar con un muerto no revienta")
 	var texto: String = FileAccess.get_file_as_string(SaveSystem.RUTA)
 	_check(not ("respawn" in texto), "save: el JSON no guarda timers de respawn")
-	_check(not ("pendiente" in texto), "save: el JSON no guarda pendientes")
+	# Fase 31: "pendiente" sí aparece en el JSON (slots pendiente_1/2 del
+	# equipo); lo que no debe guardarse son los pendientes de respawn,
+	# cuyo payload usa la clave "tiempo".
+	_check(not ("\"tiempo\"" in texto), "save: el JSON no guarda pendientes de respawn")
 	# La carga restaura vivos/muertos como siempre (los muertos pendientes
 	# de respawn simplemente no están en la lista de la demo).
 	var j2: Player = PL.new(SB.new(10.0, 8.0, 6.0, 4.0))

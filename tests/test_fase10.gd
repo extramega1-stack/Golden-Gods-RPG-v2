@@ -87,8 +87,10 @@ func _al_usada(skill_id: String) -> void:
 	_usadas.append(skill_id)
 
 
-func _player(pos: Vector3) -> Player:
+func _player(pos: Vector3, clase: String = "guerrero") -> Player:
 	var p: Player = PL.new()
+	# Fase 31: la clase antes del add_child (_ready configura las skills).
+	p.clase_id = clase
 	root.add_child(p)
 	p.global_position = pos
 	_basura.append(p)
@@ -148,7 +150,7 @@ func _t_ataque_t_persiste() -> void:
 ## bola_fuego por id (fase 17), rango 12. El hotbar lanzar_skill(i) es por
 ## clase desde la fase 18; la mecánica de pendiente se prueba con el id.
 func _t_skill_lejos_castea_y_sigue() -> void:
-	var p: Player = _player(Vector3(100, 0, 100))
+	var p: Player = _player(Vector3(100, 0, 100), "mago")
 	var e: Enemy = _enemigo(Vector3(100, 0, 120))
 	_contar_desde(p)
 	p.mana_actual = 999.0
@@ -253,7 +255,7 @@ func _t_doble_clic_inicia_bucle() -> void:
 ## curacion_menor por id (fase 17): el hotbar lanzar_skill(i) es por clase
 ## desde la fase 18 (el guerrero ya no tiene curar en su lista).
 func _t_curacion_no_altera_combate() -> void:
-	var p: Player = _player(Vector3(700, 0, 700))
+	var p: Player = _player(Vector3(700, 0, 700), "clerigo")
 	var e: Enemy = _enemigo(Vector3(700, 0, 702))
 	_contar_desde(p)
 	p.mana_actual = 999.0

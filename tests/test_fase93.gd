@@ -73,8 +73,10 @@ func _al_seleccion(e: Entity) -> void:
 	_sel_ultima = e
 
 
-func _player(pos: Vector3) -> Player:
+func _player(pos: Vector3, clase: String = "guerrero") -> Player:
 	var p: Player = PL.new()
+	# Fase 31: la clase antes del add_child (_ready configura las skills).
+	p.clase_id = clase
 	root.add_child(p)
 	p.global_position = pos
 	_basura.append(p)
@@ -127,7 +129,7 @@ func _t_tras_matar_no_camina() -> void:
 
 ## (c) Skill pendiente cuyo objetivo muere antes del casteo: se cancela todo.
 func _t_skill_pendiente_muere_no_camina() -> void:
-	var p: Player = _player(Vector3.ZERO)
+	var p: Player = _player(Vector3.ZERO, "mago")
 	var e: Enemy = _enemigo(Vector3(20, 0, 0))
 	p.seleccionar(e)
 	p.lanzar_skill_id("bola_fuego")  # Bola de fuego, rango 12 < 20: queda pendiente y camina.
@@ -142,7 +144,7 @@ func _t_skill_pendiente_muere_no_camina() -> void:
 
 ## (d) El casteo mata al objetivo: no sigue caminando al cadáver.
 func _t_skill_casteo_mata_no_camina() -> void:
-	var p: Player = _player(Vector3.ZERO)
+	var p: Player = _player(Vector3.ZERO, "mago")
 	var e: Enemy = _enemigo(Vector3(20, 0, 0))
 	e.vida_actual = 1.0  # la bola lo one-shotea
 	p.seleccionar(e)

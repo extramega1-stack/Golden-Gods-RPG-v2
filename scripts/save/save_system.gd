@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 9
+const SAVE_VERSION: int = 10
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -51,6 +51,8 @@ func guardar() -> bool:
 			"talentos": jugador.talentos.to_dict() if jugador.talentos != null else {},
 			# Fase 30: puntos de atributo sin gastar (los base ya van en "entidad").
 			"puntos_atributo": jugador.puntos_atributo,
+			# Fase 31: niveles de skill + puntos sin gastar.
+			"skills": jugador.skills.to_dict() if jugador.skills != null else {},
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
@@ -124,6 +126,7 @@ func _cargar_jugador(dj: Dictionary) -> void:
 	_cargar_inventario(dj)
 	_cargar_equipo(dj)
 	_cargar_talentos(dj)
+	_cargar_skills(dj)
 	var pos: Array = dj.get("pos", [])
 	if pos.size() >= 3:
 		jugador.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
@@ -186,6 +189,17 @@ func _cargar_talentos(dj: Dictionary) -> void:
 		jugador.puntos_atributo = maxi(0, int(dj.get("puntos_atributo", 0)))
 	else:
 		jugador.puntos_atributo = maxi(0, (jugador.nivel - 1) * 2)
+
+
+## Fase 31 — Skills. Sin bloque (partidas v9): niveles default de la
+## clase actual (sus skills en 1, 0 puntos). Con bloque: se restaura.
+func _cargar_skills(dj: Dictionary) -> void:
+	if jugador.skills == null:
+		jugador.skills = SkillSystem.new()
+	if dj.has("skills"):
+		jugador.skills.cargar_estado(dj.get("skills", {}), jugador.clase_id)
+	else:
+		jugador.skills.configurar_clase(jugador.clase_id)
 
 
 func _cargar_enemigos(lista: Array) -> void:

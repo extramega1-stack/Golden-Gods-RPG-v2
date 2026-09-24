@@ -197,6 +197,9 @@ func _t_persistencia() -> void:
 ## Ejecución real contra un Player (necesita el árbol).
 func _t_ejecutar() -> void:
 	var p: Player = PL.new()
+	# Fase 31: el test castea curacion_menor (clérigo); la clase va antes
+	# del add_child porque _ready configura las skills.
+	p.clase_id = "clerigo"
 	root.add_child(p)
 	_basura.append(p)
 	var b: BarraAcciones = BA.new()

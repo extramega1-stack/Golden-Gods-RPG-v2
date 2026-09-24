@@ -42,9 +42,9 @@ var _misiones: QuestLog = null
 var _lista_enemigos: Array = []
 ## Fase 9: el spawner de respawn (los timers son runtime, no se guardan).
 var _spawner: SpawnerMobs = null
-## Fase 28: panel de talentos (nodo de la escena principal; null en demos
+## Fase 31: panel de habilidades (nodo de la escena principal; null en demos
 ## viejas como fase9, que no lo traen).
-var _panel_talentos: PanelTalentos = null
+var _panel_habilidades: PanelHabilidades = null
 ## Fase 30: ventana de personaje (igual que talentos).
 var _panel_personaje: PanelPersonaje = null
 ## Fase 20: pool de enemigos (precarga la escena una vez y recicla nodos
@@ -95,10 +95,10 @@ func _ready() -> void:
 	var audio := AudioJuego.new()
 	audio.name = "AudioJuego"
 	add_child(audio)
-	# Fase 28: panel de talentos (solo la escena principal lo trae).
-	_panel_talentos = get_node_or_null("PanelTalentos") as PanelTalentos
-	if _panel_talentos != null:
-		_panel_talentos.conectar(_jugador)
+	# Fase 31: panel de habilidades (solo la escena principal lo trae).
+	_panel_habilidades = get_node_or_null("PanelHabilidades") as PanelHabilidades
+	if _panel_habilidades != null:
+		_panel_habilidades.conectar(_jugador)
 	# Fase 30: ventana de personaje (igual).
 	_panel_personaje = get_node_or_null("PanelPersonaje") as PanelPersonaje
 	if _panel_personaje != null:
@@ -181,8 +181,8 @@ func _cargar_partida_guardada() -> bool:
 		_panel_eq.conectar(_jugador)
 		_panel_tienda.conectar(_jugador)
 		_panel_misiones.conectar(_jugador, _misiones)
-		if _panel_talentos != null and is_instance_valid(_panel_talentos):
-			_panel_talentos.conectar(_jugador)
+		if _panel_habilidades != null and is_instance_valid(_panel_habilidades):
+			_panel_habilidades.conectar(_jugador)
 		if _panel_personaje != null and is_instance_valid(_panel_personaje):
 			_panel_personaje.conectar(_jugador)
 		_hud.refrescar()

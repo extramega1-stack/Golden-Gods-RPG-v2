@@ -890,3 +890,22 @@ Reparto STR/STA/DEX/INT con 2 puntos por nivel (inspirado en FlyFF Universe).
 - Tests: `tests/test_fase30_atributos.gd` — 26/26.
 
 *Fin del documento maestro v3.25 — Fase 30 (atributos).*
+
+## Fase 31 — Sistemas estilo FlyFF Universe (2026-09-24)
+
+H intacto (Fase 30). K/I/C rehechos al estilo FlyFF Universe.
+
+**Skills nivel 1–20 (tecla K):**
+- `data/skills.json`: las 32 skills traen `max_nivel: 20`, `power_nivel` y `mana_nivel` (extra por nivel en unidades del efecto principal).
+- `SkillSystem`: `puntos_skill` (2 por nivel del jugador), `configurar_clase()` (skills de la clase en 1, ajenas en 0; al cambiar de clase devuelve los puntos invertidos y es no-op si la clase no cambia), `subir_nivel()` con motivos, `power_efectivo()` / `mana_efectivo()` / `cantidad_efectiva()`. Lanzar usa los valores efectivos; las ajenas dan "no_aprendida".
+- Curación migrada: `curacion_menor.power = 80`, `luz_sanadora.power = 200`; la fuente efectiva es `power_efectivo` (`efecto.cantidad` queda por compatibilidad).
+- Save v10 con bloque `skills` (version 1, puntos + niveles); carga v9 tolerante (skills de la clase en 1).
+- `PanelHabilidades` (capa 30, ex-`PanelTalentos`, acción `abrir_habilidades` en K, ESC cierra): pestañas "Skills" (nombre, Nv X/20, números efectivos, botón +) y "Talentos" (migración íntegra de la lógica de la Fase 28).
+
+**Inventario FlyFF (tecla I):** `PanelInventario` rehecho — pestañas Todos / Equipo / Consumibles / Materiales / Misión, rejilla de 6 columnas, celda coloreada por tipo con inicial y cantidad, clic = seleccionar → barra con nombre, descripción y botones Usar/Equipar. `Inventario.listar()` y `PanelInventario.pasa_filtro()` (lógica testeable).
+
+**Equipo paperdoll 12 slots (tecla C):** `Equipo.SLOTS` = arma, escudo, casco, armadura, guantes, botas, pendiente_1/2, collar, anillo_1/2, amuleto. Equipable = campo `slot` válido (no `tipo`); joyería genérica ("pendiente"/"anillo") al primer libre del par, o reemplaza el primero. `to_dict`/`from_dict` genéricos; la UI es paperdoll de 3 columnas con clic = quitar.
+- 10 piezas nuevas en `data/items.json` (27 items): escudo_madera, casco_cuero, guantes_cuero, botas_cuero, collar_cobre, pendiente_luna/sol, anillo_poder/sabio, amuleto_guardian.
+- Tests: `tests/test_fase31_skills.gd` — 115/115; `tests/test_fase31_equipo.gd` — 55/55; `tests/test_fase31_inventario.gd` — 55/55. Suite completa: 57 suites, 0 fallos.
+
+*Fin del documento maestro v3.26 — Fase 31.*

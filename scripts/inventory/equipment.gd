@@ -1,41 +1,112 @@
 class_name Equipo
 extends RefCounted
-## Equipo del jugador: slots "arma" y "armadura".
+## Equipo del jugador estilo FlyFF (fase 31): 12 slots.
 ##
 ## Principio de la rebuild (directriz de Juan Diego): el equipo NUNCA escribe
 ## stats base; solo aporta modificadores identificados por fuente
 ## ("equipo:<slot>:<stat>") vía StatBlock.add_mod / remove_mod. Al desequipar
 ## (o al reemplazar por otro item) los mods se quitan con la misma fuente.
+##
+## Criterio de equipable: el item trae campo "slot" válido. Los items con
+## slot "pendiente"/"anillo" (genérico) ocupan el primer libre del par
+## (pendiente_1/pendiente_2, anillo_1/anillo_2); si el par está lleno se
+## reemplaza el primero (el viejo vuelve al inventario).
 
 signal cambiado()
 
-const SLOTS: Array[String] = ["arma", "armadura"]
+## Orden de paperdoll: izq arma/escudo, centro armadura, der accesorios.
+const SLOTS: Array[String] = ["arma", "escudo", "casco", "armadura",
+	"guantes", "botas", "pendiente_1", "pendiente_2", "collar",
+	"anillo_1", "anillo_2", "amuleto"]
+## Slots genéricos de joyería (el item dice "pendiente"/"anillo").
+const SLOTS_JOYA: Dictionary = {
+	"pendiente": ["pendiente_1", "pendiente_2"],
+	"anillo": ["anillo_1", "anillo_2"],
+}
 const SAVE_VERSION: int = 1
 
 ## slot -> item_id ("" = vacío).
-var _equipado: Dictionary = {"arma": "", "armadura": ""}
+var _equipado: Dictionary = {}
+
+
+func _init() -> void:
+	for s in SLOTS:
+		_equipado[s] = ""
+
+
+## Nombres bonitos para la UI (paperdoll).
+static func nombre_slot(slot: String) -> String:
+	match slot:
+		"arma":
+			return "Arma"
+		"escudo":
+			return "Escudo"
+		"casco":
+			return "Casco"
+		"armadura":
+			return "Armadura"
+		"guantes":
+			return "Guantes"
+		"botas":
+			return "Botas"
+		"pendiente_1", "pendiente_2":
+			return "Pendiente"
+		"collar":
+			return "Collar"
+		"anillo_1", "anillo_2":
+			return "Anillo"
+		"amuleto":
+			return "Amuleto"
+	return slot.capitalize()
 
 
 func equipado_en(slot: String) -> String:
 	return str(_equipado.get(slot, ""))
 
 
+## ¿El item es equipable? Criterio fase 31: trae "slot" válido
+## (directo o genérico de joyería).
+static func es_equipable(item_id: String) -> bool:
+	if not ItemDB.existe(item_id):
+		return false
+	var slot: String = str(ItemDB.obtener(item_id).get("slot", ""))
+	return SLOTS.has(slot) or SLOTS_JOYA.has(slot)
+
+
+## ¿El slot del item encaja en este slot concreto? (los genéricos de
+## joyería encajan en cualquiera de su par).
+static func slot_valido_para(item_slot: String, slot: String) -> bool:
+	if item_slot == slot:
+		return true
+	var par: Array = SLOTS_JOYA.get(item_slot, [])
+	return (par as Array).has(slot)
+
+
+## Resuelve el slot destino de un item: los genéricos van al primer libre
+## del par; si el par está lleno, al primero (reemplazo).
+static func resolver_slot(item: Dictionary, equipado: Dictionary) -> String:
+	var item_slot: String = str(item.get("slot", ""))
+	var par: Array = SLOTS_JOYA.get(item_slot, [])
+	if par.is_empty():
+		return item_slot
+	for s in par:
+		if str(equipado.get(str(s), "")) == "":
+			return str(s)
+	return str(par[0])
+
+
 ## Equipa un item del inventario en su slot.
 ## Si el slot estaba ocupado, primero se desequipa (devuelve al inventario).
-## Retorna false si el item no existe, no es arma/armadura, su slot es
-## inválido o no hay stock en el inventario. No toca stats base.
+## Retorna false si el item no existe, no es equipable o no hay stock.
+## No toca stats base.
 func equipar(item_id: String, stats: StatBlock, inventario: Inventario) -> bool:
 	if not ItemDB.existe(item_id):
 		push_warning("[Equipo] item desconocido: %s" % item_id)
 		return false
 	var item: Dictionary = ItemDB.obtener(item_id)
-	var tipo: String = str(item.get("tipo", ""))
-	if tipo != "arma" and tipo != "armadura":
-		push_warning("[Equipo] no es equipable: %s" % item_id)
-		return false
-	var slot: String = str(item.get("slot", ""))
+	var slot: String = resolver_slot(item, _equipado)
 	if not SLOTS.has(slot):
-		push_warning("[Equipo] slot inválido '%s' para %s" % [slot, item_id])
+		push_warning("[Equipo] no es equipable: %s" % item_id)
 		return false
 	if inventario.contar(item_id) <= 0:
 		push_warning("[Equipo] sin stock en inventario: %s" % item_id)
@@ -94,9 +165,12 @@ static func _fuente(slot: String, stat: String) -> String:
 
 ## Serialización versionada (los mods se reaplican en from_dict).
 func to_dict() -> Dictionary:
+	var bloque: Dictionary = {}
+	for slot in SLOTS:
+		bloque[slot] = equipado_en(slot)
 	return {
 		"version": SAVE_VERSION,
-		"slots": {"arma": equipado_en("arma"), "armadura": equipado_en("armadura")},
+		"slots": bloque,
 	}
 
 
@@ -110,7 +184,7 @@ static func from_dict(d: Dictionary, stats: StatBlock) -> Equipo:
 		if item_id == "" or not ItemDB.existe(item_id):
 			continue
 		var item: Dictionary = ItemDB.obtener(item_id)
-		if str(item.get("slot", "")) != slot:
+		if not slot_valido_para(str(item.get("slot", "")), slot):
 			push_warning("[Equipo] from_dict ignora %s (slot %s)" % [item_id, slot])
 			continue
 		eq._equipado[slot] = item_id

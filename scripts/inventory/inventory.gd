@@ -43,6 +43,20 @@ func agregar(item_id: String, cantidad: int = 1) -> int:
 	return restante
 
 
+## Lista enriquecida para la UI: [{id, cantidad, item}].
+func listar() -> Array:
+	var out: Array = []
+	for e in entradas:
+		if not (e is Dictionary):
+			continue
+		var iid: String = str(e.get("item_id", ""))
+		if iid == "" or not ItemDB.existe(iid):
+			continue
+		out.append({"id": iid, "cantidad": int(e.get("cantidad", 1)),
+			"item": ItemDB.obtener(iid)})
+	return out
+
+
 ## Quita items. Retorna false (sin tocar nada) si no hay stock suficiente.
 func quitar(item_id: String, cantidad: int = 1) -> bool:
 	if cantidad <= 0:

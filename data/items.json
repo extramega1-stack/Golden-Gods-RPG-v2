@@ -1,1 +1,479 @@
-{"items":[{"apilable":true,"descripcion":"Restaura 60 de vida al beberla.","efecto":{"cantidad":60.0,"tipo":"curar"},"id":"pocion_vida","mods":[],"nombre":"Poción de vida","precio":25,"rareza":"comun","slot":"","tipo":"consumible"},{"apilable":true,"descripcion":"Restaura 40 de maná al beberla.","efecto":{"cantidad":40.0,"tipo":"mana"},"id":"pocion_mana","mods":[],"nombre":"Poción de maná","precio":25,"rareza":"comun","slot":"","tipo":"consumible"},{"apilable":false,"descripcion":"Una daga vieja de goblin. Mejor que nada.","efecto":{},"id":"daga_gastada","mods":[{"kind":0,"stat":"ataque","valor":4.0}],"nombre":"Daga gastada","precio":15,"rareza":"comun","slot":"arma","tipo":"arma"},{"apilable":false,"descripcion":"Espada corta de hierro. Fiable y afilada.","efecto":{},"id":"espada_corta","mods":[{"kind":0,"stat":"ataque","valor":9.0}],"nombre":"Espada corta","precio":80,"rareza":"comun","slot":"arma","tipo":"arma"},{"apilable":false,"descripcion":"Forjada con esmero; su filo encuentra puntos débiles.","efecto":{},"id":"espada_hierro","mods":[{"kind":0,"stat":"ataque","valor":14.0},{"kind":0,"stat":"crit_prob","valor":0.02}],"nombre":"Espada de hierro","precio":220,"rareza":"magico","slot":"arma","tipo":"arma"},{"apilable":false,"descripcion":"Ropa gruesa reforzada. Protección básica.","efecto":{},"id":"armadura_tela","mods":[{"kind":0,"stat":"defensa","valor":6.0}],"nombre":"Armadura de tela","precio":40,"rareza":"comun","slot":"armadura","tipo":"armadura"},{"apilable":false,"descripcion":"Cuero curtido que aguanta golpes y da vigor.","efecto":{},"id":"armadura_cuero","mods":[{"kind":0,"stat":"defensa","valor":12.0},{"kind":0,"stat":"vida_max","valor":20.0}],"nombre":"Armadura de cuero","precio":150,"rareza":"comun","slot":"armadura","tipo":"armadura"},{"apilable":false,"descripcion":"Anillas de acero entrelazadas. Para guerreros serios.","efecto":{},"id":"cota_malla","mods":[{"kind":0,"stat":"defensa","valor":20.0},{"kind":0,"stat":"vida_max","valor":40.0}],"nombre":"Cota de malla","precio":350,"rareza":"magico","slot":"armadura","tipo":"armadura"},{"apilable":true,"descripcion":"Colmillo afilado de lobo salvaje. Se vende bien.","efecto":{},"id":"colmillo","mods":[],"nombre":"Colmillo de lobo","precio":5,"rareza":"comun","slot":"","tipo":"material"},{"apilable":false,"descripcion":"Pesada maza de guerra ogra. Golpea fuerte, pero lenta.","efecto":{},"id":"maza_ogro","mods":[{"kind":0,"stat":"ataque","valor":18.0},{"kind":0,"stat":"vel_ataque","valor":-0.1}],"nombre":"Maza de ogro","precio":300,"rareza":"raro","slot":"arma","tipo":"arma"},{"apilable":true,"descripcion":"Eco solidificado del Devorador: arena que canta a destiempo. Huele a Tártaro.","efecto":{},"id":"fragmento_duna","mods":[],"nombre":"Fragmento de las Dunas","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":true,"descripcion":"Escama de fuego del Fundidor: aún tibia. La fragua la reconoce.","efecto":{},"id":"fragmento_volcan","mods":[],"nombre":"Fragmento del Volcán","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":true,"descripcion":"Colmillo de escarcha del Aullido: frío que no derrite. La nieve lo teme.","efecto":{},"id":"fragmento_pico","mods":[],"nombre":"Fragmento del Pico","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":true,"descripcion":"Nota rota del Eco: vibra en una frecuencia imposible. Elthar la estudia.","efecto":{},"id":"fragmento_cristal","mods":[],"nombre":"Fragmento del Cristal","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":true,"descripcion":"Ojo ciego del Susurro: ya no mira, pero recuerda. Guárdalo del Velo.","efecto":{},"id":"fragmento_umbral","mods":[],"nombre":"Fragmento del Umbral","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":true,"descripcion":"Corona mellada del Campeón: manchada de algo más viejo que la sangre.","efecto":{},"id":"fragmento_arena","mods":[],"nombre":"Fragmento de la Arena","precio":100,"rareza":"rara","slot":"","tipo":"material"},{"apilable":false,"descripcion":"El Molde templado en la última guerra: ya no corta, pero pesa como una promesa cumplida.","efecto":{},"id":"verdugo_eco","mods":[{"kind":0,"stat":"ataque","valor":30.0},{"kind":0,"stat":"crit_prob","valor":0.05}],"nombre":"Eco del Verdugo","precio":0,"rareza":"legendario","slot":"arma","tipo":"arma"}],"nota":"Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo.","version":1}
+{
+ "items": [
+  {
+   "apilable": true,
+   "descripcion": "Restaura 60 de vida al beberla.",
+   "efecto": {
+    "cantidad": 60.0,
+    "tipo": "curar"
+   },
+   "id": "pocion_vida",
+   "mods": [],
+   "nombre": "Poción de vida",
+   "precio": 25,
+   "rareza": "comun",
+   "slot": "",
+   "tipo": "consumible"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Restaura 40 de maná al beberla.",
+   "efecto": {
+    "cantidad": 40.0,
+    "tipo": "mana"
+   },
+   "id": "pocion_mana",
+   "mods": [],
+   "nombre": "Poción de maná",
+   "precio": 25,
+   "rareza": "comun",
+   "slot": "",
+   "tipo": "consumible"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Una daga vieja de goblin. Mejor que nada.",
+   "efecto": {},
+   "id": "daga_gastada",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "ataque",
+     "valor": 4.0
+    }
+   ],
+   "nombre": "Daga gastada",
+   "precio": 15,
+   "rareza": "comun",
+   "slot": "arma",
+   "tipo": "arma"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Espada corta de hierro. Fiable y afilada.",
+   "efecto": {},
+   "id": "espada_corta",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "ataque",
+     "valor": 9.0
+    }
+   ],
+   "nombre": "Espada corta",
+   "precio": 80,
+   "rareza": "comun",
+   "slot": "arma",
+   "tipo": "arma"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Forjada con esmero; su filo encuentra puntos débiles.",
+   "efecto": {},
+   "id": "espada_hierro",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "ataque",
+     "valor": 14.0
+    },
+    {
+     "kind": 0,
+     "stat": "crit_prob",
+     "valor": 0.02
+    }
+   ],
+   "nombre": "Espada de hierro",
+   "precio": 220,
+   "rareza": "magico",
+   "slot": "arma",
+   "tipo": "arma"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Ropa gruesa reforzada. Protección básica.",
+   "efecto": {},
+   "id": "armadura_tela",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "defensa",
+     "valor": 6.0
+    }
+   ],
+   "nombre": "Armadura de tela",
+   "precio": 40,
+   "rareza": "comun",
+   "slot": "armadura",
+   "tipo": "armadura"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Cuero curtido que aguanta golpes y da vigor.",
+   "efecto": {},
+   "id": "armadura_cuero",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "defensa",
+     "valor": 12.0
+    },
+    {
+     "kind": 0,
+     "stat": "vida_max",
+     "valor": 20.0
+    }
+   ],
+   "nombre": "Armadura de cuero",
+   "precio": 150,
+   "rareza": "comun",
+   "slot": "armadura",
+   "tipo": "armadura"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Anillas de acero entrelazadas. Para guerreros serios.",
+   "efecto": {},
+   "id": "cota_malla",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "defensa",
+     "valor": 20.0
+    },
+    {
+     "kind": 0,
+     "stat": "vida_max",
+     "valor": 40.0
+    }
+   ],
+   "nombre": "Cota de malla",
+   "precio": 350,
+   "rareza": "magico",
+   "slot": "armadura",
+   "tipo": "armadura"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Colmillo afilado de lobo salvaje. Se vende bien.",
+   "efecto": {},
+   "id": "colmillo",
+   "mods": [],
+   "nombre": "Colmillo de lobo",
+   "precio": 5,
+   "rareza": "comun",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": false,
+   "descripcion": "Pesada maza de guerra ogra. Golpea fuerte, pero lenta.",
+   "efecto": {},
+   "id": "maza_ogro",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "ataque",
+     "valor": 18.0
+    },
+    {
+     "kind": 0,
+     "stat": "vel_ataque",
+     "valor": -0.1
+    }
+   ],
+   "nombre": "Maza de ogro",
+   "precio": 300,
+   "rareza": "raro",
+   "slot": "arma",
+   "tipo": "arma"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Eco solidificado del Devorador: arena que canta a destiempo. Huele a Tártaro.",
+   "efecto": {},
+   "id": "fragmento_duna",
+   "mods": [],
+   "nombre": "Fragmento de las Dunas",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Escama de fuego del Fundidor: aún tibia. La fragua la reconoce.",
+   "efecto": {},
+   "id": "fragmento_volcan",
+   "mods": [],
+   "nombre": "Fragmento del Volcán",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Colmillo de escarcha del Aullido: frío que no derrite. La nieve lo teme.",
+   "efecto": {},
+   "id": "fragmento_pico",
+   "mods": [],
+   "nombre": "Fragmento del Pico",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Nota rota del Eco: vibra en una frecuencia imposible. Elthar la estudia.",
+   "efecto": {},
+   "id": "fragmento_cristal",
+   "mods": [],
+   "nombre": "Fragmento del Cristal",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Ojo ciego del Susurro: ya no mira, pero recuerda. Guárdalo del Velo.",
+   "efecto": {},
+   "id": "fragmento_umbral",
+   "mods": [],
+   "nombre": "Fragmento del Umbral",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": true,
+   "descripcion": "Corona mellada del Campeón: manchada de algo más viejo que la sangre.",
+   "efecto": {},
+   "id": "fragmento_arena",
+   "mods": [],
+   "nombre": "Fragmento de la Arena",
+   "precio": 100,
+   "rareza": "rara",
+   "slot": "",
+   "tipo": "material"
+  },
+  {
+   "apilable": false,
+   "descripcion": "El Molde templado en la última guerra: ya no corta, pero pesa como una promesa cumplida.",
+   "efecto": {},
+   "id": "verdugo_eco",
+   "mods": [
+    {
+     "kind": 0,
+     "stat": "ataque",
+     "valor": 30.0
+    },
+    {
+     "kind": 0,
+     "stat": "crit_prob",
+     "valor": 0.05
+    }
+   ],
+   "nombre": "Eco del Verdugo",
+   "precio": 0,
+   "rareza": "legendario",
+   "slot": "arma",
+   "tipo": "arma"
+  },
+  {
+   "id": "escudo_madera",
+   "nombre": "Escudo de madera",
+   "descripcion": "Un escudo simple pero firme.",
+   "tipo": "armadura",
+   "slot": "escudo",
+   "mods": [
+    {
+     "stat": "defensa",
+     "kind": 0,
+     "valor": 8.0
+    },
+    {
+     "stat": "vida_max",
+     "kind": 0,
+     "valor": 10.0
+    }
+   ],
+   "precio": 50,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "casco_cuero",
+   "nombre": "Casco de cuero",
+   "descripcion": "Protege la cabeza del aventurero.",
+   "tipo": "armadura",
+   "slot": "casco",
+   "mods": [
+    {
+     "stat": "defensa",
+     "kind": 0,
+     "valor": 6.0
+    }
+   ],
+   "precio": 50,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "guantes_cuero",
+   "nombre": "Guantes de cuero",
+   "descripcion": "Agarre firme y manos veloces.",
+   "tipo": "armadura",
+   "slot": "guantes",
+   "mods": [
+    {
+     "stat": "defensa",
+     "kind": 0,
+     "valor": 5.0
+    },
+    {
+     "stat": "vel_ataque",
+     "kind": 0,
+     "valor": 0.05
+    }
+   ],
+   "precio": 50,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "botas_cuero",
+   "nombre": "Botas de cuero",
+   "descripcion": "Para caminar el mundo sin cansarse.",
+   "tipo": "armadura",
+   "slot": "botas",
+   "mods": [
+    {
+     "stat": "defensa",
+     "kind": 0,
+     "valor": 5.0
+    },
+    {
+     "stat": "vel_mov",
+     "kind": 0,
+     "valor": 0.3
+    }
+   ],
+   "precio": 50,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "collar_cobre",
+   "nombre": "Collar de cobre",
+   "descripcion": "Un collar sencillo con un dije lunar.",
+   "tipo": "accesorio",
+   "slot": "collar",
+   "mods": [
+    {
+     "stat": "vida_max",
+     "kind": 0,
+     "valor": 25.0
+    }
+   ],
+   "precio": 60,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "pendiente_luna",
+   "nombre": "Pendiente de luna",
+   "descripcion": "Brilla con luz plateada; aclara la mente.",
+   "tipo": "accesorio",
+   "slot": "pendiente",
+   "mods": [
+    {
+     "stat": "mana_max",
+     "kind": 0,
+     "valor": 15.0
+    }
+   ],
+   "precio": 60,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "pendiente_sol",
+   "nombre": "Pendiente de sol",
+   "descripcion": "Un punto cálido que afina el instinto.",
+   "tipo": "accesorio",
+   "slot": "pendiente",
+   "mods": [
+    {
+     "stat": "crit_prob",
+     "kind": 0,
+     "valor": 0.01
+    }
+   ],
+   "precio": 70,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "anillo_poder",
+   "nombre": "Anillo de poder",
+   "descripcion": "Pesa poco, pega fuerte.",
+   "tipo": "accesorio",
+   "slot": "anillo",
+   "mods": [
+    {
+     "stat": "ataque",
+     "kind": 0,
+     "valor": 4.0
+    }
+   ],
+   "precio": 70,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "anillo_sabio",
+   "nombre": "Anillo del sabio",
+   "descripcion": "Susurra fórmulas arcanas.",
+   "tipo": "accesorio",
+   "slot": "anillo",
+   "mods": [
+    {
+     "stat": "poder",
+     "kind": 0,
+     "valor": 6.0
+    }
+   ],
+   "precio": 70,
+   "rareza": "comun",
+   "apilable": false
+  },
+  {
+   "id": "amuleto_guardian",
+   "nombre": "Amuleto del guardián",
+   "descripcion": "Un ojo tallado que vela por ti.",
+   "tipo": "accesorio",
+   "slot": "amuleto",
+   "mods": [
+    {
+     "stat": "defensa",
+     "kind": 0,
+     "valor": 8.0
+    },
+    {
+     "stat": "vida_max",
+     "kind": 0,
+     "valor": 15.0
+    }
+   ],
+   "precio": 90,
+   "rareza": "raro",
+   "apilable": false
+  }
+ ],
+ "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo.",
+ "version": 1
+}

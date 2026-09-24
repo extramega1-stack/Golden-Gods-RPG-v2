@@ -138,6 +138,8 @@ func _ready() -> void:
 	inventario = Inventario.new()
 	equipo = Equipo.new()
 	skills = SkillSystem.new()
+	# Fase 31: las skills de la clase empiezan en nivel 1.
+	skills.configurar_clase(clase_id)
 	# Fase 28: talentos (1 punto por nivel subido).
 	talentos = Talentos.new()
 	if not subio_nivel.is_connected(_al_subir_nivel_talentos):
@@ -740,11 +742,15 @@ func ganar_oro(cantidad: int) -> void:
 
 ## Fase 28: cada nivel da 1 punto de talento (propio, no de Entity).
 ## Fase 30: cada nivel da 2 puntos de atributo.
+## Fase 31: cada nivel da 2 puntos de skill.
 func _al_subir_nivel_talentos(_nivel: int) -> void:
 	if talentos == null:
 		talentos = Talentos.new()
 	talentos.puntos += 1
 	puntos_atributo += 2
+	if skills == null:
+		skills = SkillSystem.new()
+	skills.puntos_skill += 2
 
 
 ## Fase 30: reparte 1 punto de atributo (FlyFF). Retorna "ok" /
@@ -774,6 +780,11 @@ func fijar_identidad(p_nombre: String, p_clase_id: String) -> void:
 	# Fase 28: al cambiar de clase se purgan los talentos ajenos.
 	if talentos != null:
 		talentos.purgar_clase(stats, clase_id)
+	# Fase 31: al cambiar de clase se reconfiguran los niveles de skill
+	# (las skills de la clase nueva empiezan en 1; devuelve los puntos
+	# invertidos en la anterior).
+	if skills != null:
+		skills.configurar_clase(clase_id)
 	identidad_cambiada.emit()
 
 

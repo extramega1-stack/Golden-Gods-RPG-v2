@@ -1,5 +1,5 @@
 {
- "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}.",
+ "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}. Fase 31: max_nivel/power_nivel/mana_nivel (power_nivel = extra por nivel en unidades del efecto principal).",
  "version": 2,
  "skills": [
   {
@@ -17,7 +17,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.12,
+   "mana_nivel": 0.6
   },
   {
    "id": "tajo_veloz",
@@ -34,7 +37,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.07,
+   "mana_nivel": 0.4
   },
   {
    "id": "embate",
@@ -51,7 +57,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.11,
+   "mana_nivel": 0.7
   },
   {
    "id": "grito_guerra",
@@ -70,7 +79,10 @@
     "cantidad": 0.25,
     "duracion": 10.0,
     "stat": "ataque"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.8
   },
   {
    "id": "torbellino",
@@ -88,7 +100,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 4.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.1,
+   "mana_nivel": 1.0
   },
   {
    "id": "muro_escudo",
@@ -107,7 +122,10 @@
     "cantidad": 0.4,
     "duracion": 8.0,
     "stat": "defensa"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.01,
+   "mana_nivel": 0.9
   },
   {
    "id": "ejecucion",
@@ -124,7 +142,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.17,
+   "mana_nivel": 1.2
   },
   {
    "id": "ira_titan",
@@ -143,7 +164,10 @@
     "cantidad": 0.6,
     "duracion": 12.0,
     "stat": "ataque"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.012,
+   "mana_nivel": 1.8
   },
   {
    "id": "descarga_arcana",
@@ -160,7 +184,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.08,
+   "mana_nivel": 0.5
   },
   {
    "id": "bola_fuego",
@@ -177,7 +204,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.16,
+   "mana_nivel": 0.9
   },
   {
    "id": "prision_hielo",
@@ -196,7 +226,10 @@
     "cantidad": 0.5,
     "duracion": 5.0,
     "stat": "velocidad"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.7
   },
   {
    "id": "escudo_mana",
@@ -215,7 +248,10 @@
     "cantidad": 0.5,
     "duracion": 8.0,
     "stat": "defensa"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.01,
+   "mana_nivel": 1.0
   },
   {
    "id": "rayo_encadenado",
@@ -233,7 +269,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 3.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.11,
+   "mana_nivel": 1.2
   },
   {
    "id": "nova_escarcha",
@@ -251,7 +290,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 5.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.1,
+   "mana_nivel": 1.1
   },
   {
    "id": "explosion_mental",
@@ -268,7 +310,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.19,
+   "mana_nivel": 1.4
   },
   {
    "id": "lluvia_meteoros",
@@ -286,7 +331,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 6.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.2,
+   "mana_nivel": 2.0
   },
   {
    "id": "disparo_certero",
@@ -303,7 +351,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.12,
+   "mana_nivel": 0.5
   },
   {
    "id": "disparo_doble",
@@ -320,7 +371,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.09,
+   "mana_nivel": 0.6
   },
   {
    "id": "tiro_rodilla",
@@ -339,7 +393,10 @@
     "cantidad": 0.4,
     "duracion": 5.0,
     "stat": "velocidad"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.6
   },
   {
    "id": "flecha_venenosa",
@@ -358,7 +415,10 @@
     "cantidad": 0.25,
     "duracion": 8.0,
     "stat": "ataque"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.006,
+   "mana_nivel": 0.7
   },
   {
    "id": "ojo_halcon",
@@ -377,7 +437,10 @@
     "cantidad": 0.25,
     "duracion": 12.0,
     "stat": "crit"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.8
   },
   {
    "id": "disparo_explosivo",
@@ -395,7 +458,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 3.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.14,
+   "mana_nivel": 1.0
   },
   {
    "id": "lluvia_flechas",
@@ -413,7 +479,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 5.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.11,
+   "mana_nivel": 1.2
   },
   {
    "id": "danza_flechas",
@@ -431,7 +500,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 6.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.17,
+   "mana_nivel": 1.8
   },
   {
    "id": "curacion_menor",
@@ -441,14 +513,17 @@
    "mana": 20.0,
    "cooldown": 10.0,
    "rango": 0.0,
-   "power": 0.0,
+   "power": 80,
    "magica": false,
    "bonus_crit": 0.0,
    "varianza": 0.1,
    "efecto": {
     "tipo": "curar",
     "cantidad": 80.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 6.0,
+   "mana_nivel": 1.0
   },
   {
    "id": "castigo_divino",
@@ -465,7 +540,10 @@
    "efecto": {
     "tipo": "dano",
     "cantidad": 0.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.14,
+   "mana_nivel": 0.8
   },
   {
    "id": "bendicion",
@@ -484,7 +562,10 @@
     "cantidad": 0.2,
     "duracion": 12.0,
     "stat": "ataque"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.008,
+   "mana_nivel": 0.9
   },
   {
    "id": "juicio",
@@ -503,7 +584,10 @@
     "cantidad": 0.2,
     "duracion": 8.0,
     "stat": "ataque"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.006,
+   "mana_nivel": 0.8
   },
   {
    "id": "escudo_sagrado",
@@ -522,7 +606,10 @@
     "cantidad": 0.6,
     "duracion": 10.0,
     "stat": "defensa"
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.012,
+   "mana_nivel": 1.2
   },
   {
    "id": "luz_sanadora",
@@ -532,14 +619,17 @@
    "mana": 35.0,
    "cooldown": 18.0,
    "rango": 0.0,
-   "power": 0.0,
+   "power": 200,
    "magica": false,
    "bonus_crit": 0.0,
    "varianza": 0.1,
    "efecto": {
     "tipo": "curar",
     "cantidad": 200.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 12.0,
+   "mana_nivel": 1.6
   },
   {
    "id": "nova_sagrada",
@@ -557,7 +647,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 4.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.12,
+   "mana_nivel": 1.3
   },
   {
    "id": "juicio_final",
@@ -575,7 +668,10 @@
     "tipo": "aoe",
     "cantidad": 0.0,
     "radio": 6.0
-   }
+   },
+   "max_nivel": 20,
+   "power_nivel": 0.19,
+   "mana_nivel": 2.2
   }
  ]
 }

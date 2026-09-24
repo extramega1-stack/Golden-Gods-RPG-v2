@@ -31,6 +31,15 @@ extends RefCounted
 ## SkillFX lo tiñe). Feedback sonoro: AudioJuego.al_skill(tipo) en lanzar()
 ## (fase 20: pipeline existente).
 
+## Fase 31 — niveles de skill estilo FlyFF (1–20, 2 puntos por nivel del
+## jugador). Cada clase conoce sus skills a nivel 1 (`configurar_clase`);
+## el resto están en 0 ("no aprendidas") y no se pueden subir ni lanzar.
+## `power_nivel` del JSON escala el efecto principal: power para daño/aoe/
+## curar, `efecto.cantidad` para buff/debuff (misma unidad del efecto).
+## Sin `configurar_clase()`, el sistema opera en modo libre: todas las
+## skills conocidas lanzan a nivel 1 (compatibilidad con tests viejos y
+## herramientas). En juego el Player siempre configura su clase.
+
 signal skill_usada(skill_id: String)
 signal skill_fallida(skill_id: String, motivo: String)
 
@@ -44,6 +53,131 @@ var _cds: Dictionary = {}
 ## Efectos temporales activos: Array de diccionarios {objetivo: WeakRef,
 ## mod_id: String, tiempo: float}.
 var _efectos: Array = []
+
+## Fase 31 — puntos para subir skills (el Player suma 2 por nivel).
+var puntos_skill: int = 0
+## skill_id -> nivel (0 = no aprendida / ausente).
+var _niveles: Dictionary = {}
+## Clase configurada ("" = modo libre: todo conocido a nivel 1).
+var _clase_id: String = ""
+
+
+## Fija la clase: sus skills empiezan en 1, el resto en 0. Devuelve los
+## puntos invertidos en niveles (2–20) de la clase anterior, como la purga
+## de talentos. Repetir con la misma clase es no-op: no reinicia progreso.
+func configurar_clase(clase_id: String) -> int:
+	if _clase_id == clase_id:
+		return 0
+	var devueltos: int = 0
+	for sid in _niveles:
+		var n: int = int(_niveles[sid])
+		if n > 1:
+			devueltos += n - 1
+	puntos_skill += devueltos
+	_niveles.clear()
+	_clase_id = clase_id
+	for sid in SkillDB.skills_por_clase(clase_id):
+		_niveles[sid] = 1
+	return devueltos
+
+
+## Nivel actual (0 si no aprendida o desconocida).
+func nivel_de(skill_id: String) -> int:
+	return maxi(0, int(_niveles.get(skill_id, 0)))
+
+
+## ¿Se puede subir un nivel? "ok" | "desconocida" | "no_aprendida" |
+## "max_nivel" | "sin_puntos".
+func puede_subir(skill_id: String) -> String:
+	if not SkillDB.existe(skill_id):
+		return "desconocida"
+	if nivel_de(skill_id) <= 0:
+		return "no_aprendida"
+	var mx: int = maxi(1, int(SkillDB.obtener(skill_id).get("max_nivel", 20)))
+	if nivel_de(skill_id) >= mx:
+		return "max_nivel"
+	if puntos_skill <= 0:
+		return "sin_puntos"
+	return "ok"
+
+
+## Gasta 1 punto_skill y sube un nivel. Retorna "ok" o el motivo.
+func subir_nivel(skill_id: String) -> String:
+	var motivo: String = puede_subir(skill_id)
+	if motivo != "ok":
+		return motivo
+	puntos_skill -= 1
+	_niveles[skill_id] = nivel_de(skill_id) + 1
+	return "ok"
+
+
+## Power con el nivel aplicado (daño/aoe). Sin configurar: base.
+func power_efectivo(skill_id: String) -> float:
+	var sk: Dictionary = SkillDB.obtener(skill_id)
+	var bonus: int = maxi(0, nivel_de(skill_id) - 1)
+	return float(sk.get("power", 1.0)) \
+		+ float(sk.get("power_nivel", 0.0)) * float(bonus)
+
+
+## Costo de maná con el nivel aplicado. Sin configurar: base.
+func mana_efectivo(skill_id: String) -> float:
+	var sk: Dictionary = SkillDB.obtener(skill_id)
+	var bonus: int = maxi(0, nivel_de(skill_id) - 1)
+	return float(sk.get("mana", 0.0)) \
+		+ float(sk.get("mana_nivel", 0.0)) * float(bonus)
+
+
+## Efecto principal con el nivel aplicado (curar/buff/debuff: cantidad).
+## Sin configurar: base.
+func cantidad_efectiva(skill_id: String) -> float:
+	var sk: Dictionary = SkillDB.obtener(skill_id)
+	var ef: Dictionary = sk.get("efecto", {})
+	var bonus: int = maxi(0, nivel_de(skill_id) - 1)
+	return float(ef.get("cantidad", 0.0)) \
+		+ float(sk.get("power_nivel", 0.0)) * float(bonus)
+
+
+## Copia del dict de la skill con power/maná/cantidad efectivos.
+## (SkillDB.obtener devuelve el dict vivo del caché: no se muta.)
+func _skill_efectiva(skill_id: String) -> Dictionary:
+	var sk: Dictionary = SkillDB.obtener(skill_id).duplicate()
+	sk["power"] = power_efectivo(skill_id)
+	sk["mana"] = mana_efectivo(skill_id)
+	var ef: Dictionary = (sk.get("efecto", {}) as Dictionary).duplicate()
+	ef["cantidad"] = cantidad_efectiva(skill_id)
+	sk["efecto"] = ef
+	return sk
+
+
+## Serialización versionada (bloque "skills" del save, v10).
+func to_dict() -> Dictionary:
+	var bloque: Dictionary = {}
+	for sid in _niveles:
+		bloque[str(sid)] = nivel_de(str(sid))
+	return {"version": 1, "puntos_skill": puntos_skill, "niveles": bloque}
+
+
+## Restaura puntos + niveles (tolerante: versión distinta → vacío).
+## Registra la clase para que un futuro `configurar_clase` con la misma
+## sea no-op (no purgue lo cargado).
+func cargar_estado(d: Dictionary, clase_id: String = "") -> void:
+	_niveles.clear()
+	puntos_skill = 0
+	_clase_id = clase_id
+	if int(d.get("version", 0)) != 1:
+		if not d.is_empty():
+			push_warning("[SkillSystem] versión de bloque desconocida; se arranca vacío")
+		return
+	puntos_skill = maxi(0, int(d.get("puntos_skill", 0)))
+	var bloque: Dictionary = d.get("niveles", {})
+	for sid in bloque:
+		var skill_id: String = str(sid)
+		if not SkillDB.existe(skill_id):
+			continue
+		var mx: int = maxi(1, int(SkillDB.obtener(skill_id).get("max_nivel", 20)))
+		var n: int = clampi(int(bloque[sid]), 0, mx)
+		if n > 0:
+			_niveles[skill_id] = n
 
 
 ## Descuenta los cooldowns (nunca bajan de 0) y expira buffs/debuffs.
@@ -73,10 +207,15 @@ func _requiere_objetivo(skill: Dictionary) -> bool:
 
 
 ## "" si se puede lanzar; si no, el motivo:
-## "desconocida" | "objetivo" | "no_combatible" | "rango" | "mana" | "cooldown".
+## "desconocida" | "no_aprendida" | "objetivo" | "no_combatible" |
+## "rango" | "mana" | "cooldown".
+## Fase 31: "no_aprendida" solo aplica en modo con clase (configurado);
+## sin configurar, toda skill conocida lanza a nivel 1 (modo libre).
 func puede_lanzar(skill_id: String, lanzador: Entity, objetivo: Entity) -> String:
 	if not SkillDB.existe(skill_id):
 		return "desconocida"
+	if _clase_id != "" and nivel_de(skill_id) <= 0:
+		return "no_aprendida"
 	var skill: Dictionary = SkillDB.obtener(skill_id)
 	if _requiere_objetivo(skill):
 		if objetivo == null or not objetivo.esta_vivo():
@@ -86,7 +225,7 @@ func puede_lanzar(skill_id: String, lanzador: Entity, objetivo: Entity) -> Strin
 		var rango: float = float(skill.get("rango", 0.0))
 		if _dist_plana(lanzador, objetivo) > rango:
 			return "rango"
-	if lanzador.mana_actual < float(skill.get("mana", 0.0)):
+	if lanzador.mana_actual < mana_efectivo(skill_id):
 		return "mana"
 	if cooldown_restante(skill_id) > 0.0:
 		return "cooldown"
@@ -103,7 +242,7 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 	if motivo != "":
 		skill_fallida.emit(skill_id, motivo)
 		return false
-	var skill: Dictionary = SkillDB.obtener(skill_id)
+	var skill: Dictionary = _skill_efectiva(skill_id)
 	var mana: float = float(skill.get("mana", 0.0))
 	if not lanzador.gastar_mana(mana):
 		skill_fallida.emit(skill_id, "mana")
@@ -113,7 +252,7 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 	var tipo: String = str(efecto.get("tipo", ""))
 	match tipo:
 		"curar":
-			_aplicar_curar(lanzador, efecto)
+			_aplicar_curar(skill_id, lanzador)
 		"dano":
 			if objetivo != null:
 				_aplicar_dano(skill, lanzador, objetivo)
@@ -132,8 +271,11 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 	return true
 
 
-func _aplicar_curar(lanzador: Entity, efecto: Dictionary) -> void:
-	lanzador.heal(float(efecto.get("cantidad", 0.0)))
+## Fase 31: la fuente efectiva de la curación es `power_efectivo` (power
+## base migrado 80/200 + `power_nivel` por nivel). `efecto.cantidad` se
+## conserva en datos por compatibilidad pero ya no se lee aquí.
+func _aplicar_curar(skill_id: String, lanzador: Entity) -> void:
+	lanzador.heal(power_efectivo(skill_id))
 	lanzador.mostrar_fx(COLOR_CURAR)
 
 

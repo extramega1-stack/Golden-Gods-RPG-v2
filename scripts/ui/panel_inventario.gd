@@ -1,59 +1,252 @@
 class_name PanelInventario
 extends CanvasLayer
-## Panel de inventario de la fase 5: lista los items del Inventario real del
-## jugador. "Usar" en consumibles → `inventario.usar(id, jugador)`; "Equipar"
-## en armas/armaduras → `equipo.equipar(id, stats, inventario)`.
+## Inventario estilo FlyFF (fase 31): pestañas Todos / Equipo / Consumibles /
+## Materiales / Misión, rejilla de 6 columnas de celdas coloreadas por tipo
+## (inicial del nombre + cantidad). Clic en una celda = seleccionar; la barra
+## inferior muestra nombre, descripción y los botones Usar / Equipar.
+##
+## "Usar" en consumibles → `inventario.usar(id, jugador)`; "Equipar" en
+## equipables → `equipo.equipar(id, stats, inventario)`.
 ##
 ## Regla dura: arranca con visible=false (oculto no intercepta nada); al
 ## mostrarse, solo el panel lleva mouse_filter STOP (lección 11 de AGENTS.md).
 ## Se reconstruye al abrirse y al recibir `inventario.cambiado`/`equipo.cambiado`.
 
+## Orden de las pestañas (FlyFF).
+const PESTANAS: Array[String] = ["Todos", "Equipo", "Consumibles",
+	"Materiales", "Misión"]
+## Columnas de la rejilla.
+const COLUMNAS: int = 6
+
 var _jugador: Player = null
-var _lista: VBoxContainer = null
+var _rejillas: Dictionary = {}
+var _sel_id: String = ""
+var _sel_nombre: Label = null
+var _sel_desc: Label = null
+var _btn_usar: Button = null
+var _btn_equipar: Button = null
 
 
-func _ready() -> void:
+func _init() -> void:
 	layer = UiLayers.PANEL_INVENTARIO
+	_construir_cromo()
 	visible = false
-	_construir()
 
 
-func _construir() -> void:
-	var panel: PanelContainer = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	panel.custom_minimum_size = Vector2(400, 440)
-	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	var estilo: StyleBoxFlat = StyleBoxFlat.new()
-	estilo.bg_color = Color(0.07, 0.07, 0.1, 0.97)
-	estilo.border_color = Color(0.75, 0.62, 0.3)
-	estilo.set_border_width_all(2)
-	estilo.set_corner_radius_all(6)
-	panel.add_theme_stylebox_override("panel", estilo)
-	add_child(panel)
-	var caja: VBoxContainer = VBoxContainer.new()
-	caja.add_theme_constant_override("separation", 6)
-	panel.add_child(caja)
-	var titulo: Label = Label.new()
-	titulo.text = "Inventario   (I para cerrar)"
+func _construir_cromo() -> void:
+	var fondo := PanelContainer.new()
+	fondo.set_anchors_preset(Control.PRESET_CENTER)
+	fondo.position = Vector2(-280.0, -260.0)
+	fondo.size = Vector2(560.0, 520.0)
+	fondo.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(fondo)
+	var margen := MarginContainer.new()
+	margen.add_theme_constant_override("margin_left", 16)
+	margen.add_theme_constant_override("margin_right", 16)
+	margen.add_theme_constant_override("margin_top", 12)
+	margen.add_theme_constant_override("margin_bottom", 12)
+	fondo.add_child(margen)
+	var caja := VBoxContainer.new()
+	caja.add_theme_constant_override("separation", 8)
+	margen.add_child(caja)
+	var titulo := Label.new()
+	titulo.text = "Inventario (I)"
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	titulo.add_theme_color_override("font_color", Color(0.95, 0.9, 0.75))
 	titulo.add_theme_font_size_override("font_size", 20)
+	titulo.add_theme_color_override("font_color", Color(0.85, 0.68, 0.25))
 	caja.add_child(titulo)
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(380, 380)
+	var tabs := TabContainer.new()
+	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	caja.add_child(tabs)
+	for pestana in PESTANAS:
+		tabs.add_child(_pestana(pestana))
+	caja.add_child(_barra_seleccion())
+
+
+func _pestana(pestana: String) -> ScrollContainer:
+	var scroll := ScrollContainer.new()
+	scroll.name = pestana
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	caja.add_child(scroll)
-	_lista = VBoxContainer.new()
-	_lista.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lista.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_lista.add_theme_constant_override("separation", 4)
-	scroll.add_child(_lista)
+	var rejilla := GridContainer.new()
+	rejilla.columns = COLUMNAS
+	rejilla.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rejilla.add_theme_constant_override("h_separation", 6)
+	rejilla.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(rejilla)
+	_rejillas[pestana] = rejilla
+	return scroll
 
 
+func _barra_seleccion() -> VBoxContainer:
+	var caja := VBoxContainer.new()
+	caja.add_theme_constant_override("separation", 4)
+	_sel_nombre = Label.new()
+	_sel_nombre.text = "Selecciona un item"
+	_sel_nombre.add_theme_font_size_override("font_size", 15)
+	caja.add_child(_sel_nombre)
+	_sel_desc = Label.new()
+	_sel_desc.text = ""
+	_sel_desc.add_theme_font_size_override("font_size", 12)
+	_sel_desc.add_theme_color_override("font_color", Color(0.7, 0.68, 0.6))
+	_sel_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_sel_desc.custom_minimum_size = Vector2(0, 34)
+	caja.add_child(_sel_desc)
+	var botones := HBoxContainer.new()
+	botones.add_theme_constant_override("separation", 8)
+	caja.add_child(botones)
+	_btn_usar = Button.new()
+	_btn_usar.text = "Usar"
+	_btn_usar.pressed.connect(_al_usar)
+	botones.add_child(_btn_usar)
+	_btn_equipar = Button.new()
+	_btn_equipar.text = "Equipar"
+	_btn_equipar.pressed.connect(_al_equipar)
+	botones.add_child(_btn_equipar)
+	return caja
+
+
+## Conecta (o reconecta) al jugador. Re-suscribe sin duplicar.
+func conectar(j: Player) -> void:
+	if _jugador != null and is_instance_valid(_jugador):
+		if _jugador.inventario.cambiado.is_connected(_reconstruir):
+			_jugador.inventario.cambiado.disconnect(_reconstruir)
+		if _jugador.equipo.cambiado.is_connected(_reconstruir):
+			_jugador.equipo.cambiado.disconnect(_reconstruir)
+	_jugador = j
+	_sel_id = ""
+	if _jugador != null and is_instance_valid(_jugador):
+		if not _jugador.inventario.cambiado.is_connected(_reconstruir):
+			_jugador.inventario.cambiado.connect(_reconstruir)
+		if not _jugador.equipo.cambiado.is_connected(_reconstruir):
+			_jugador.equipo.cambiado.connect(_reconstruir)
+	_reconstruir()
+
+
+func _reconstruir(_arg = null) -> void:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return
+	var items: Array = _jugador.inventario.listar()
+	for pestana in PESTANAS:
+		var rejilla: GridContainer = _rejillas.get(pestana)
+		if rejilla == null:
+			continue
+		for h in rejilla.get_children():
+			h.queue_free()
+		for entrada in items:
+			var item: Dictionary = entrada.get("item", {})
+			if pasa_filtro(item, pestana):
+				rejilla.add_child(_celda(entrada, item))
+	_actualizar_barra()
+
+
+## Lógica de filtrado por pestaña (testeable sin UI).
+static func pasa_filtro(item: Dictionary, pestana: String) -> bool:
+	match pestana:
+		"Todos":
+			return true
+		"Equipo":
+			return Equipo.es_equipable(str(item.get("id", "")))
+		"Consumibles":
+			return str(item.get("tipo", "")) == "consumible"
+		"Materiales":
+			return str(item.get("tipo", "")) == "material"
+		"Misión":
+			return str(item.get("tipo", "")) == "mision"
+	return false
+
+
+## Color de celda por tipo (FlyFF).
+static func color_tipo(tipo: String) -> Color:
+	match tipo:
+		"arma":
+			return Color(0.45, 0.16, 0.16)
+		"armadura":
+			return Color(0.18, 0.24, 0.34)
+		"accesorio":
+			return Color(0.34, 0.20, 0.44)
+		"consumible":
+			return Color(0.14, 0.34, 0.16)
+		"material":
+			return Color(0.34, 0.27, 0.14)
+		"mision":
+			return Color(0.40, 0.32, 0.12)
+	return Color(0.22, 0.22, 0.26)
+
+
+func _celda(entrada: Dictionary, item: Dictionary) -> Button:
+	var iid: String = str(entrada.get("id", ""))
+	var cant: int = int(entrada.get("cantidad", 1))
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(72.0, 72.0)
+	btn.toggle_mode = true
+	btn.button_pressed = (iid == _sel_id)
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = color_tipo(str(item.get("tipo", "")))
+	estilo.border_color = Color(0.85, 0.68, 0.25) if iid == _sel_id else Color(0.1, 0.1, 0.12)
+	estilo.set_border_width_all(2)
+	estilo.set_corner_radius_all(4)
+	btn.add_theme_stylebox_override("normal", estilo)
+	btn.add_theme_stylebox_override("hover", estilo)
+	btn.add_theme_stylebox_override("pressed", estilo)
+	var inicial := Label.new()
+	inicial.text = str(item.get("nombre", "?")).left(1).to_upper()
+	inicial.add_theme_font_size_override("font_size", 28)
+	inicial.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
+	inicial.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inicial.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inicial.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	inicial.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(inicial)
+	if cant > 1:
+		var badge := Label.new()
+		badge.text = "x%d" % cant
+		badge.add_theme_font_size_override("font_size", 11)
+		badge.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+		badge.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		badge.position = Vector2(-34.0, -20.0)
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(badge)
+	btn.tooltip_text = "%s x%d" % [str(item.get("nombre", iid)), cant]
+	btn.pressed.connect(_al_celda.bind(iid))
+	return btn
+
+
+func _al_celda(iid: String) -> void:
+	_sel_id = iid
+	_reconstruir()
+
+
+func _actualizar_barra() -> void:
+	if _sel_id == "" or _jugador == null or not is_instance_valid(_jugador):
+		_sel_nombre.text = "Selecciona un item"
+		_sel_desc.text = ""
+		_btn_usar.disabled = true
+		_btn_equipar.disabled = true
+		return
+	if _jugador.inventario.contar(_sel_id) <= 0:
+		_sel_id = ""
+		_actualizar_barra()
+		return
+	var item: Dictionary = ItemDB.obtener(_sel_id)
+	_sel_nombre.text = item.get("nombre", _sel_id)
+	_sel_desc.text = item.get("descripcion", "")
+	_btn_usar.disabled = str(item.get("tipo", "")) != "consumible"
+	_btn_equipar.disabled = not Equipo.es_equipable(_sel_id)
+
+
+func _al_usar() -> void:
+	if _sel_id == "" or _jugador == null or not is_instance_valid(_jugador):
+		return
+	_jugador.inventario.usar(_sel_id, _jugador)
+
+
+func _al_equipar() -> void:
+	if _sel_id == "" or _jugador == null or not is_instance_valid(_jugador):
+		return
+	_jugador.equipo.equipar(_sel_id, _jugador.stats, _jugador.inventario)
+
+
+## I alterna el inventario.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("abrir_inventario"):
 		visible = not visible
@@ -62,96 +255,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Conecta el panel al jugador; re-llamar reconecta (tras cargar partida
-## el Inventario/Equipo son instancias nuevas).
-func conectar(j: Player) -> void:
-	if _jugador != null:
-		if is_instance_valid(_jugador.inventario) \
-				and _jugador.inventario.cambiado.is_connected(_al_cambio):
-			_jugador.inventario.cambiado.disconnect(_al_cambio)
-		if is_instance_valid(_jugador.equipo) \
-				and _jugador.equipo.cambiado.is_connected(_al_cambio):
-			_jugador.equipo.cambiado.disconnect(_al_cambio)
-	_jugador = j
-	if _jugador != null:
-		if _jugador.inventario != null:
-			_jugador.inventario.cambiado.connect(_al_cambio)
-		if _jugador.equipo != null:
-			_jugador.equipo.cambiado.connect(_al_cambio)
-	_reconstruir()
-
-
-func _al_cambio() -> void:
-	_reconstruir()
-
-
-func _reconstruir() -> void:
-	if _lista == null or _jugador == null or _jugador.inventario == null:
-		return
-	for h in _lista.get_children():
-		h.queue_free()
-	var inv: Inventario = _jugador.inventario
-	if inv.entradas.is_empty():
-		var vacio: Label = Label.new()
-		vacio.text = "(vacío)"
-		vacio.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_lista.add_child(vacio)
-		return
-	for e in inv.entradas:
-		if not (e is Dictionary):
-			continue
-		var ed: Dictionary = e
-		var item_id: String = str(ed.get("item_id", ""))
-		var cant: int = int(ed.get("cantidad", 0))
-		var item: Dictionary = ItemDB.obtener(item_id)
-		var nombre: String = str(item.get("nombre", item_id))
-		var tipo: String = str(item.get("tipo", ""))
-		var fila: HBoxContainer = HBoxContainer.new()
-		fila.add_theme_constant_override("separation", 8)
-		fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_lista.add_child(fila)
-		var lab: Label
-		if tipo == "consumible":
-			# Fase 17: el nombre del consumible es arrastrable a la barra.
-			lab = _chip_consumible(nombre, cant, item_id)
-		else:
-			lab = Label.new()
-			lab.text = "%s x%d" % [nombre, cant]
-			lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		fila.add_child(lab)
-		if tipo == "consumible":
-			fila.add_child(_boton("Usar", _usar.bind(item_id)))
-		elif tipo == "arma" or tipo == "armadura":
-			fila.add_child(_boton("Equipar", _equipar.bind(item_id)))
-
-
-func _boton(texto: String, accion: Callable) -> Button:
-	var b: Button = Button.new()
-	b.text = texto
-	b.pressed.connect(accion)
-	return b
-
-
-## Fase 17 — chip arrastrable de un consumible (origen "inventario" para la
-## barra de acciones). Reusa el ChipArrastre de la barra.
-func _chip_consumible(nombre: String, cant: int, item_id: String) -> BarraAcciones.ChipArrastre:
-	var chip: BarraAcciones.ChipArrastre = BarraAcciones.ChipArrastre.new()
-	chip.text = "%s x%d (arrastrar)" % [nombre, cant]
-	chip.add_theme_color_override("font_color", Color(0.85, 0.95, 0.85))
-	chip.add_theme_font_size_override("font_size", 15)
-	chip.tooltip_text = "Arrastra a la barra de acciones"
-	chip.datos = {"origen": "inventario", "tipo": "item", "id": item_id}
-	return chip
-
-
-func _usar(item_id: String) -> void:
-	if _jugador == null or _jugador.inventario == null:
-		return
-	_jugador.inventario.usar(item_id, _jugador)
-
-
-func _equipar(item_id: String) -> void:
-	if _jugador == null or _jugador.inventario == null or _jugador.equipo == null:
-		return
-	_jugador.equipo.equipar(item_id, _jugador.stats, _jugador.inventario)
+## ESC cierra (corre antes que el _unhandled_input del Player).
+func _input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("cancelar_seleccion"):
+		visible = false
+		get_viewport().set_input_as_handled()

@@ -6,7 +6,7 @@ extends SceneTree
 ## (b) subir(): valida clase/nivel/tope/puntos y aplica mods × rango;
 ## (c) Player: 1 punto por nivel; cambio de clase purga y devuelve;
 ## (d) round-trip de guardado (puntos+rangos; mods idempotentes);
-## (e) PanelTalentos: 3 filas en guerrero, gastar por botón sin reventar.
+## (e) PanelHabilidades (pestaña Talentos): 3 filas en guerrero, gastar por botón sin reventar.
 ##
 ## Cómo correrlo: godot --headless --path <proyecto> --script res://tests/test_fase28_talentos.gd
 
@@ -141,19 +141,20 @@ func _test_roundtrip() -> void:
 
 
 ## (e) Panel: filas por clase y gasto sin reventar.
+## Fase 31: los talentos viven en la pestaña "Talentos" de PanelHabilidades.
 func _test_panel() -> void:
 	var p: Player = _player()
-	var panel: PanelTalentos = PanelTalentos.new()
+	var panel: PanelHabilidades = PanelHabilidades.new()
 	root.add_child(panel)
 	_basura.append(panel)
 	panel.conectar(p)
-	_chk(panel._filas.get_child_count() == 3,
-		"e: 3 filas en guerrero", str(panel._filas.get_child_count()))
+	_chk(panel._filas_talentos.get_child_count() == 3,
+		"e: 3 filas en guerrero", str(panel._filas_talentos.get_child_count()))
 	p.gain_xp(100000)
 	panel.conectar(p)
 	# Las filas viejas se liberan al final del frame: buscar la viva.
 	var btn: Button = null
-	for h in panel._filas.get_children():
+	for h in panel._filas_talentos.get_children():
 		var hb: HBoxContainer = h as HBoxContainer
 		if hb == null or hb.is_queued_for_deletion():
 			continue

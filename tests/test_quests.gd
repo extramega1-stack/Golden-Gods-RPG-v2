@@ -429,8 +429,8 @@ func _t_save_v5() -> void:
 	_check(s.guardar(), "save v9: guardar() true")
 	var texto: String = FileAccess.get_file_as_string(SaveSystem.RUTA)
 	var crudo: Variant = JSON.parse_string(texto)
-	_check(crudo is Dictionary and int((crudo as Dictionary).get("version", 0)) == 9,
-		"save v9: la partida guarda version 9")
+	_check(crudo is Dictionary and int((crudo as Dictionary).get("version", 0)) == 10,
+		"save v10: la partida guarda version 10")
 	# Cambiar el progreso DESPUÉS de guardar: cargar debe restaurarlo.
 	for i in 3:
 		q.registrar_muerte("goblin")
