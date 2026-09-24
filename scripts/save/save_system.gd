@@ -130,6 +130,9 @@ func _cargar_jugador(dj: Dictionary) -> void:
 	jugador.nombre = str(dj.get("nombre", "Héroe"))
 	var cid: String = str(dj.get("clase_id", "guerrero"))
 	jugador.clase_id = cid if ClaseDB.existe(cid) else "guerrero"
+	# Fase 42: la clase es la fuente de verdad del stat principal de daño
+	# (saves previos a la fase 42 vienen sin él en el bloque entidad).
+	jugador.stats.set_stat_daño(ClaseDB.stat_daño(jugador.clase_id))
 	jugador.identidad_cambiada.emit()
 	jugador.oro = maxi(0, int(dj.get("oro", 0)))
 	jugador.oro_cambiado.emit(jugador.oro)

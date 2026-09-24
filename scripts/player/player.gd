@@ -788,14 +788,15 @@ func fijar_identidad(p_nombre: String, p_clase_id: String) -> void:
 
 
 ## Fase 11 — aplica los atributos base de una clase desde datos (ClaseDB):
-## pone los 4 atributos (fuerza, aguante, destreza, inteligencia),
-## recalcula derivados y llena vida/maná.
+## pone los 4 atributos (fuerza, aguante, destreza, inteligencia) y su stat
+## principal de daño (fase 42), recalcula derivados y llena vida/maná.
 ## Idempotente y tolerante: un id desconocido no toca nada ni revienta.
 ## NO emite `identidad_cambiada` (son stats, no identidad).
 func aplicar_clase(id: String) -> void:
 	if not ClaseDB.existe(id):
 		return
 	var base: Dictionary = ClaseDB.stats_base(id)
+	stats.set_stat_daño(ClaseDB.stat_daño(id))
 	stats.fuerza = float(base.get("fuerza", 0.0))
 	stats.aguante = float(base.get("aguante", 0.0))
 	stats.destreza = float(base.get("destreza", 0.0))

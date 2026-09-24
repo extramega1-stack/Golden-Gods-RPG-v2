@@ -86,9 +86,16 @@ func _reconstruir(_arg = null) -> void:
 			st.mana_max, st.ataque, st.poder, st.defensa,
 			st.crit_prob * 100.0, st.crit_dmg, st.vel_ataque, st.vel_mov]
 	if _puntos != null:
-		_puntos.text = "Puntos de atributo: %d" % _jugador.puntos_atributo
+		# Fase 42: dice qué stat es el principal de daño de la clase (el que
+		# sube ataque/poder), para que subir DEX en el daguero se entienda.
+		_puntos.text = "Puntos de atributo: %d · Daño principal: %s" % [
+			_jugador.puntos_atributo, _jugador.stats.stat_daño_etiqueta()]
 	for atributo in Player.ATRIBUTOS_REPARTIBLES:
-		_filas.add_child(_fila_atributo(atributo))
+		var fila: HBoxContainer = _fila_atributo(atributo)
+		if atributo == _jugador.stats.stat_daño:
+			fila.modulate = Color(1.0, 0.92, 0.6)
+			fila.tooltip_text = "Stat principal de daño de tu clase"
+		_filas.add_child(fila)
 
 
 func _fila_atributo(atributo: String) -> HBoxContainer:
@@ -120,13 +127,13 @@ func _fila_atributo(atributo: String) -> HBoxContainer:
 static func _descripcion_atributo(atributo: String) -> String:
 	match atributo:
 		"fuerza":
-			return "Daño físico"
+			return "Daño físico, vida"
 		"aguante":
 			return "Vida y defensa"
 		"destreza":
-			return "Crítico y velocidad de ataque"
+			return "Crítico, vel. ataque y daño si es tu stat principal"
 		"inteligencia":
-			return "Maná y poder"
+			return "Maná, poder y daño si es tu stat principal"
 	return ""
 
 

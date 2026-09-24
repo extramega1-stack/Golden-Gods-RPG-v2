@@ -90,6 +90,9 @@ func configurar(arquetipo: Dictionary) -> void:
 		float(arquetipo.get("destreza", 5.0)),
 		float(arquetipo.get("inteligencia", 5.0))
 	)
+	# Fase 42: los mobs dañan con su stat principal (STR por defecto; un
+	# arquetipo puede declarar "stat_daño" para mobs de finesse/arcana).
+	stats.set_stat_daño(str(arquetipo.get("stat_daño", "fuerza")))
 	vida_actual = stats.vida_max
 	mana_actual = stats.mana_max
 	radio_aggro = float(arquetipo.get("radio_aggro", 10.0))

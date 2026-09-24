@@ -31,6 +31,11 @@ static var _mats_frente: Array = []
 var _dueno: Entity = null
 var _fg: MeshInstance3D = null
 var _fondo: MeshInstance3D = null
+## Fase 42: el frente usa malla propia (el billboard ignora scale.x del
+## nodo, por eso el frente no se encogía y se veía una 2ª barra completa
+## desplazada). Se redimensiona la MALLA y se compensa el centro para que
+## crezca desde la izquierda; los MATERIALES siguen compartidos.
+var _quad_frente: QuadMesh = null
 var _reloj: float = 0.0
 
 
@@ -52,10 +57,13 @@ func _ready() -> void:
 
 func _hacer_barra(es_frente: bool) -> MeshInstance3D:
 	var mi: MeshInstance3D = MeshInstance3D.new()
-	mi.mesh = _quad_compartido()
 	if es_frente:
+		_quad_frente = QuadMesh.new()
+		_quad_frente.size = Vector2(ANCHO, ALTO)
+		mi.mesh = _quad_frente
 		mi.material_override = _mat_frente_para(1.0)
 	else:
+		mi.mesh = _quad_compartido()
 		mi.material_override = _mat_fondo_compartido()
 	return mi
 
@@ -108,13 +116,14 @@ func _al_vida_cambiada(vida: float, vida_max: float) -> void:
 
 
 func _actualizar(pct: float) -> void:
-	if _fg == null:
+	if _fg == null or _quad_frente == null:
 		return
 	pct = clampf(pct, 0.0, 1.0)
-	_fg.scale.x = maxf(pct, 0.001)
-	# El QuadMesh está centrado: se recorre para que crezca desde la izquierda.
-	_fg.position.x = -ANCHO * (1.0 - pct) * 0.5
-	# Fase 20: peldaño compartido en vez de mutar un material propio.
+	# Fase 42: escalamos la MALLA, no el nodo (billboard). El QuadMesh
+	# está centrado, así que se compensa el centro para crecer a la izquierda.
+	_quad_frente.size = Vector2(maxf(ANCHO * pct, 0.001), ALTO)
+	_quad_frente.center_offset = Vector3((ANCHO - ANCHO * pct) * 0.5, 0.0, 0.0)
+	# Peldaño compartido en vez de mutar un material propio.
 	_fg.material_override = _mat_frente_para(pct)
 
 

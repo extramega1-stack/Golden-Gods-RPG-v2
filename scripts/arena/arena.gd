@@ -213,6 +213,11 @@ static func es_maestro(npc_id: String) -> bool:
 	return bool(NpcDB.obtener(npc_id).get("arena", false))
 
 
+## Centro del campo (para el teletransporte de la demo). Sin configurar → origen.
+func centro_campo() -> Vector3:
+	return Vector3(_centro.x, 0.0, _centro.y)
+
+
 ## Serialización versionada (bloque "arena" del save, v12).
 func to_dict() -> Dictionary:
 	return {

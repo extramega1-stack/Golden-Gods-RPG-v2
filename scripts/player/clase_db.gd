@@ -95,6 +95,16 @@ static func stats_base(clase_id: String) -> Dictionary:
 	}
 
 
+## Atributo principal de daño de la clase (fase 42: campo `stat_daño` de
+## data/clases.json — guerrero STR, arquero/daguero DEX, mago/clérigo INT).
+## Es el stat que escala `ataque` y `poder` de esa clase. Desconocida o
+## inválida → "fuerza" (tolerante, saves viejos).
+static func stat_daño(clase_id: String) -> String:
+	var c: Dictionary = obtener(clase_id)
+	var sd: String = str(c.get("stat_daño", "fuerza"))
+	return sd if StatBlock.STATS_BASE.has(sd) else "fuerza"
+
+
 ## Color primario de la clase (borde del emblema). Si falta o es inválido,
 ## dorado por defecto.
 static func color_primario(clase_id: String) -> Color:

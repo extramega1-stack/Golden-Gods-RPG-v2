@@ -1054,7 +1054,7 @@ eventos y anuncian el siguiente por toast. Nunca bloquea.
 ## Fase 40 — Daguero, quinta clase jugable (2026-09-24)
 
 Asesino DEX puro con datos, sin tocar código de sistemas (`rpg`).
-- Base 15/15/45/15: ataque 35, crit 23% ×1.95, vel.atq 1.36, 625 HP.
+- Base 15/15/45/15: crit 23% ×1.95, vel.atq 1.36, 625 HP. (Ataque: ver Fase 42, el daño escala con DEX → 83.75.)
   Tradeoff honesto: pega menos por golpe que el arquero (65) y es tan
   de papel como el mago; compensa con crítico y cadencia cuerpo a cuerpo.
 - 8 skills rango corto (skills.json v3): puñalada, golpe_bajo y
@@ -1082,3 +1082,35 @@ Asesino DEX puro con datos, sin tocar código de sistemas (`rpg`).
 - Tests: `tests/test_fase41_arena.gd` — 27/27. Suite 100% verde + smokes.
 
 *Fin del documento maestro v3.36 — Fase 41 (arena).*
+
+## Fase 42 — Fixes de playtest: barra, arena y daño por stat (2026-09-24)
+
+Tres reportes de Juan Diego, causa raíz verificada cada uno
+(`systematic-debugging` + `rpg`).
+- **Doble barra de vida**: el material del frente es *billboard*, y el
+  billboard descarta la escala del nodo — el frente se veía de ancho
+  completo y desplazado (= 2 barras). Ahora el frente usa malla propia que
+  se redimensiona (`center_offset` lo ancla a la izquierda); los
+  materiales siguen compartidos (fase 20).
+- **"Entrenar" no llevaba a la arena**: `Arena.centro_campo()` no existía
+  (`Nonexistent function` en el log) → el teleport nunca corría. Añadido +
+  test de regresión. De paso, `TiendaDB` ya no avisa por `tienda_id: null`.
+- **Daño que no escalaba con el stat de la clase**: `StatBlock` elige el
+  atributo principal de daño (`stat_daño`, campo nuevo en clases.json) y
+  tanto `ataque` como `poder` escalan con él. Las skills ya leían
+  `ataque`/`poder` (y las curas, `poder`): escalan solas. Coeficientes
+  (`StatBlock.COEF_*`): STR 2.0, DEX 1.75, INT 2.5 (poder).
+
+  | Clase | stat daño | Ataque | Poder | HP | Rol |
+  |---|---|---|---|---|---|
+  | Guerrero | STR | 65 | 65 | 1150 | tanque/frontline |
+  | Arquero | DEX | 57.5 | 57.5 | 925 | DPS a distancia (cambió de 65) |
+  | Mago | INT | 95 | 117.5 | 625 | burst AoE |
+  | Clérigo | INT | 65 | 80 | 850 | soporte |
+  | Daguero | DEX | 83.75 | 83.75 | 625 | burst melee (subió de 35) |
+
+  Saves v1 (sin `stat_daño`) → STR; al cargar, la clase re-afirma el suyo.
+  El panel de personaje marca el stat principal de tu clase.
+- Tests: `tests/test_fase42_dano.gd` — 44/44. Suite 100% verde + smokes.
+
+*Fin del documento maestro v3.37 — Fase 42 (fixes playtest).*

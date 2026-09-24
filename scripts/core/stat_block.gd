@@ -8,11 +8,14 @@ extends RefCounted
 ## aportan MODIFICADORES identificados por fuente (ver add_mod), y la UI solo
 ## LEE estos valores, nunca los escribe.
 ##
-## Fórmulas de derivados (documentadas para balance, fase 34):
+## Fórmulas de derivados (documentadas para balance, fase 34/42):
 ## - vida_max   = 100 + fuerza * 20 + aguante * 15   (tanques viven más)
 ## - mana_max   = 50 + inteligencia * 15
-## - ataque     = 5 + fuerza * 2                     (daño físico puro)
-## - poder      = 5 + inteligencia * 2.5             (daño mágico)
+## - ataque     = 5 + stat_daño * coef_ataque         (FASE 42: el stat
+##   principal de la clase, no siempre fuerza)
+## - poder      = 5 + stat_daño * coef_poder          (mismo stat principal:
+##   subir DEX al arquero/daguero sube también su poder; subir INT al
+##   mago/clérigo sube su poder y su canal físico)
 ## - defensa    = fuerza * 0.5 + aguante * 1.0       (placas resisten más)
 ## - crit_prob  = 0.05 + destreza * 0.004            (tope 0.60)
 ## - crit_dmg   = 1.50 + destreza * 0.010            (multiplicador)
@@ -24,28 +27,46 @@ extends RefCounted
 ## cada clase parte de 15 en todo + 15 extra en sus stats de rol
 ## (presupuestos iguales de 90 pts).
 ##
+## Fase 42: `stat_daño` es el atributo que escala el daño de la clase (lo
+## fija data/clases.json: guerrero STR, arquero/daguero DEX, mago/clérigo
+## INT). Las skills ya leen `ataque`/`poder` (Formulas.damage), así que
+## escalan solas con el stat principal; las curas escalan con `poder`.
+##
 ## Los coeficientes lineales viven en DERIVACION (datos, no constantes regadas);
 ## los topes y bases especiales, en consts con nombre.
 
 enum ModKind { PLANO, PORCENTUAL }
 
-const SAVE_VERSION: int = 1
+const SAVE_VERSION: int = 2
 
-## Nombres de stats derivados (fuente única; también los acepta add_mod/get_stat).
+## Atributos base válidos (fuente única de nombres).
+const STATS_BASE: Array[String] = ["fuerza", "aguante", "destreza", "inteligencia"]
+
+## Nombres de stats derivados (fuente única; también los aceptan add_mod/get_stat).
 const STATS_DERIVADOS: Array[String] = [
 	"vida_max", "mana_max", "ataque", "poder", "defensa",
 	"crit_prob", "crit_dmg", "vel_ataque", "vel_mov",
 ]
 
 ## Coeficientes lineales por stat: {"base": b, "<atributo>": coef, ...}.
-## Lo que no está aquí (crítico, vel. de ataque) se calcula aparte por topes.
+## Lo que no está aquí (crítico, vel. de ataque, daño) se calcula aparte.
 const DERIVACION: Dictionary = {
 	"vida_max": {"base": 100.0, "fuerza": 20.0, "aguante": 15.0},
 	"mana_max": {"base": 50.0, "inteligencia": 15.0},
-	"ataque": {"base": 5.0, "fuerza": 2.0},
-	"poder": {"base": 5.0, "inteligencia": 2.5},
+	"ataque": {"base": 5.0},
+	"poder": {"base": 5.0},
 	"defensa": {"base": 0.0, "fuerza": 0.5, "aguante": 1.0},
 	"vel_mov": {"base": 6.0},
+}
+
+## Fase 42: cuánto daño da 1 punto del stat PRINCIPAL de la clase.
+## Fuerza pega más fuerte que finesse (DEX) e inteligencia sube más el
+## canal mágico. Se puede tocar aquí para rebalancear todas las clases.
+const COEF_ATAQUE_POR_STAT: Dictionary = {
+	"fuerza": 2.0, "aguante": 1.0, "destreza": 1.75, "inteligencia": 2.0,
+}
+const COEF_PODER_POR_STAT: Dictionary = {
+	"fuerza": 2.0, "aguante": 1.0, "destreza": 1.75, "inteligencia": 2.5,
 }
 
 const CRIT_PROB_BASE: float = 0.05
@@ -63,6 +84,9 @@ var fuerza: float = 0.0
 var aguante: float = 0.0
 var destreza: float = 0.0
 var inteligencia: float = 0.0
+## Fase 42: atributo que escala `ataque` y `poder` (lo fija la clase desde
+## data/clases.json; default fuerza para enemigos y stats genéricos).
+var stat_daño: String = "fuerza"
 
 # --- Derivados (SOLO los escribe recalc(); el resto del código los LEE) ---
 var vida_max: float = 0.0
@@ -105,6 +129,45 @@ func set_base(nombre: String, valor: float) -> void:
 			push_warning("[StatBlock] atributo base desconocido: %s" % nombre)
 			return
 	recalc()
+
+
+## Fase 42: fija el atributo principal de daño (fuerza|aguante|destreza|
+## inteligencia) y recalcula. Nombre inválido → warning, no cambia nada.
+func set_stat_daño(nombre: String) -> bool:
+	if not STATS_BASE.has(nombre):
+		push_warning("[StatBlock] stat principal de daño desconocido: %s" % nombre)
+		return false
+	stat_daño = nombre
+	recalc()
+	return true
+
+
+## Valor de un atributo base por nombre ("" o inválido → 0.0).
+func valor_de(nombre: String) -> float:
+	match nombre:
+		"fuerza":
+			return fuerza
+		"aguante":
+			return aguante
+		"destreza":
+			return destreza
+		"inteligencia":
+			return inteligencia
+	return 0.0
+
+
+## Etiqueta corta del stat principal para la UI ("Fuerza", "Destreza"...).
+func stat_daño_etiqueta() -> String:
+	match stat_daño:
+		"fuerza":
+			return "Fuerza"
+		"aguante":
+			return "Aguante"
+		"destreza":
+			return "Destreza"
+		"inteligencia":
+			return "Inteligencia"
+	return ""
 
 
 ## Añade (o reemplaza) un modificador identificado por su fuente.
@@ -154,11 +217,18 @@ func recalc() -> void:
 
 
 ## Derivación lineal desde la tabla DERIVACION. Sin entrada → 0.0.
+## Fase 42: `ataque` y `poder` escalan con el stat principal de la clase.
 func _derivar_lineal(nombre: String) -> float:
 	var coefs: Dictionary = DERIVACION.get(nombre, {})
 	if coefs.is_empty():
 		return 0.0
 	var total: float = float(coefs.get("base", 0.0))
+	if nombre == "ataque":
+		total += float(COEF_ATAQUE_POR_STAT.get(stat_daño, 0.0)) * valor_de(stat_daño)
+		return total
+	if nombre == "poder":
+		total += float(COEF_PODER_POR_STAT.get(stat_daño, 0.0)) * valor_de(stat_daño)
+		return total
 	total += float(coefs.get("fuerza", 0.0)) * fuerza
 	total += float(coefs.get("aguante", 0.0)) * aguante
 	total += float(coefs.get("destreza", 0.0)) * destreza
@@ -202,6 +272,7 @@ func to_dict() -> Dictionary:
 			"destreza": destreza,
 			"inteligencia": inteligencia,
 		},
+		"stat_daño": stat_daño,
 		"mods": mods,
 	}
 
@@ -214,6 +285,9 @@ static func from_dict(d: Dictionary) -> StatBlock:
 		float(b.get("destreza", 0.0)),
 		float(b.get("inteligencia", 0.0))
 	)
+	# Fase 42: saves v1 (sin stat_daño) → "fuerza" (comportamiento previo).
+	var sd: String = str(d.get("stat_daño", "fuerza"))
+	sb.set_stat_daño(sd if STATS_BASE.has(sd) else "fuerza")
 	var mods: Array = d.get("mods", [])
 	for m in mods:
 		var md: Dictionary = m

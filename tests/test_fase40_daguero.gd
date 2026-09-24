@@ -89,7 +89,10 @@ func _test_clase() -> void:
 			and float(base.get("inteligencia", -1.0)) == 15.0,
 		"a: base 15/15/45/15", str(base))
 	var s: StatBlock = SB.new(15.0, 15.0, 45.0, 15.0)
-	_chk(is_equal_approx(s.ataque, 35.0), "a: ataque 35", str(s.ataque))
+	# Fase 42: el daguero daña con DEX (stat principal), no con STR.
+	s.set_stat_daño(ClaseDB.stat_daño("daguero"))
+	_chk(is_equal_approx(s.ataque, 83.75), "a: ataque 83.75 = 5 + DEX×1.75",
+		str(s.ataque))
 	_chk(is_equal_approx(s.vida_max, 625.0), "a: vida 625", str(s.vida_max))
 	_chk(is_equal_approx(s.mana_max, 275.0), "a: maná 275", str(s.mana_max))
 	_chk(is_equal_approx(s.crit_prob, 0.23), "a: crit 23%", str(s.crit_prob))

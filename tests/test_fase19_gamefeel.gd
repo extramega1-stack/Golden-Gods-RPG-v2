@@ -146,9 +146,13 @@ func _t_barra_vida() -> void:
 	e.take_damage(30.0, null, false)
 	_check(b.visible, "al recibir dano la barra aparece", "")
 	var fg: MeshInstance3D = b.get("_fg") as MeshInstance3D
+	var qf: QuadMesh = fg.mesh
 	var pct: float = e.vida_actual / e.stats.vida_max
-	_check(absf(fg.scale.x - pct) < 0.01, "la barra refleja el porcentaje de vida",
-		"scale=%f pct=%f" % [fg.scale.x, pct])
+	# Fase 42: el frente se mide por la MALLA (el billboard ignora el scale
+	# del nodo y por eso la barra se veía duplicada).
+	_check(absf(qf.size.x / BarraVidaMob.ANCHO - pct) < 0.01,
+		"la barra refleja el porcentaje de vida",
+		"ancho=%f pct=%f" % [qf.size.x / BarraVidaMob.ANCHO, pct])
 	e.heal(99999.0)
 	b._process(0.6)
 	_check(not b.visible, "a vida llena la barra se oculta", "")

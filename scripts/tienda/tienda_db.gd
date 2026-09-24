@@ -65,7 +65,10 @@ static func tienda_de_npc(npc_id: String) -> String:
 	cargar()
 	if npc_id == "":
 		return ""
-	var desde_npc: String = str(NpcDB.obtener(npc_id).get("tienda_id", ""))
+	var crudo: Variant = NpcDB.obtener(npc_id).get("tienda_id", "")
+	# Fase 42: "tienda_id": null (NPCs sin tienda) es lo normal; antes
+	# str(null) = "<null>" y disparaba un warning de tienda inexistente.
+	var desde_npc: String = "" if crudo == null else str(crudo)
 	if desde_npc != "":
 		if _cache.has(desde_npc):
 			return desde_npc

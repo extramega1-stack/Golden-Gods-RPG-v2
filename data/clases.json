@@ -9,7 +9,8 @@
    "inteligencia": 15.0,
    "jugable": true,
    "nombre": "Arquero",
-   "aguante": 15.0
+   "aguante": 15.0,
+   "stat_daño": "destreza"
   },
   "daguero": {
    "color_primario": "5a2a6e",
@@ -20,7 +21,8 @@
    "inteligencia": 15.0,
    "jugable": true,
    "nombre": "Daguero",
-   "aguante": 15.0
+   "aguante": 15.0,
+   "stat_daño": "destreza"
   },
   "guerrero": {
    "color_primario": "b03a2e",
@@ -31,7 +33,8 @@
    "inteligencia": 15.0,
    "jugable": true,
    "nombre": "Guerrero",
-   "aguante": 30.0
+   "aguante": 30.0,
+   "stat_daño": "fuerza"
   },
   "mago": {
    "color_primario": "3a4a8f",
@@ -42,7 +45,8 @@
    "inteligencia": 45.0,
    "jugable": true,
    "nombre": "Mago",
-   "aguante": 15.0
+   "aguante": 15.0,
+   "stat_daño": "inteligencia"
   },
   "clerigo": {
    "nombre": "Clérigo",
@@ -53,7 +57,8 @@
    "color_primario": "e8c96a",
    "color_secundario": "2a2416",
    "jugable": true,
-   "aguante": 30.0
+   "aguante": 30.0,
+   "stat_daño": "inteligencia"
   }
  },
  "orden": [

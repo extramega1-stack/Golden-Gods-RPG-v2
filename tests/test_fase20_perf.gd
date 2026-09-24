@@ -169,8 +169,12 @@ func _test_barra_compartida() -> void:
 	var fg2: MeshInstance3D = b2.get("_fg") as MeshInstance3D
 	var fo1: MeshInstance3D = b1.get("_fondo") as MeshInstance3D
 	var fo2: MeshInstance3D = b2.get("_fondo") as MeshInstance3D
-	_chk(fg1.mesh == fg2.mesh and fo1.mesh == fg2.mesh,
-		"f: un solo QuadMesh compartido")
+	_chk(fo1.mesh == fo2.mesh,
+		"f: el FONDO usa un solo QuadMesh compartido")
+	# Fase 42: el frente lleva malla propia (el billboard ignora scale.x del
+	# nodo) pero los MATERIALES siguen compartidos: sigue sin installer
+	# recursos de color por barra.
+	_chk(fg1.mesh != fo1.mesh, "f: el frente tiene su propia malla")
 	_chk(fo1.material_override == fo2.material_override,
 		"f: fondo con material compartido")
 	e1.take_damage(e1.stats.vida_max * 0.5, null, false)

@@ -42,7 +42,10 @@ func _check(cond: bool, nombre: String, detalle: String = "") -> void:
 		printerr("  FAIL " + nombre + extra)
 
 
-## Bloque de referencia (fase 34): fuerza=10, aguante=8, destreza=6, inteligencia=4.
+## Bloque de referencia (fase 34/42): fuerza=10, aguante=8, destreza=6,
+## inteligencia=4. stat principal de daño = fuerza (default): ataque y poder
+## escalan por el MISMO stat. La vía por clase (STR/DEX/INT) se prueba en
+## test_fase42_dano.
 func _nuevo_ref() -> StatBlock:
 	var sb: StatBlock = SB.new(10.0, 8.0, 6.0, 4.0)
 	return sb
@@ -53,7 +56,7 @@ func _t_derivados() -> void:
 	_check(is_equal_approx(sb.vida_max, 420.0), "vida_max = 100 + 10*20 + 8*15", str(sb.vida_max))
 	_check(is_equal_approx(sb.mana_max, 110.0), "mana_max = 50 + 4*15", str(sb.mana_max))
 	_check(is_equal_approx(sb.ataque, 25.0), "ataque = 5 + 10*2", str(sb.ataque))
-	_check(is_equal_approx(sb.poder, 15.0), "poder = 5 + 4*2.5", str(sb.poder))
+	_check(is_equal_approx(sb.poder, 25.0), "poder = 5 + STR*2.0 (stat principal)", str(sb.poder))
 	_check(is_equal_approx(sb.defensa, 13.0), "defensa = 10*0.5 + 8*1.0", str(sb.defensa))
 	_check(is_equal_approx(sb.crit_prob, 0.074), "crit_prob = 0.05 + 6*0.004", str(sb.crit_prob))
 	_check(is_equal_approx(sb.crit_dmg, 1.56), "crit_dmg = 1.5 + 6*0.01", str(sb.crit_dmg))
@@ -114,8 +117,8 @@ func _t_dano_varianza_y_magia() -> void:
 	# 22.124 * 1.10 ≈ 24.336 → 24.
 	_check(int(rv["final"]) == 24, "varianza +10% inyectada", str(rv["final"]))
 	var rm: Dictionary = FM.damage(atk, defe, {"power": 1.0, "magica": true, "bonus_crit": 0.0, "varianza": 0.0}, 0.99, 0.0)
-	# poder 15 * 100/113 ≈ 13.27 → 13.
-	_check(int(rm["final"]) == 13, "dano magico usa poder", str(rm["final"]))
+	# poder 25 * 100/113 ≈ 22.12 → 22.
+	_check(int(rm["final"]) == 22, "dano magico usa poder", str(rm["final"]))
 
 
 func _t_dano_defensa_alta() -> void:
