@@ -96,6 +96,14 @@ var equipo: Equipo = null
 var skills: SkillSystem = null
 ## Fase 28 — talentos del héroe (1 punto por nivel; la UI los gasta).
 var talentos: Talentos = null
+## Fase 30 — puntos de atributo estilo FlyFF (2 por nivel; se reparten en
+## STR/fuerza, STA/aguante, DEX/destreza e INT/inteligencia).
+var puntos_atributo: int = 0
+## Atributos repartibles (fuente única; la agilidad la fija la clase).
+const ATRIBUTOS_REPARTIBLES: Array[String] = ["fuerza", "aguante", "destreza", "inteligencia"]
+## Etiquetas FlyFF para la UI.
+const ETIQUETA_ATRIBUTO: Dictionary = {"fuerza": "STR", "aguante": "STA",
+	"destreza": "DEX", "inteligencia": "INT"}
 
 var _rig: CameraRig = null
 var _tiene_destino: bool = false
@@ -731,10 +739,30 @@ func ganar_oro(cantidad: int) -> void:
 
 
 ## Fase 28: cada nivel da 1 punto de talento (propio, no de Entity).
+## Fase 30: cada nivel da 2 puntos de atributo.
 func _al_subir_nivel_talentos(_nivel: int) -> void:
 	if talentos == null:
 		talentos = Talentos.new()
 	talentos.puntos += 1
+	puntos_atributo += 2
+
+
+## Fase 30: reparte 1 punto de atributo (FlyFF). Retorna "ok" /
+## "sin_puntos" / "atributo" (no repartible). Recalcula derivados y deja
+## la vida/maná actuales (no rellena; solo hace clamp si exceden).
+func repartir_atributo(atributo: String) -> String:
+	if puntos_atributo <= 0:
+		return "sin_puntos"
+	if atributo not in ATRIBUTOS_REPARTIBLES:
+		return "atributo"
+	puntos_atributo -= 1
+	stats.set_base(atributo, float(stats.get(atributo)) + 1.0)
+	stats.recalc()
+	vida_actual = minf(vida_actual, stats.vida_max)
+	mana_actual = minf(mana_actual, stats.mana_max)
+	vida_cambiada.emit(vida_actual, stats.vida_max)
+	mana_cambiado.emit(mana_actual, stats.mana_max)
+	return "ok"
 
 
 ## Fase 11 — identidad del héroe (nombre + clase visible en la UI).

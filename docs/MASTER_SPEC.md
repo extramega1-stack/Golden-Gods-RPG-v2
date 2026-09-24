@@ -879,3 +879,14 @@ Los 20 NPCs hablan del mundo: sira 4, ambientales 4, porteros 3 (ilya 4 y bram 3
 - Tests: `tests/test_fase29_dialogos.gd` — 33/33.
 
 *Fin del documento maestro v3.24 — Fase 29 (diálogos).*
+
+## Fase 30 — Atributos FlyFF + personaje (2026-09-24)
+
+Reparto STR/STA/DEX/INT con 2 puntos por nivel (inspirado en FlyFF Universe).
+- `StatBlock.aguante` (STA: +15 vida y +1 defensa por punto; default 0, sin cambios para enemigos/clases/partidas viejas).
+- `Player.puntos_atributo` + `repartir_atributo()` (valida, recalcula, sin rellenar); 2 puntos por nivel en `subio_nivel`.
+- Save v9 con `puntos_atributo` (retroactivo 2/nivel).
+- `PanelPersonaje` (capa 31, tecla H): tabla de derivados + 4 filas con "+".
+- Tests: `tests/test_fase30_atributos.gd` — 26/26.
+
+*Fin del documento maestro v3.25 — Fase 30 (atributos).*

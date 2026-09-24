@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 8
+const SAVE_VERSION: int = 9
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -49,6 +49,8 @@ func guardar() -> bool:
 			"equipo": jugador.equipo.to_dict() if jugador.equipo != null else {},
 			# Fase 28: talentos (puntos + rangos; los mods viajan en "entidad").
 			"talentos": jugador.talentos.to_dict() if jugador.talentos != null else {},
+			# Fase 30: puntos de atributo sin gastar (los base ya van en "entidad").
+			"puntos_atributo": jugador.puntos_atributo,
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
@@ -179,6 +181,11 @@ func _cargar_talentos(dj: Dictionary) -> void:
 	else:
 		jugador.talentos.puntos = maxi(0, jugador.nivel - 1)
 	jugador.talentos.aplicar_todos(jugador.stats)
+	# Fase 30: puntos de atributo (v8 sin bloque: retroactivo 2/nivel).
+	if dj.has("puntos_atributo"):
+		jugador.puntos_atributo = maxi(0, int(dj.get("puntos_atributo", 0)))
+	else:
+		jugador.puntos_atributo = maxi(0, (jugador.nivel - 1) * 2)
 
 
 func _cargar_enemigos(lista: Array) -> void:

@@ -28,6 +28,8 @@ const DETALLE_MISION: int = 28
 const PANEL_VIAJE: int = 29
 ## Fase 28: panel de talentos (rango 20–69 = paneles de sistemas).
 const PANEL_TALENTOS: int = 30
+## Fase 30: ventana de personaje estilo FlyFF (rango 20–69).
+const PANEL_PERSONAJE: int = 31
 const VENTANA_DIALOGO: int = 81
 ## Fase 7: panel de tienda (rango 80–89 = tiendas/diálogos).
 const PANEL_TIENDA: int = 82

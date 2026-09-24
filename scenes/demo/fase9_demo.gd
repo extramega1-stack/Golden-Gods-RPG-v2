@@ -45,6 +45,8 @@ var _spawner: SpawnerMobs = null
 ## Fase 28: panel de talentos (nodo de la escena principal; null en demos
 ## viejas como fase9, que no lo traen).
 var _panel_talentos: PanelTalentos = null
+## Fase 30: ventana de personaje (igual que talentos).
+var _panel_personaje: PanelPersonaje = null
 ## Fase 20: pool de enemigos (precarga la escena una vez y recicla nodos
 ## por arquetipo). Lo usan la factory del spawner/streaming y la
 ## liberación del cadáver; las demos hijas lo heredan.
@@ -97,6 +99,10 @@ func _ready() -> void:
 	_panel_talentos = get_node_or_null("PanelTalentos") as PanelTalentos
 	if _panel_talentos != null:
 		_panel_talentos.conectar(_jugador)
+	# Fase 30: ventana de personaje (igual).
+	_panel_personaje = get_node_or_null("PanelPersonaje") as PanelPersonaje
+	if _panel_personaje != null:
+		_panel_personaje.conectar(_jugador)
 	for e in _lista_enemigos:
 		_spawner.vigilar(e)
 	_hud.conectar(_jugador)
@@ -177,6 +183,8 @@ func _cargar_partida_guardada() -> bool:
 		_panel_misiones.conectar(_jugador, _misiones)
 		if _panel_talentos != null and is_instance_valid(_panel_talentos):
 			_panel_talentos.conectar(_jugador)
+		if _panel_personaje != null and is_instance_valid(_panel_personaje):
+			_panel_personaje.conectar(_jugador)
 		_hud.refrescar()
 		# Fase 18: la clase restaurada del save puede no ser la de la
 		# conexión inicial; el libro se refiltra (los slots los trae el

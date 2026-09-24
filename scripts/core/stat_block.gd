@@ -35,11 +35,11 @@ const STATS_DERIVADOS: Array[String] = [
 ## Coeficientes lineales por stat: {"base": b, "<atributo>": coef, ...}.
 ## Lo que no está aquí (crítico, vel. de ataque) se calcula aparte por topes.
 const DERIVACION: Dictionary = {
-	"vida_max": {"base": 100.0, "fuerza": 20.0},
+	"vida_max": {"base": 100.0, "fuerza": 20.0, "aguante": 15.0},
 	"mana_max": {"base": 50.0, "inteligencia": 15.0},
 	"ataque": {"base": 5.0, "fuerza": 2.0, "agilidad": 0.5},
 	"poder": {"base": 5.0, "inteligencia": 2.5},
-	"defensa": {"base": 0.0, "fuerza": 0.5, "agilidad": 1.5},
+	"defensa": {"base": 0.0, "fuerza": 0.5, "agilidad": 1.5, "aguante": 1.0},
 	"vel_mov": {"base": 6.0, "agilidad": 0.05},
 }
 
@@ -54,10 +54,13 @@ const VEL_ATAQUE_MAX: float = 2.0
 const VEL_MOV_MAX: float = 10.0
 
 # --- Atributos base (los escribe el dueño del bloque; luego llama a recalc) ---
+# Fase 30: "aguante" (STA de FlyFF: vida y defensa). Default 0: enemigos,
+# clases viejas y partidas viejas no lo traen y no cambian.
 var fuerza: float = 0.0
 var agilidad: float = 0.0
 var destreza: float = 0.0
 var inteligencia: float = 0.0
+var aguante: float = 0.0
 
 # --- Derivados (SOLO los escribe recalc(); el resto del código los LEE) ---
 var vida_max: float = 0.0
@@ -76,15 +79,16 @@ var _mods: Dictionary = {}
 var _base: Dictionary = {}
 
 
-func _init(p_fuerza: float = 0.0, p_agilidad: float = 0.0, p_destreza: float = 0.0, p_inteligencia: float = 0.0) -> void:
+func _init(p_fuerza: float = 0.0, p_agilidad: float = 0.0, p_destreza: float = 0.0, p_inteligencia: float = 0.0, p_aguante: float = 0.0) -> void:
 	fuerza = p_fuerza
 	agilidad = p_agilidad
 	destreza = p_destreza
 	inteligencia = p_inteligencia
+	aguante = p_aguante
 	recalc()
 
 
-## Cambia un atributo base y recalcula. nombre: fuerza|agilidad|destreza|inteligencia.
+## Cambia un atributo base y recalcula. nombre: fuerza|agilidad|destreza|inteligencia|aguante.
 func set_base(nombre: String, valor: float) -> void:
 	match nombre:
 		"fuerza":
@@ -95,6 +99,8 @@ func set_base(nombre: String, valor: float) -> void:
 			destreza = valor
 		"inteligencia":
 			inteligencia = valor
+		"aguante":
+			aguante = valor
 		_:
 			push_warning("[StatBlock] atributo base desconocido: %s" % nombre)
 			return
@@ -159,6 +165,7 @@ func _derivar_lineal(nombre: String) -> float:
 	total += float(coefs.get("agilidad", 0.0)) * agilidad
 	total += float(coefs.get("destreza", 0.0)) * destreza
 	total += float(coefs.get("inteligencia", 0.0)) * inteligencia
+	total += float(coefs.get("aguante", 0.0)) * aguante
 	return total
 
 
@@ -197,6 +204,7 @@ func to_dict() -> Dictionary:
 			"agilidad": agilidad,
 			"destreza": destreza,
 			"inteligencia": inteligencia,
+			"aguante": aguante,
 		},
 		"mods": mods,
 	}
@@ -208,7 +216,8 @@ static func from_dict(d: Dictionary) -> StatBlock:
 		float(b.get("fuerza", 0.0)),
 		float(b.get("agilidad", 0.0)),
 		float(b.get("destreza", 0.0)),
-		float(b.get("inteligencia", 0.0))
+		float(b.get("inteligencia", 0.0)),
+		float(b.get("aguante", 0.0))
 	)
 	var mods: Array = d.get("mods", [])
 	for m in mods:
