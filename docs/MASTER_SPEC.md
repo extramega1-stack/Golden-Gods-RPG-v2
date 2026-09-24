@@ -844,3 +844,11 @@ Durnan + Bram forjan el Molde (no el arma: su promesa).
 - Catálogo: 35 misiones. Tests: `tests/test_fase25_acto3.gd` — 18/18.
 
 *Fin del documento maestro v3.20 — Fase 25 (Acto III).*
+
+## Fase 26 — Acto IV: El Descenso (2026-09-24)
+
+Karg abre la puerta bajo la Arena (canon: la Arena es la puerta al Tártaro).
+- La puerta (hablar Vex, exige el Molde), El Descenso (4 ogros), El Umbral (Susurro + informar a Karg; la puerta duerme otro siglo).
+- Catálogo: 38 misiones. Tests: `tests/test_fase26_acto4.gd` — 17/17.
+
+*Fin del documento maestro v3.21 — Fase 26 (Acto IV).*

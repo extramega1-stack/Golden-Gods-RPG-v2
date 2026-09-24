@@ -129,7 +129,7 @@ func _t_db() -> void:
 	var ids: Array[String] = QDB.ids()
 	# Fase 22: 25 = 3 de Moon Town + 22 de las cadenas por ciudad.
 	# Fase 23: 29 = 25 + 4 del Acto I. Fase 24: 32 = 29 + 3 del Acto II.
-	_check(ids.size() == 35, "db: 35 misiones (32 + 3 acto III)", str(ids.size()))
+	_check(ids.size() == 38, "db: 38 misiones (35 + 3 acto IV)", str(ids.size()))
 	var g: Dictionary = QDB.obtener("goblins_fuera")
 	_check(str(g.get("nombre", "")) == "Goblins fuera",
 		"db: nombre Goblins fuera")

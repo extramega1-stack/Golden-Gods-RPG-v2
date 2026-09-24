@@ -5,7 +5,7 @@ extends SceneTree
 ## (a) la forja exige el rumbo (bloqueada sin acto2);
 ## (b) carbón: recolectar 5 colmillos;
 ## (c) yunque: 3 ogros; molde mixto (hablar Elthar + 4 lobos);
-## (d) catálogo en 35 misiones.
+## (d) catálogo en 35 misiones (38 desde fase 26; ver test_fase26).
 ##
 ## Cómo correrlo: godot --headless --path <proyecto> --script res://tests/test_fase25_acto3.gd
 
@@ -63,7 +63,7 @@ func _player() -> Player:
 
 ## (a) Catálogo y prerrequisito.
 func _test_catalogo() -> void:
-	_chk(QD.ids().size() == 35, "a: 35 misiones", str(QD.ids().size()))
+	_chk(QD.ids().size() == 38, "a: 38 misiones", str(QD.ids().size()))
 	_chk(QD.requiere("q_acto3_carbon") == "q_acto2_rumbo_forja",
 		"a: el carbón exige el rumbo")
 	_chk(QD.requiere("q_acto3_yunque") == "q_acto3_carbon",
