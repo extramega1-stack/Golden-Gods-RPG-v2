@@ -980,3 +980,17 @@ Con la skill `rpg` (fórmula deliberada, números acotados, datos no código).
 - Tests: `tests/test_fase35_balance.gd` — 28/28.
 
 *Fin del documento maestro v3.30 — Fase 35 (balance).*
+
+## Fase 36 — Paper-doll 3D visible (2026-09-24)
+
+El equipo se ve en el héroe (skills `godot-3d-essentials` + `rpg`).
+- `PaperDoll` (`scripts/player/paper_doll.gd`, hijo del Player desde
+  `_ready`): pieza procedural por slot ocupado (espada+guarda, escudo,
+  casco, coraza, guantes y botas pares, gemas doradas emissive para
+  joyería), mallas y materiales COMPARTIDOS por slot.
+- Auto-suscripción a `equipo.cambiado`; si el save reemplaza el objeto,
+  re-suscribe y reconstruye (comparación por frame, sin polling).
+  Puro visual: nunca toca stats.
+- Tests: `tests/test_fase36_paperdoll.gd` — 38/38.
+
+*Fin del documento maestro v3.31 — Fase 36 (paper-doll).*

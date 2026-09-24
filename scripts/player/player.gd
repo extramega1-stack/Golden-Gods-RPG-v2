@@ -144,6 +144,12 @@ func _ready() -> void:
 	talentos = Talentos.new()
 	if not subio_nivel.is_connected(_al_subir_nivel_talentos):
 		subio_nivel.connect(_al_subir_nivel_talentos)
+	# Fase 36: muñeco 3D del equipo (visual; se auto-suscribe y se
+	# re-suscribe solo si el save reemplaza el objeto Equipo).
+	var muneco := PaperDoll.new()
+	muneco.name = "PaperDoll"
+	add_child(muneco)
+	muneco.conectar(self)
 
 
 func _unhandled_input(event: InputEvent) -> void:
