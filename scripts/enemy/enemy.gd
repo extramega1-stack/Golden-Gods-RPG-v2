@@ -233,6 +233,7 @@ func die(fuente: Entity = null) -> void:
 		return
 	super.die(fuente)
 	estado = Estado.MUERTO
+	AudioJuego.al_morir()
 	var drops: Array = DropTable.roll_drops(_tabla_loot, rng)
 	botin_generado.emit(drops, global_position)
 	if fuente != null and fuente != self and fuente.esta_vivo():

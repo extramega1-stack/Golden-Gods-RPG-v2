@@ -1,0 +1,18 @@
+{
+  "_nota": "Recetas de SFX procedurales (fase 20, P1 audio). Sin binarios: Sintetizador genera el WAV al arrancar. Campos: forma (seno/cuadrado/ruido), freq_ini/freq_fin (Hz, barrido), duracion (s), volumen (0-1).",
+  "sonidos": {
+    "golpe": {"forma": "ruido", "freq_ini": 700.0, "freq_fin": 150.0, "duracion": 0.12, "volumen": 0.5},
+    "critico": {"forma": "cuadrado", "freq_ini": 900.0, "freq_fin": 300.0, "duracion": 0.16, "volumen": 0.45},
+    "muerte": {"forma": "seno", "freq_ini": 400.0, "freq_fin": 80.0, "duracion": 0.35, "volumen": 0.5},
+    "moneda": {"forma": "seno", "freq_ini": 950.0, "freq_fin": 1500.0, "duracion": 0.12, "volumen": 0.4},
+    "recoger": {"forma": "seno", "freq_ini": 500.0, "freq_fin": 800.0, "duracion": 0.12, "volumen": 0.4},
+    "skill_dano": {"forma": "cuadrado", "freq_ini": 300.0, "freq_fin": 900.0, "duracion": 0.18, "volumen": 0.4},
+    "skill_curar": {"forma": "seno", "freq_ini": 600.0, "freq_fin": 1200.0, "duracion": 0.25, "volumen": 0.4},
+    "skill_buff": {"forma": "seno", "freq_ini": 400.0, "freq_fin": 1000.0, "duracion": 0.25, "volumen": 0.4},
+    "skill_debuff": {"forma": "seno", "freq_ini": 800.0, "freq_fin": 250.0, "duracion": 0.25, "volumen": 0.4},
+    "skill_aoe": {"forma": "ruido", "freq_ini": 300.0, "freq_fin": 1200.0, "duracion": 0.3, "volumen": 0.45},
+    "clic": {"forma": "seno", "freq_ini": 1200.0, "freq_fin": 1000.0, "duracion": 0.05, "volumen": 0.3},
+    "mision": {"forma": "seno", "freq_ini": 700.0, "freq_fin": 1400.0, "duracion": 0.3, "volumen": 0.4},
+    "error": {"forma": "cuadrado", "freq_ini": 250.0, "freq_fin": 180.0, "duracion": 0.15, "volumen": 0.35}
+  }
+}

@@ -798,3 +798,14 @@ Fix (sin cambiar gameplay; modos nuevos opt-in, defaults intactos para tests):
 - Regresión verde salvo 2 preexistentes (título en `test_fase12_integracion`; `NPCS_ESPERADOS` en `smoke_fase15_ciudades`).
 
 *Fin del documento maestro v3.15 — Fase 20 (paquete de rendimiento P0).*
+
+## Fase 21 — Pipeline de audio procedural (2026-09-24)
+
+No había ni un solo SFX (solo `TODO(audio)` en skills y "sin audio" en clima). Sin binarios: todo sintetizado al arrancar.
+- `data/sonidos.json` (nuevo): 13 recetas data-driven (forma/freq_ini/freq_fin/duracion/volumen).
+- `scripts/audio/sintetizador.gd` (nuevo, puro/testeable): WAV mono 8 bits a 22050 Hz con barrido, envolvente y ataque; ruido determinista.
+- `scripts/audio/audio_juego.gd` (nuevo, patrón GameFeel): buses SFX/Ambiente/Musica + pool de 8 voces round-robin + síntesis única al arrancar; API estática no-op sin instancia; `modo_prueba` rutea sin `play()` (el driver dummy pierde playbacks).
+- Cableado: golpe/crítico en `Entity.take_damage`, stinger en `Enemy.die`, moneda/recoger en la demo, un SFX por tipo de efecto en `SkillSystem.lanzar` (TODO resuelto); la demo crea el nodo.
+- Tests: `tests/test_fase20_audio.gd` — 23/23.
+
+*Fin del documento maestro v3.16 — Fase 21 (audio procedural).*

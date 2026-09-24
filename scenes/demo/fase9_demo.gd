@@ -86,6 +86,10 @@ func _ready() -> void:
 	_pool.name = "PoolMobs"
 	_pool.configurar_arquetipos(_arquetipos)
 	add_child(_pool)
+	# Fase 20 (P1 audio): manager de SFX (buses + pool + recetas).
+	var audio := AudioJuego.new()
+	audio.name = "AudioJuego"
+	add_child(audio)
 	for e in _lista_enemigos:
 		_spawner.vigilar(e)
 	_hud.conectar(_jugador)
@@ -440,6 +444,8 @@ func _colocar_pickup(item_id: String, pos: Vector3) -> void:
 
 
 func _al_recoger_botin(drop: Dictionary) -> void:
+	# Fase 20: SFX de recogida (moneda para oro, blip para items).
+	AudioJuego.al_recoger(str(drop.get("tipo", "")))
 	if str(drop.get("tipo", "")) == "oro":
 		_jugador.ganar_oro(int(drop.get("cantidad", 0)))
 	else:

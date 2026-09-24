@@ -28,8 +28,8 @@ extends RefCounted
 ## duración (no se acumula). Sin tocar StatBlock: solo add_mod/remove_mod;
 ## la UI solo lee.
 ## Feedback visual: Entity.mostrar_fx(color) por tipo de efecto (el nodo
-## SkillFX lo tiñe). TODO(audio): el pipeline de sonido aún no existe;
-## cuando exista, aquí sonará el SFX del skill.
+## SkillFX lo tiñe). Feedback sonoro: AudioJuego.al_skill(tipo) en lanzar()
+## (fase 20: pipeline existente).
 
 signal skill_usada(skill_id: String)
 signal skill_fallida(skill_id: String, motivo: String)
@@ -126,8 +126,8 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 				_aplicar_debuff(skill_id, objetivo, efecto)
 		_:
 			push_warning("[SkillSystem] tipo de efecto desconocido: '%s' en %s" % [tipo, skill_id])
-	# TODO(audio): el pipeline de sonido aún no existe; aquí sonará el SFX
-	# del skill lanzado (un sonido por tipo de efecto).
+	# Fase 20: SFX del skill lanzado (un sonido por tipo de efecto).
+	AudioJuego.al_skill(tipo)
 	skill_usada.emit(skill_id)
 	return true
 
