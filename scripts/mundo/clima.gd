@@ -38,6 +38,10 @@ var ciclo: CicloDia = null
 var jugador: Node3D = null
 ## Si es false, el clima solo cambia con fijar_clima() (tests, debug).
 var cambio_automatico: bool = true
+## Fase 20 (P0-5): tope de gotas del nodo de lluvia (presupuesto para HW
+## modesto). 0 = sin tope (se usa `lluvia.gotas` del JSON, 2000).
+## Se lee de `lluvia.tope_gotas` del JSON; ausente = 0.
+var tope_gotas: int = 0
 
 var _estado: String = "despejado"
 var _lluvia_int: float = 0.0
@@ -219,6 +223,13 @@ func _aplicar_visuales() -> void:
 func _construir_lluvia() -> void:
 	var d: Dictionary = _cfg().get("lluvia", {})
 	var gotas: int = maxi(int(d.get("gotas", 2000)), 1)
+	# Fase 20: tope data-driven (JSON `lluvia.tope_gotas`, o la propiedad
+	# si se fijó a mano antes del _ready, como en tests).
+	var tope: int = tope_gotas
+	if tope <= 0:
+		tope = maxi(int(d.get("tope_gotas", 0)), 0)
+	if tope > 0:
+		gotas = mini(gotas, tope)
 	var radio: float = float(d.get("radio_area", 28.0))
 	var caida: float = float(d.get("velocidad_caida", 30.0))
 	var pre: float = float(d.get("preprocess_seg", 1.4))

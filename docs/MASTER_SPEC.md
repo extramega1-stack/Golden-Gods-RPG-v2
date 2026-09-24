@@ -784,3 +784,17 @@ Fix:
 - Tests: `tests/test_fase19_1.gd` — 4 pruebas (referencia liberada no aborta el tick, respawn re-asocia tras limpieza, matcher de cadáveres, respawn libera el cadáver correcto).
 
 *Fin del documento maestro v3.14.1 — Fase 19.1 (hotfix freed object).*
+
+## Fase 20 — Paquete de rendimiento P0 + limpieza de demos (2026-09-24)
+
+Auditoría game-developer (60 FPS): el tick caliente hacía `load()` + `instantiate()` + `queue_free()` por stream-in/out, `mobs_vivos()` recorría 1127 registros con alloc por llamada a 60 fps, minimapa/brújula hacían `queue_redraw()` cada frame, el arranque congelaba el juego (terreno 36 chunks + 9 ciudades en el primer frame) y Moon Town pagaba ~40 OmniLight3D siempre.
+
+Fix (sin cambiar gameplay; modos nuevos opt-in, defaults intactos para tests):
+- P0-1 Pool de mobs: `scripts/mundo/pool_mobs.gd` (nuevo, `class_name PoolMobs`): precarga `enemigo.tscn` UNA vez, freelist por arquetipo (`obtener`/`devolver`, `SkillFX` una vez por instancia). `Enemy.reiniciar(arquetipo)` (reconfigura, revive, colisión viva 4/1). La factory de la demo delega al pool; el streaming recicla vía `fijar_pool()` (sin pool = `queue_free()` como antes); conexiones de la demo con guarda `is_connected` (el reutilizado las trae). Tests: `tests/test_pool_mobs.gd` — 32/32.
+- P0-2 UI dirty-driven: `StreamingMobs.mobs_vivos()` es caché exacta invalidada por evento (configurar/instanciar/liberar/reaparecer); minimapa redibuja solo si el jugador se movió (throttle 0.1 s), hay pings, el fade transiciona, el streaming emite instanciado/liberado o late 0.5 s con mobs; brújula igual por yaw/jugador/objetivo/misión. Tests: `tests/test_fase20_ui.gd` — 29/29.
+- P0-3 Carga progresiva: `Terreno` y `CiudadLuna` aceptan `construccion_progresiva` (el `_ready` carga datos y encola; `_process` avanza con `progreso_*` y `*_listo` al terminar; `avanzar_construccion()` testeable). `scripts/ui/pantalla_carga.gd` (nueva, capa `UiLayers.CARGA` = 99). La demo parte el arranque: `_ready` rápido + `_al_mundo_listo()` tras el gate (colocar jugador/NPCs, viaje). Tests: `tests/test_fase20_carga.gd` — 36/36.
+- P0-5 Budget luces/partículas + harness: `Antorcha` con culling por distancia (`jugador`, 120 m; sin jugador = siempre on); `CiudadLuna.fijar_jugador()` propaga (la demo lo llama); `Clima.tope_gotas` recorta el amount (default 2000 intacto). `scripts/ui/monitor_fps.gd` (nuevo, solo debug) y `tools/bench_fps.gd` (bench headless CPU: 144 FPS, p95 6.9 ms). Tests: `tests/test_fase20_perf.gd` — 10/10.
+- Limpieza: una sola demo principal (`fase14_demo.tscn`, `Escenas.JUEGO`); borradas `fase3–12_demo.tscn` + `main.tscn`/`main.gd` (Fase 0). Se conserva `fase9_demo.tscn` como fixture de `test_fase91/92`; `test_fase12_integracion` verifica el contrato sobre `fase14_demo.tscn`.
+- Regresión verde salvo 2 preexistentes (título en `test_fase12_integracion`; `NPCS_ESPERADOS` en `smoke_fase15_ciudades`).
+
+*Fin del documento maestro v3.15 — Fase 20 (paquete de rendimiento P0).*

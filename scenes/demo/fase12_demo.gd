@@ -22,6 +22,11 @@ var _ciclo: CicloDia = null
 var _region_db: RegionDB = null
 ## Fase 12.1: streaming de mobs (los 1121 spawns como datos).
 var _streaming: StreamingMobs = null
+## Fase 20 (P0-3): arranque diferido. El terreno (y las ciudades en fase
+## 14) se construyen por partes tras el primer frame; `_process` avanza la
+## pantalla de carga y, al terminar, llama `_al_mundo_listo()` una vez.
+var _carga: PantallaCarga = null
+var _mundo_pendiente: bool = false
 
 
 func _ready() -> void:
@@ -66,6 +71,64 @@ func _ready() -> void:
 	clima.ciclo = _ciclo
 	clima.jugador = _jugador
 	add_child(clima)
+	# Fase 20: monitor FPS solo en debug (harness; en release no existe).
+	if OS.is_debug_build() and _hud != null:
+		var mon := MonitorFPS.new()
+		mon.configurar(_streaming)
+		_hud.add_child(mon)
+	# Fase 20: el mundo se termina de construir por partes; la pantalla de
+	# carga cubre la espera y `_al_mundo_listo()` cierra el arranque.
+	_mostrar_carga()
+	_mundo_pendiente = true
+
+
+func _process(_delta: float) -> void:
+	if not _mundo_pendiente:
+		return
+	_actualizar_carga()
+	if _construccion_lista():
+		_mundo_pendiente = false
+		_al_mundo_listo()
+
+
+## ¿Terminó la construcción del mundo? La base mira el terreno; fase 14
+## añade sus 9 ciudades. Virtual/testeable por las hijas.
+func _construccion_lista() -> bool:
+	if _terreno == null or not is_instance_valid(_terreno):
+		return true
+	return _terreno.construccion_terminada()
+
+
+## Fracción 0..1 para la pantalla de carga. Fase 14 la pondera con las
+## ciudades (aquí solo existe el terreno).
+func _fraccion_carga() -> float:
+	if _terreno == null or not is_instance_valid(_terreno):
+		return 1.0
+	return _terreno.fraccion_construccion()
+
+
+## El mundo está listo: ocultar la carga. Las hijas extienden (fase 14
+## coloca jugador/NPCs y monta el viaje rápido aquí, no en _ready).
+func _al_mundo_listo() -> void:
+	_ocultar_carga()
+
+
+func _mostrar_carga() -> void:
+	_ocultar_carga()
+	_carga = PantallaCarga.new()
+	add_child(_carga)
+	_carga.fijar_progreso(0.0, "Levantando el mundo…")
+
+
+func _actualizar_carga() -> void:
+	if _carga != null and is_instance_valid(_carga):
+		_carga.fijar_progreso(_fraccion_carga(), "Levantando el mundo…")
+
+
+func _ocultar_carga() -> void:
+	if _carga != null and is_instance_valid(_carga):
+		_carga.queue_free()
+	_carga = null
 
 
 ## Fase 12.1: lee data/spawns.json y lo carga como REGISTROS en el
@@ -97,10 +160,12 @@ func _iniciar_streaming() -> void:
 	_streaming = StreamingMobs.new()
 	_streaming.name = "StreamingMobs"
 	_streaming.configurar(registros)
-	# La factory es la de la fase 9 (crea + configura con el arquetipo).
+	# La factory es la de la fase 9 (pool: crea + configura con el arquetipo).
 	_streaming.fijar_factory(_crear_enemigo)
 	_streaming.fijar_jugador(_jugador)
 	_streaming.fijar_spawner(_spawner)
+	# Fase 20: el streaming recicla en el pool en vez de queue_free().
+	_streaming.fijar_pool(_pool)
 	_streaming.mob_instanciado.connect(_al_mob_instanciado)
 	_streaming.mob_liberado.connect(_al_mob_liberado)
 	_spawner.puerta_reaparicion = _puerta_respawn
@@ -115,11 +180,15 @@ func _iniciar_streaming() -> void:
 
 ## Fase 12.1: el streaming instanció un mob cercano: la misma configuración,
 ## señales y vigilancia que la fase 12 original por nodo.
+## Fase 20: el mob puede venir del pool con las señales de la demo ya
+## conectadas (se guardan para no duplicar pickups ni muertes).
 func _al_mob_instanciado(e: Enemy) -> void:
 	if e == null:
 		return
-	e.botin_generado.connect(_al_botin_generado)
-	e.murio.connect(_al_morir_enemigo.bind(e))
+	if not e.botin_generado.is_connected(_al_botin_generado):
+		e.botin_generado.connect(_al_botin_generado)
+	if not e.murio.is_connected(_al_morir_enemigo.bind(e)):
+		e.murio.connect(_al_morir_enemigo.bind(e))
 	e.terreno = _terreno
 	e._pegar_al_terreno()
 	_lista_enemigos.append(e)

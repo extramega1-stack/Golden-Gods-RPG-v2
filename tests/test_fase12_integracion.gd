@@ -3,8 +3,12 @@ extends SceneTree
 ##
 ## Blinda que las cuatro piezas encajan: cada spawn de data/spawns.json cae
 ## en una región de data/regiones.json, el Terreno cubre la escala real
-## (36.864 u) y la demo fase12 referencia los nodos/sistemas nuevos.
+## (36.864 u) y la demo vigente referencia los nodos/sistemas nuevos.
 ## La lógica fina de cada pieza la cubren sus tests dedicados.
+##
+## Nota (limpieza): las demos viejas (fase3–12) se eliminaron; la única
+## escena principal es fase14_demo.tscn (hereda la cadena fase9→11→12→14),
+## así que el contrato de escena se verifica sobre ella.
 ##
 ## Cómo correrlo:
 ##   ~/workspace/tools/godot/godot --headless --path ~/workspace/godot-rpg-remake --script res://tests/test_fase12_integracion.gd
@@ -67,9 +71,9 @@ func _run() -> void:
 	# 3. Terreno: escala real del proyecto.
 	_check(Terreno.TAMANO == 36864.0, "Terreno.TAMANO == 36864")
 	_check(Terreno.PASO == 128.0, "Terreno.PASO == 128")
-	# 4. La demo fase12 referencia los sistemas nuevos (contrato de escena).
-	var tscn: String = FileAccess.get_file_as_string("res://scenes/demo/fase12_demo.tscn")
-	_check(tscn.find("fase12_demo.gd") >= 0, "tscn usa fase12_demo.gd")
+	# 4. La demo vigente referencia los sistemas nuevos (contrato de escena).
+	var tscn: String = FileAccess.get_file_as_string("res://scenes/demo/fase14_demo.tscn")
+	_check(tscn.find("fase14_demo.gd") >= 0, "tscn usa fase14_demo.gd")
 	_check(tscn.find("scripts/mundo/terreno.gd") >= 0, "tscn incluye Terreno")
 	_check(tscn.find("scripts/mundo/ciclo_dia.gd") >= 0, "tscn incluye CicloDia")
 	_check(tscn.find("scripts/mundo/vigia_region.gd") >= 0, "tscn incluye VigiaRegion")

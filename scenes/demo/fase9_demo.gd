@@ -16,8 +16,9 @@ extends Node3D
 ## seleccionado lejano camina hasta él y al llegar abre el diálogo.
 
 const ENEMIES_JSON: String = "res://data/enemies.json"
-const ENEMIGO_ESCENA: String = "res://scenes/enemy/enemigo.tscn"
 const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
+## La escena del enemigo la precarga el PoolMobs UNA vez (fase 20): aquí
+## ya no se hace `load()` por cada spawn (era IO + parse en el tick).
 
 @onready var _jugador: Player = $Player
 @onready var _rig: CameraRig = $CameraRig
@@ -41,6 +42,10 @@ var _misiones: QuestLog = null
 var _lista_enemigos: Array = []
 ## Fase 9: el spawner de respawn (los timers son runtime, no se guardan).
 var _spawner: SpawnerMobs = null
+## Fase 20: pool de enemigos (precarga la escena una vez y recicla nodos
+## por arquetipo). Lo usan la factory del spawner/streaming y la
+## liberación del cadáver; las demos hijas lo heredan.
+var _pool: PoolMobs = null
 ## Fase 9.1: NPCs en escena (para refrescar los marcadores de misión).
 var _lista_npcs: Array = []
 ## Fase 9.2: estados conocidos de misión (para detectar el paso
@@ -76,6 +81,11 @@ func _ready() -> void:
 	_spawner.fijar_factory(_crear_enemigo)
 	_spawner.reaparecido.connect(_al_reaparecer_enemigo)
 	add_child(_spawner)
+	# Fase 20: el pool vive junto al spawner y comparte sus arquetipos.
+	_pool = PoolMobs.new()
+	_pool.name = "PoolMobs"
+	_pool.configurar_arquetipos(_arquetipos)
+	add_child(_pool)
 	for e in _lista_enemigos:
 		_spawner.vigilar(e)
 	_hud.conectar(_jugador)
@@ -248,27 +258,19 @@ func _mis_enemigos() -> Array:
 
 
 ## Fase 9: factory que el SpawnerMobs usa para reinstanciar enemigos.
-## Solo crea y configura; las señales de la demo se conectan en
-## _al_reaparecer_enemigo (si se conectaran aquí habría dobles).
+## Fase 20: delega en el PoolMobs (escena precargada + reciclaje por
+## arquetipo). Solo crea y configura; las señales de la demo se conectan en
+## _al_reaparecer_enemigo (con guarda `is_connected`: el nodo puede ser
+## reutilizado y traerlas ya conectadas de su vida anterior).
 func _crear_enemigo(arquetipo_id: String, posicion: Vector3) -> Enemy:
-	var escena: PackedScene = load(ENEMIGO_ESCENA) as PackedScene
-	if escena == null:
-		push_warning("[Fase9] no se pudo cargar " + ENEMIGO_ESCENA)
+	if _pool == null:
+		push_warning("[Fase9] sin pool: no se puede crear '%s'" % arquetipo_id)
 		return null
-	var e: Enemy = escena.instantiate() as Enemy
+	var e: Enemy = _pool.obtener(arquetipo_id, posicion)
 	if e == null:
 		return null
-	e.arquetipo_id = arquetipo_id
-	e.add_to_group("enemigos")
-	# Fase 18: gancho visual del feedback de skills (tinte temporal que
-	# lee Entity.fx_color; hermano de DamageFlash).
-	e.add_child(SkillFX.new())
-	e.position = posicion
-	add_child(e)
-	var arq: Dictionary = _arquetipos.get(arquetipo_id, {})
-	if arq.is_empty():
+	if _arquetipos.get(arquetipo_id, {}).is_empty():
 		push_warning("[Fase9] arquetipo desconocido en respawn: '%s'" % arquetipo_id)
-	e.configurar(arq)
 	return e
 
 
@@ -279,8 +281,13 @@ func _crear_enemigo(arquetipo_id: String, posicion: Vector3) -> Enemy:
 func _al_reaparecer_enemigo(nuevo: Enemy) -> void:
 	if nuevo == null:
 		return
-	nuevo.botin_generado.connect(_al_botin_generado)
-	nuevo.murio.connect(_al_morir_enemigo.bind(nuevo))
+	# Fase 20: el reaparecido puede venir del pool con las señales ya
+	# conectadas de su vida anterior (conectar dos veces duplicaría
+	# pickups y muertes). Guarda con el mismo patrón del streaming.
+	if not nuevo.botin_generado.is_connected(_al_botin_generado):
+		nuevo.botin_generado.connect(_al_botin_generado)
+	if not nuevo.murio.is_connected(_al_morir_enemigo.bind(nuevo)):
+		nuevo.murio.connect(_al_morir_enemigo.bind(nuevo))
 	# Fase 19.1: el cadáver a liberar es el muerto más cercano al punto de
 	# reaparición (mismo criterio que StreamingMobs._al_reaparecido). Antes
 	# se usaba _ultimo_muerto (una sola ranura): con 2+ muertes antes de un
@@ -294,7 +301,11 @@ func _al_reaparecer_enemigo(nuevo: Enemy) -> void:
 		if is_instance_valid(crudo):
 			var viejo: Enemy = crudo as Enemy
 			if viejo != null and viejo != nuevo:
-				viejo.queue_free()
+				# Fase 20: el cadáver se recicla en vez de liberarse.
+				if _pool != null:
+					_pool.devolver(viejo)
+				else:
+					viejo.queue_free()
 	else:
 		_lista_enemigos.append(nuevo)
 	print("[Fase9] %s reapareció" % nuevo.nombre_mostrado)

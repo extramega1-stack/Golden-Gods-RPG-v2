@@ -40,6 +40,11 @@ const ALFA_REPOSO: float = 0.35
 const PING_DURACION: float = 5.0
 ## Umbral (m) para considerar que el jugador se movio.
 const UMBRAL_MOVIMIENTO: float = 0.05
+## Fase 20 (P0-2): throttle del redibujo en movimiento (10 Hz: a 6 m/s el
+## paso es 0.6 m = 0.003 px, invisible) y latido en reposo con mobs
+## visibles (los mobs caminan; sus puntos se refrescan a 2 Hz).
+const INTERVALO_REDIBUJO: float = 0.1
+const LATIDO_QUIETO: float = 0.5
 
 const DORADO: Color = Color(0.85, 0.68, 0.25)
 const FONDO_OSCURO: Color = Color(0.02, 0.02, 0.04, 0.95)
@@ -63,6 +68,18 @@ var _ultima_pos: Vector3 = Vector3.ZERO
 var _tiene_pos: bool = false
 var _tiempo_quieto: float = 0.0
 var _arrastrando: bool = false
+## Fase 20 (P0-2): redibujo dirty-driven. Antes `_process` hacía
+## `queue_redraw()` cada frame (60/s) y `_dibujar_mobs` recorría los 1127
+## registros del streaming por frame. Ahora solo se redibuja si algo
+## visible cambió: el jugador se movió, hay pings animados, el fade sigue
+## en transición, el streaming instanció/liberó (señal) o late el
+## temporizador con mobs visibles (caminan).
+var _forzar_redibujo: bool = false
+var _acum_redibujo: float = 0.0
+var _ultima_pos_dibujo: Vector3 = Vector3.ZERO
+var _tiene_dibujo: bool = false
+var _alfa_objetivo: float = 1.0
+var _streaming_suscrito: StreamingMobs = null
 
 
 func _init() -> void:
@@ -100,6 +117,7 @@ func _construir_etiqueta() -> void:
 ## si no, lo intenta al llegar `terreno_listo`).
 func configurar(jugador: Player, terreno: Terreno, camara: CameraRig,
 		region_db: RegionDB, streaming: StreamingMobs) -> void:
+	_suscribir_streaming(streaming)
 	_jugador = jugador
 	_terreno = terreno
 	_camara = camara
@@ -108,6 +126,10 @@ func configurar(jugador: Player, terreno: Terreno, camara: CameraRig,
 	_tiempo_quieto = 0.0
 	_tiene_pos = false
 	_region_actual = ""
+	_forzar_redibujo = false
+	_acum_redibujo = 0.0
+	_tiene_dibujo = false
+	_alfa_objetivo = 1.0
 	if _etiqueta != null:
 		_etiqueta.text = ""
 	if _terreno != null:
@@ -121,6 +143,28 @@ func configurar(jugador: Player, terreno: Terreno, camara: CameraRig,
 
 func _al_terreno_listo() -> void:
 	_render_fondo()
+
+
+## Suscripción al streaming para el redibujo dirty-driven: instanciar o
+## liberar un mob cambia los puntos rojos (re-conectar no duplica).
+func _suscribir_streaming(streaming: StreamingMobs) -> void:
+	if _streaming_suscrito != null and is_instance_valid(_streaming_suscrito):
+		if _streaming_suscrito.mob_instanciado.is_connected(_al_mob_cambio):
+			_streaming_suscrito.mob_instanciado.disconnect(_al_mob_cambio)
+		if _streaming_suscrito.mob_liberado.is_connected(_al_mob_cambio):
+			_streaming_suscrito.mob_liberado.disconnect(_al_mob_cambio)
+	_streaming_suscrito = streaming
+	if _streaming_suscrito != null and is_instance_valid(_streaming_suscrito):
+		if not _streaming_suscrito.mob_instanciado.is_connected(_al_mob_cambio):
+			_streaming_suscrito.mob_instanciado.connect(_al_mob_cambio)
+		if not _streaming_suscrito.mob_liberado.is_connected(_al_mob_cambio):
+			_streaming_suscrito.mob_liberado.connect(_al_mob_cambio)
+
+
+## El set de mobs instanciados cambió: el próximo _process redibuja.
+## La firma con parámetro sirve a ambas señales (mob_instanciado/liberado).
+func _al_mob_cambio(_e: Enemy) -> void:
+	_forzar_redibujo = true
 
 
 ## Fija la lista de NPCs a dibujar (puntos dorados). Solo lectura.
@@ -173,7 +217,56 @@ func _process(delta: float) -> void:
 	_actualizar_fade(delta)
 	_actualizar_pings(delta)
 	_refrescar_region()
-	queue_redraw()
+	if _redibujo_sucio(delta):
+		queue_redraw()
+
+
+## ¿Toca redibujar este frame? Pura en lecturas (testeable): decide sin
+## mutar salvo el snapshot interno al redibujar. Al redibujar consume el
+## forzado, reinicia el acumulador y congela la posición del jugador.
+func _redibujo_sucio(delta: float) -> bool:
+	_acum_redibujo += delta
+	var sucio: bool = _forzar_redibujo
+	# Sin dibujo previo, el primer frame siempre dibuja (sin throttle).
+	if _jugador_se_movio() and (not _tiene_dibujo or _acum_redibujo >= INTERVALO_REDIBUJO):
+		sucio = true
+	if not _pings.is_empty():
+		sucio = true
+	if _fade_en_transicion():
+		sucio = true
+	if _acum_redibujo >= LATIDO_QUIETO and _hay_mobs():
+		sucio = true
+	if sucio:
+		_forzar_redibujo = false
+		_acum_redibujo = 0.0
+		_tiene_dibujo = true
+		if _jugador != null and is_instance_valid(_jugador):
+			_ultima_pos_dibujo = _jugador.global_position
+	return sucio
+
+
+## ¿Se movió el jugador desde el último dibujo? Sin dibujo previo, sí
+## (el primer frame siempre dibuja). Sin jugador, no.
+func _jugador_se_movio() -> bool:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return false
+	if not _tiene_dibujo:
+		return true
+	return _jugador.global_position.distance_to(_ultima_pos_dibujo) > UMBRAL_MOVIMIENTO
+
+
+## ¿El fade aún viaja hacia su objetivo? (modulate no necesita _draw,
+## pero el cambio de alfa sí merece frames contiguos: sin esto el
+## redibujo se cortaría a mitad de la transición.)
+func _fade_en_transicion() -> bool:
+	return absf(modulate.a - _alfa_objetivo) > 0.005
+
+
+## ¿Hay mobs instanciados que caminen? (caché exacta del streaming: O(1).)
+func _hay_mobs() -> bool:
+	if _streaming == null or not is_instance_valid(_streaming):
+		return false
+	return not _streaming.mobs_vivos().is_empty()
 
 
 ## Fade en reposo: solo LEE la posicion del jugador.
@@ -193,6 +286,7 @@ func _actualizar_fade(delta: float) -> void:
 	var objetivo: float = 1.0
 	if _tiempo_quieto >= TIEMPO_REPOSO:
 		objetivo = ALFA_REPOSO
+	_alfa_objetivo = objetivo
 	# lerpf es concreto (no Variant); minf evita sobrepasar en lag spikes.
 	modulate.a = lerpf(modulate.a, objetivo, minf(delta * 3.0, 1.0))
 

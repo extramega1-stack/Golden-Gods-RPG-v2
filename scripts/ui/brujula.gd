@@ -33,6 +33,12 @@ const COLOR_BORDE: Color = Color(0.78, 0.62, 0.28, 0.85)
 const COLOR_MARCADOR: Color = Color(1.0, 0.8, 0.2, 1.0)
 const TAM_LETRA: int = 15
 const TAM_LETRA_DIST: int = 11
+## Fase 20 (P0-2): redibujo dirty-driven. Antes `_process` hacía
+## `queue_redraw()` cada frame con `draw_string` por frame. La tira solo
+## cambia si gira la cámara, se mueve el jugador/objetivo o cambia la
+## misión: en reposo total no se redibuja.
+const UMBRAL_YAW: float = 0.002
+const UMBRAL_POS: float = 0.5
 
 var _camara: CameraRig = null
 var _jugador: Player = null
@@ -40,6 +46,13 @@ var _quest_log: QuestLog = null
 var _streaming: StreamingMobs = null
 var _npcs: Array = []
 var _objetivo: Node3D = null
+## Snapshot de la última vista dibujada (para el dirty-driven).
+var _tiene_vista: bool = false
+var _vista_yaw: float = 0.0
+var _vista_jug: Vector3 = Vector3.ZERO
+var _vista_tiene_jug: bool = false
+var _vista_obj: Vector3 = Vector3.ZERO
+var _vista_tiene_obj: bool = false
 
 
 func _init() -> void:
@@ -197,13 +210,57 @@ func _al_quest_cambiada() -> void:
 
 func _refrescar_objetivo() -> void:
 	_objetivo = resolver_objetivo()
+	# La misión cambió: el marcador puede aparecer/desaparecer.
+	queue_redraw()
 
 
 func _process(_delta: float) -> void:
 	# Si el objetivo se liberó (mob muerto/streaming), re-resolver.
 	if _objetivo != null and not is_instance_valid(_objetivo):
 		_refrescar_objetivo()
-	queue_redraw()
+	elif _vista_cambio():
+		queue_redraw()
+
+
+## ¿Cambió la vista desde el último dibujo? Compara yaw de cámara y
+## posiciones de jugador/objetivo contra el snapshot (testeable). Al
+## detectar cambio, actualiza el snapshot. Sin snapshot previo, sí.
+func _vista_cambio() -> bool:
+	var yaw: float = _yaw_camara()
+	var jug: Vector3 = Vector3.ZERO
+	var tiene_jug: bool = _jugador != null and is_instance_valid(_jugador)
+	if tiene_jug:
+		jug = _jugador.global_position
+	var obj: Vector3 = Vector3.ZERO
+	var tiene_obj: bool = _objetivo != null and is_instance_valid(_objetivo)
+	if tiene_obj:
+		obj = _objetivo.global_position
+	if not _tiene_vista:
+		_guardar_vista(yaw, jug, tiene_jug, obj, tiene_obj)
+		return true
+	var cambio: bool = absf(yaw - _vista_yaw) > UMBRAL_YAW
+	if tiene_jug != _vista_tiene_jug:
+		cambio = true
+	elif tiene_jug and jug.distance_to(_vista_jug) > UMBRAL_POS:
+		cambio = true
+	if tiene_obj != _vista_tiene_obj:
+		cambio = true
+	elif tiene_obj and obj.distance_to(_vista_obj) > UMBRAL_POS:
+		cambio = true
+	if cambio:
+		_guardar_vista(yaw, jug, tiene_jug, obj, tiene_obj)
+	return cambio
+
+
+## Congela la vista actual como "ya dibujada".
+func _guardar_vista(yaw: float, jug: Vector3, tiene_jug: bool,
+		obj: Vector3, tiene_obj: bool) -> void:
+	_tiene_vista = true
+	_vista_yaw = yaw
+	_vista_jug = jug
+	_vista_tiene_jug = tiene_jug
+	_vista_obj = obj
+	_vista_tiene_obj = tiene_obj
 
 
 func _draw() -> void:

@@ -22,6 +22,10 @@ const GRAVEDAD: float = 24.0
 const TASA_PERSECUCION: float = 8.0
 ## Deja de perseguir más allá de aggro × este factor (leash).
 const FACTOR_SUELTA: float = 1.5
+## Colisión de un enemigo vivo (ver scenes/enemy/enemigo.tscn): la usa
+## reiniciar() al sacar del pool; devolver al pool la apaga a 0.
+const CAPA_VIVA: int = 4
+const MASCARA_VIVA: int = 1
 
 ## Id del arquetipo en data/enemies.json (se asigna en la escena).
 @export var arquetipo_id: String = ""
@@ -240,3 +244,24 @@ func restaurar(d: Dictionary) -> void:
 	super.restaurar(d)
 	estado = Estado.MUERTO if not esta_vivo() else Estado.QUIETO
 	_cd = 0.0
+
+
+## Fase 20 — reutilización por pooling (PoolMobs): deja al enemigo como
+## recién configurado y vivo, listo para reaparecer en otra posición.
+## Reaplica el arquetipo (stats/vida/maná/loot/tinte), revive colisión y
+## procesado, muestra el cuerpo y limpia velocidad/flash/fx. Idempotente:
+## llamarlo sobre un enemigo ya vivo solo lo reconfigura.
+func reiniciar(arquetipo: Dictionary) -> void:
+	configurar(arquetipo)
+	_muerto = false
+	estado = Estado.QUIETO
+	_cd = 0.0
+	_frame_ia = 0
+	flash_tiempo = 0.0
+	fx_tiempo = 0.0
+	velocity = Vector3.ZERO
+	collision_layer = CAPA_VIVA
+	collision_mask = MASCARA_VIVA
+	mostrar_cuerpo()
+	set_process(true)
+	set_physics_process(true)

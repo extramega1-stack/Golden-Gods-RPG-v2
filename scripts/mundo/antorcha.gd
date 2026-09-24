@@ -18,6 +18,13 @@ var energia_base: float = 1.8
 var alcance: float = 9.0
 ## Ciclo día/noche que modula el brillo; null = brillo fijo.
 var ciclo: CicloDia = null
+## Fase 20 (P0-5): budget de luces. Jugador de referencia para el culling;
+## null = siempre encendida (comportamiento de siempre, lo usan los tests).
+## Más allá de `rango_culling` la OmniLight3D se apaga (visible=false) y se
+## salta el flicker: Moon Town tiene ~40 y Forward+ las paga todas.
+var jugador: Node3D = null
+## Distancia (m) a partir de la cual la luz se apaga.
+var rango_culling: float = 120.0
 
 var _luz: OmniLight3D = null
 var _t: float = 0.0
@@ -40,12 +47,33 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _luz == null:
 		return
+	# Fase 20: culling por distancia (las lejanas ni parpadean).
+	if _lejos_del_jugador():
+		if _luz.visible:
+			_luz.visible = false
+		return
+	if not _luz.visible:
+		_luz.visible = true
 	_t += delta
 	# Flicker barato: dos senos, sin allocs (sin Vector/Color por frame).
 	var parpadeo: float = 1.0 \
 		+ 0.10 * sin(_t * 11.0 + _fase) \
 		+ 0.07 * sin(_t * 23.7 + _fase * 1.7)
 	_luz.light_energy = energia_base * factor_brillo() * parpadeo
+
+
+## ¿Está el jugador más allá del rango? Sin jugador, nunca (siempre on).
+func _lejos_del_jugador() -> bool:
+	if jugador == null or not is_instance_valid(jugador):
+		return false
+	var d: Vector3 = jugador.global_position - global_position
+	d.y = 0.0
+	return d.length() > rango_culling
+
+
+## ¿La luz está encendida ahora? (tests y balanceo del budget.)
+func luz_activa() -> bool:
+	return _luz != null and _luz.visible and not _lejos_del_jugador()
 
 
 ## Factor día/noche: 1.0 si no hay ciclo; 0.3 de día → 1.0 de noche.

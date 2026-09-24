@@ -129,6 +129,7 @@ mesh = SubResource("BoxMesh_marca")
 surface_material_override/0 = SubResource("StandardMaterial3D_marca")
 
 [node name="Terreno" type="Node3D" parent="."]
+construccion_progresiva = true
 script = ExtResource("15_terreno")
 
 [node name="CicloDia" type="Node" parent="."]

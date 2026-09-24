@@ -19,6 +19,11 @@ extends Node3D
 
 signal terreno_listo
 
+## Fase 20 (P0-3): progreso de la construcción por partes (hechos, total).
+## La demo la usa para la pantalla de carga; en modo síncrono no se emite
+## (compatibilidad con los tests viejos).
+signal progreso_construccion(hechos: int, total: int)
+
 ## Escala real del mundo (1:1 con el legado; NO reescalar).
 const TAMANO: float = 36864.0
 ## Celdas por lado: (289-1) vertices.
@@ -39,27 +44,106 @@ const LOD_MAX: float = 30000.0
 
 const RUTA_BIN: String = "res://data/terreno.bin"
 
+## Fase 20 (P0-3): construcción progresiva. `false` = comportamiento de
+## siempre (todo en `_ready`; lo usan los tests). `true` = el `_ready` solo
+## carga el bin (rápido; `altura_en`/`color_en` funcionan al instante) y
+## encola los 36 chunks: `_process` construye CHUNKS_POR_FRAME por frame
+## emitiendo `progreso_construccion` y `terreno_listo` al terminar.
+## La demo principal lo activa en su .tscn.
+@export var construccion_progresiva: bool = false
+## Chunks por frame en modo progresivo (36 chunks / 2 = ~18 frames).
+const CHUNKS_POR_FRAME: int = 2
+
 var _alturas: PackedFloat32Array = PackedFloat32Array()
 var _colores: PackedColorArray = PackedColorArray()
 var _material: StandardMaterial3D = null
 ## Tiempo de construccion en ms (lo mide _ready; los tests lo leen).
 var tiempo_construccion_ms: int = 0
+## Cola de chunks pendientes en modo progresivo (Array[Vector2i]).
+var _cola_chunks: Array = []
+var _chunks_hechos: int = 0
+var _t0_construccion: int = 0
+## false si el bin no cargó (el gate de la demo no debe esperar eterno).
+var _bin_ok: bool = false
 
 
 func _ready() -> void:
 	var t0: int = Time.get_ticks_msec()
 	if not _cargar_bin():
 		push_error("[Terreno] no se pudo cargar " + RUTA_BIN)
+		_bin_ok = false
+		set_process(false)
 		terreno_listo.emit()
 		return
+	_bin_ok = true
 	_material = _hacer_material()
+	if construccion_progresiva:
+		_iniciar_cola(t0)
+		return
 	for cz in range(N_CHUNKS):
 		for cx in range(N_CHUNKS):
 			_construir_chunk(cx, cz)
 	tiempo_construccion_ms = int(Time.get_ticks_msec() - t0)
 	print("[Terreno] construido: %d chunks en %.2f s"
 			% [N_CHUNKS * N_CHUNKS, float(tiempo_construccion_ms) / 1000.0])
+	set_process(false)
 	terreno_listo.emit()
+
+
+## Encola los 36 chunks para construirlos por partes (modo progresivo).
+func _iniciar_cola(t0: int) -> void:
+	_t0_construccion = t0
+	_cola_chunks.clear()
+	for cz in range(N_CHUNKS):
+		for cx in range(N_CHUNKS):
+			_cola_chunks.append(Vector2i(cx, cz))
+	_chunks_hechos = 0
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _cola_chunks.is_empty():
+		return
+	avanzar_construccion(CHUNKS_POR_FRAME)
+
+
+## Construye hasta `max_chunks` pendientes; emite progreso y, al vaciar
+## la cola, `terreno_listo`. Pública/testeable (los tests la llaman
+## directo sin esperar frames). Retorna true si ya terminó todo.
+func avanzar_construccion(max_chunks: int) -> bool:
+	if _cola_chunks.is_empty():
+		return true
+	var n: int = mini(maxi(max_chunks, 1), _cola_chunks.size())
+	for i in range(n):
+		var celda: Vector2i = _cola_chunks.pop_front()
+		_construir_chunk(celda.x, celda.y)
+		_chunks_hechos += 1
+	progreso_construccion.emit(_chunks_hechos, N_CHUNKS * N_CHUNKS)
+	if _cola_chunks.is_empty():
+		tiempo_construccion_ms = int(Time.get_ticks_msec() - _t0_construccion)
+		print("[Terreno] construido: %d chunks en %.2f s (progresivo)"
+				% [N_CHUNKS * N_CHUNKS, float(tiempo_construccion_ms) / 1000.0])
+		set_process(false)
+		terreno_listo.emit()
+		return true
+	return false
+
+
+## ¿Terminó la construcción? En modo síncrono siempre es true tras _ready.
+## Con bin roto también es true (ya se emitió terreno_listo con error).
+func construccion_terminada() -> bool:
+	if not _bin_ok:
+		return true
+	if not construccion_progresiva:
+		return true
+	return _cola_chunks.is_empty()
+
+
+## Fracción 0..1 construida (para la pantalla de carga).
+func fraccion_construccion() -> float:
+	if not construccion_progresiva:
+		return 1.0
+	return float(_chunks_hechos) / float(N_CHUNKS * N_CHUNKS)
 
 
 ## Lee el bin a `_alturas` y `_colores`. false = archivo invalido.

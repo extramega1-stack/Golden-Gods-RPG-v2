@@ -52,11 +52,17 @@ const ANCHO_CALLE: float = 40.0
 
 ## Se emite al terminar de construir (en _ready, sincronico al add_child).
 signal ciudad_lista
+## Fase 20 (P0-3): progreso de la construcción por partes (hechos, total).
+signal progreso_ciudad(hechos: int, total: int)
 
 ## Terreno para consultar alturas. ASIGNAR ANTES de add_child.
 var terreno: Terreno = null
 ## Ciclo dia/noche que modula el brillo de las antorchas (opcional).
 var ciclo: CicloDia = null
+## Fase 20 (P0-5): jugador de referencia para el culling de antorchas.
+## Se propaga a las Antorcha reales vía `fijar_jugador()` (la demo lo llama
+## al colocar; las construidas antes quedan cubiertas por el re-pase).
+var jugador: Node3D = null
 ## Fase 15: centro del mundo de esta ciudad. Desplaza TODA la construccion
 ## (edificios, plaza, calles, muralla, antorchas, banderas, NPCs, aparicion).
 ## Las coordenadas del JSON son RELATIVAS a este centro. (0,0) = Moon Town.
@@ -82,19 +88,40 @@ var _luces: Array[Node3D] = []
 var _n_antorchas: int = 0
 ## Fase 15: nodos que rotan lento (cristal del monumento mistico, etc.).
 var _rotadores: Array[Node3D] = []
+## Fase 20 (P0-3): construcción progresiva. `false` = todo en `_ready`
+## (lo usan los tests). `true` = el `_ready` solo carga datos y encola
+## pasos (plaza, calles, muralla, un paso por edificio, antorchas,
+## banderas, npcs): `_process` ejecuta PASOS_POR_FRAME por frame emitiendo
+## `progreso_ciudad` y `ciudad_lista` al terminar. La demo la activa antes
+## del add_child (mismo contrato que `terreno`/`cargar_datos`).
+@export var construccion_progresiva: bool = false
+## Pasos de ciudad por frame en modo progresivo.
+const PASOS_POR_FRAME: int = 3
+## Cola de pasos pendientes (Array[Callable] sin argumentos).
+var _cola_pasos: Array = []
+var _pasos_hechos: int = 0
+var _pasos_total: int = 0
 
 
 func _ready() -> void:
 	if _datos.is_empty():
 		if not cargar_datos(RUTA_DATOS):
 			push_warning("[CiudadLuna] no se pudo cargar %s" % RUTA_DATOS)
+	if construccion_progresiva:
+		_iniciar_cola()
+		return
 	construir()
 	ciudad_lista.emit()
 
 
 ## Fase 15: giro lento de los monumentos animados (cristal arcano, ...).
-## Sin rotadores el proceso se desactiva (Moon Town no lo necesita).
+## Fase 20: en modo progresivo primero vacía la cola de construcción y
+## después (o en modo síncrono con rotadores) gira los monumentos.
+## Sin cola ni rotadores el proceso se desactiva.
 func _process(delta: float) -> void:
+	if not _cola_pasos.is_empty():
+		avanzar_construccion(PASOS_POR_FRAME)
+		return
 	for r in _rotadores:
 		if is_instance_valid(r):
 			r.rotation.y += delta * 0.35
@@ -130,34 +157,100 @@ func construir() -> void:
 	for e in lista:
 		if not (e is Dictionary):
 			continue
-		var d: Dictionary = e
-		var tipo: String = str(d.get("tipo", ""))
-		var x: float = float(d.get("x", 0.0))
-		var z: float = float(d.get("z", 0.0))
-		var rot: float = float(d.get("rot", 0.0))
-		var escala: float = float(d.get("escala", 1.0))
-		var variante: String = str(d.get("variante", ""))
-		var raiz: Node3D = _construir_edificio(tipo, variante)
-		if raiz == null:
-			push_warning("[CiudadLuna] tipo desconocido: %s" % tipo)
-			continue
-		# Fase 15: las x/z del JSON son relativas a `centro`.
-		var wx: float = x + centro.x
-		var wz: float = z + centro.y
-		raiz.position = Vector3(wx, _altura(wx, wz), wz)
-		raiz.rotation.y = rot
-		raiz.scale = Vector3.ONE * escala
-		raiz.name = "Edificio_%02d_%s" % [idx, tipo]
-		add_child(raiz)
-		edificios.append(raiz)
-		var h_local: float = float(raiz.get_meta("altura", 0.0))
-		alturas[str(raiz.name)] = h_local * escala
-		idx += 1
+		idx = _colocar_edificio(e as Dictionary, idx)
 	_construir_antorchas()
 	_construir_banderas_puertas()
 	_cargar_npcs()
 	# Sin monumentos animados no hace falta _process (caso Moon Town).
 	set_process(not _rotadores.is_empty())
+
+
+## Coloca un edificio del JSON (extraído del loop de construir para
+## reutilizarlo como paso progresivo). Retorna el siguiente índice.
+func _colocar_edificio(d: Dictionary, idx: int) -> int:
+	var tipo: String = str(d.get("tipo", ""))
+	var x: float = float(d.get("x", 0.0))
+	var z: float = float(d.get("z", 0.0))
+	var rot: float = float(d.get("rot", 0.0))
+	var escala: float = float(d.get("escala", 1.0))
+	var variante: String = str(d.get("variante", ""))
+	var raiz: Node3D = _construir_edificio(tipo, variante)
+	if raiz == null:
+		push_warning("[CiudadLuna] tipo desconocido: %s" % tipo)
+		return idx
+	# Fase 15: las x/z del JSON son relativas a `centro`.
+	var wx: float = x + centro.x
+	var wz: float = z + centro.y
+	raiz.position = Vector3(wx, _altura(wx, wz), wz)
+	raiz.rotation.y = rot
+	raiz.scale = Vector3.ONE * escala
+	raiz.name = "Edificio_%02d_%s" % [idx, tipo]
+	add_child(raiz)
+	edificios.append(raiz)
+	var h_local: float = float(raiz.get_meta("altura", 0.0))
+	alturas[str(raiz.name)] = h_local * escala
+	return idx + 1
+
+
+## Encola los pasos de construcción (modo progresivo). El orden es el
+## mismo que construir(): paleta, plaza, calles, muralla, un paso por
+## edificio, antorchas, banderas, npcs.
+func _iniciar_cola() -> void:
+	_cola_pasos.clear()
+	_cola_pasos.append(_aplicar_paleta)
+	_cola_pasos.append(_construir_plaza)
+	_cola_pasos.append(_construir_calles)
+	_cola_pasos.append(_construir_muralla)
+	var lista: Array = _datos.get("edificios", [])
+	var idx: int = 0
+	for e in lista:
+		if not (e is Dictionary):
+			continue
+		_cola_pasos.append(_colocar_edificio.bind(e as Dictionary, idx))
+		idx += 1
+	_cola_pasos.append(_construir_antorchas)
+	_cola_pasos.append(_construir_banderas_puertas)
+	_cola_pasos.append(_cargar_npcs)
+	_pasos_hechos = 0
+	_pasos_total = _cola_pasos.size()
+	set_process(true)
+
+
+## Ejecuta hasta `max_pasos` pendientes; emite progreso y, al vaciar la
+## cola, finaliza como construir() (rotadores, `_construida`,
+## `ciudad_lista`). Pública/testeable. Retorna true si ya terminó todo.
+func avanzar_construccion(max_pasos: int) -> bool:
+	if _cola_pasos.is_empty():
+		return true
+	var n: int = mini(maxi(max_pasos, 1), _cola_pasos.size())
+	for i in range(n):
+		var paso: Callable = _cola_pasos.pop_front()
+		paso.call()
+		_pasos_hechos += 1
+	progreso_ciudad.emit(_pasos_hechos, _pasos_total)
+	if _cola_pasos.is_empty():
+		_construida = true
+		# Sin monumentos animados no hace falta _process (caso Moon Town).
+		set_process(not _rotadores.is_empty())
+		ciudad_lista.emit()
+		return true
+	return false
+
+
+## ¿Terminó la construcción? En modo síncrono es true tras _ready.
+func construccion_terminada() -> bool:
+	if not construccion_progresiva:
+		return _construida
+	return _construida and _cola_pasos.is_empty()
+
+
+## Fracción 0..1 construida (para la pantalla de carga).
+func fraccion_construccion() -> float:
+	if not construccion_progresiva:
+		return 1.0
+	if _pasos_total <= 0:
+		return 0.0
+	return float(_pasos_hechos) / float(_pasos_total)
 
 
 ## Punto de aparicion del jugador: centro de la plaza, sobre el terreno.
@@ -193,6 +286,16 @@ func fijar_ciclo(c: CicloDia) -> void:
 			(a as Antorcha).ciclo = c
 		elif a is FalsaAntorcha:
 			(a as FalsaAntorcha).ciclo = c
+
+
+## Fija (o cambia) el jugador de referencia y lo propaga a las antorchas
+## reales para el culling por distancia (fase 20, P0-5). Cubre las ya
+## construidas y las futuras (vía `_colocar_antorcha`).
+func fijar_jugador(j: Node3D) -> void:
+	jugador = j
+	for a in _luces:
+		if a is Antorcha:
+			(a as Antorcha).jugador = j
 
 
 ## AABBs globales de todas las cajas de colision (util para tests).
@@ -1681,6 +1784,7 @@ func _colocar_antorcha(x: float, z: float, padre: Node3D) -> void:
 	if luces_reales:
 		var real := Antorcha.new()
 		real.ciclo = ciclo
+		real.jugador = jugador
 		llama = real
 	else:
 		var falsa := FalsaAntorcha.new()

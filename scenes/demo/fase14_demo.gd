@@ -62,6 +62,9 @@ func _ready() -> void:
 	_ciudad.name = "CiudadLuna"
 	_ciudad.terreno = $Terreno as Terreno
 	_ciudad.ciclo = $CicloDia as CicloDia
+	# Fase 20: las 9 ciudades se construyen por partes (pantalla de carga);
+	# `npc_spawn`/recolocación esperan a `_al_mundo_listo()`.
+	_ciudad.construccion_progresiva = true
 	add_child(_ciudad)
 	# Fase 15: las 8 ciudades secundarias (mismo contrato de API:
 	# terreno/ciclo/centro/cargar_datos ANTES del add_child).
@@ -73,9 +76,16 @@ func _ready() -> void:
 		c.centro = spec[2]
 		c.luces_reales = false
 		c.cargar_datos(str(spec[1]))
+		c.construccion_progresiva = true
 		add_child(c)
 		_ciudades_sec.append(c)
 	super._ready()
+
+
+## Fase 20: el mundo terminó de construirse por partes. Aquí (y no en
+## _ready) van los pasos que necesitan ciudades completas: recolocar al
+## jugador/NPCs (`npc_spawn` se llena al final de construir) y el viaje.
+func _al_mundo_listo() -> void:
 	# Jugador y NPCs a sus puntos data-driven de Moon Town.
 	_colocar_en_ciudad()
 	# Fase 16: viaje rápido — "Viajar" en el diálogo del portero abre el
@@ -84,6 +94,44 @@ func _ready() -> void:
 	_viaje.cargar_datos()
 	_dialogo.viaje_solicitado.connect(_al_viaje_dialogo)
 	_panel_viaje.viaje_solicitado.connect(_al_destino_viaje)
+	super._al_mundo_listo()
+
+
+## Fase 20: el gate añade las 9 ciudades al terreno de la base.
+func _construccion_lista() -> bool:
+	if not super._construccion_lista():
+		return false
+	if _ciudad != null and is_instance_valid(_ciudad):
+		if not _ciudad.construccion_terminada():
+			return false
+	for c in _ciudades_sec:
+		var ci: CiudadLuna = c as CiudadLuna
+		if ci == null or not is_instance_valid(ci):
+			continue
+		if not ci.construccion_terminada():
+			return false
+	return true
+
+
+## Fase 20: 25% terreno + 75% media de las 9 ciudades.
+func _fraccion_carga() -> float:
+	var ft: float = super._fraccion_carga()
+	return clampf(ft * 0.25 + _fraccion_ciudades() * 0.75, 0.0, 1.0)
+
+
+func _fraccion_ciudades() -> float:
+	var suma: float = 0.0
+	var n: int = 0
+	var todas: Array = [_ciudad] + _ciudades_sec
+	for c in todas:
+		var ci: CiudadLuna = c as CiudadLuna
+		if ci == null or not is_instance_valid(ci):
+			continue
+		suma += ci.fraccion_construccion()
+		n += 1
+	if n <= 0:
+		return 1.0
+	return suma / float(n)
 
 
 ## Fase 16 — "Viajar" en el diálogo de un portero: abre el PanelViaje con
@@ -136,6 +184,13 @@ func _teletransportar_viaje(plaza: Vector2, destino_id: String, costo: int) -> v
 func _colocar_en_ciudad() -> void:
 	if _ciudad == null or _jugador == null:
 		return
+	# Fase 20: el jugador como referencia del culling de antorchas (las
+	# ~40 OmniLight3D de Moon Town solo alumbran cerca).
+	_ciudad.fijar_jugador(_jugador)
+	for c in _ciudades_sec:
+		var ci: CiudadLuna = c as CiudadLuna
+		if ci != null and is_instance_valid(ci):
+			ci.fijar_jugador(_jugador)
 	_jugador.position = _ciudad.punto_aparicion_jugador()
 	_jugador.rotation.y = _ciudad.yaw_aparicion()
 	_jugador._pegar_al_terreno()

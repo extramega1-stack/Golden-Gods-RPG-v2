@@ -37,6 +37,10 @@ var _registros: Array = []
 var _factory: Callable = Callable()
 var _jugador: Node3D = null
 var _spawner: SpawnerMobs = null
+## Fase 20: pool opcional de mobs. Si está fijado, `_liberar` devuelve el
+## nodo al pool en vez de `queue_free()` (cero churn en el borde). Sin pool
+## (tests viejos) el comportamiento no cambia.
+var _pool: PoolMobs = null
 var _radio_alta: float = 600.0
 var _radio_baja: float = 800.0
 var _intervalo_seg: float = 0.25
@@ -44,6 +48,13 @@ var _acum: float = 0.0
 var _reparto_ia: int = 0
 ## Fase 12.1: si los radios se fijaron a mano (tests), los datos no los pisan.
 var _radios_manual: bool = false
+## Fase 20 (P0-2): caché exacta de `mobs_vivos()`. El minimapa y la brújula
+## la leían cada frame: antes recorría los 1127 registros y alocaba un
+## Array nuevo por llamada (60 allocs/s). Ahora se construye una vez y se
+## invalida solo ante mutación (configurar/instanciar/liberar/reaparecer);
+## entre mutaciones se devuelve la misma instancia, sin recorrer ni alocar.
+var _vivos_cache: Array = []
+var _vivos_sucia: bool = true
 
 
 func _ready() -> void:
@@ -90,6 +101,7 @@ func configurar(registros: Array) -> void:
 			"nodo": null,
 			"muerto": false,
 		})
+	_marcar_vivos_sucia()
 
 
 func fijar_factory(f: Callable) -> void:
@@ -104,6 +116,12 @@ func fijar_spawner(s: SpawnerMobs) -> void:
 	_spawner = s
 	if _spawner != null and not _spawner.reaparecido.is_connected(_al_reaparecido):
 		_spawner.reaparecido.connect(_al_reaparecido)
+
+
+## Pool de reciclaje (fase 20): la demo lo inyecta; los tests que no lo
+## fijan siguen con `queue_free()` como siempre.
+func fijar_pool(p: PoolMobs) -> void:
+	_pool = p
 
 
 ## Override de radios para tests (los datos mandan en el juego).
@@ -127,7 +145,17 @@ func conteo_instanciados() -> int:
 
 ## Nodos Enemy vivos e instanciados ahora mismo (lo lee el minimapa y la
 ## brújula de la fase 13 para dibujar/marcar mobs cercanos).
+## Fase 20: caché exacta invalidada por evento (ver _vivos_cache). Llamar
+## N veces por frame cuesta una sola construcción; la instancia devuelta
+## es compartida: iterarla, no mutarla.
 func mobs_vivos() -> Array:
+	if _vivos_sucia:
+		_vivos_cache = _construir_vivos()
+		_vivos_sucia = false
+	return _vivos_cache
+
+
+func _construir_vivos() -> Array:
 	var vivos: Array = []
 	for r in _registros:
 		var rd: Dictionary = r
@@ -135,6 +163,11 @@ func mobs_vivos() -> Array:
 		if nodo != null:
 			vivos.append(nodo)
 	return vivos
+
+
+## Invalida la caché: llamar en cada mutación del set instanciado.
+func _marcar_vivos_sucia() -> void:
+	_vivos_sucia = true
 
 
 ## Lee el Enemy de un registro validando ANTES de castear: un `as` sobre
@@ -202,6 +235,7 @@ func _instanciar(rd: Dictionary) -> void:
 	_reparto_ia += 1
 	rd["nodo"] = e
 	rd["muerto"] = false
+	_marcar_vivos_sucia()
 	if not e.murio.is_connected(_al_murio_nodo):
 		e.murio.connect(_al_murio_nodo.bind(e))
 	mob_instanciado.emit(e)
@@ -210,6 +244,7 @@ func _instanciar(rd: Dictionary) -> void:
 func _liberar(rd: Dictionary) -> void:
 	var nodo: Enemy = _nodo_registro(rd)
 	rd["nodo"] = null
+	_marcar_vivos_sucia()
 	if nodo == null:
 		return
 	if _spawner != null:
@@ -218,7 +253,12 @@ func _liberar(rd: Dictionary) -> void:
 		nodo.murio.disconnect(_al_murio_nodo)
 	# Se avisa ANTES de liberar: la demo lo saca de su lista de guardado.
 	mob_liberado.emit(nodo)
-	nodo.queue_free()
+	# Fase 20: con pool se recicla (el streamer sigue siendo la única
+	# autoridad que lo saca de circulación); sin pool se libera.
+	if _pool != null:
+		_pool.devolver(nodo)
+	else:
+		nodo.queue_free()
 
 
 ## Un nodo instanciado murió: el registro queda marcado hasta que el
@@ -243,6 +283,7 @@ func _al_reaparecido(nuevo: Enemy) -> void:
 		if _dist_plana(origen, nuevo.global_position) <= MARGEN_REAPARECIDO:
 			rd["muerto"] = false
 			rd["nodo"] = nuevo
+			_marcar_vivos_sucia()
 			nuevo.reparto = _reparto_ia % 8
 			_reparto_ia += 1
 			if not nuevo.murio.is_connected(_al_murio_nodo):
