@@ -1145,7 +1145,7 @@ Ahora cada región tiene su identidad y su poder.
   conserva su curva propia).
 - **10 mobs regionales** (`data/enemies.json`): escorpión de dunas, slog y
   gólem de ceniza, yeti, araña y espectro del velo, carnicoro, mimo,
-  centinela dorada y sombra vacía. Base stats deliberadamente 近 la del
+  centinela dorada y sombra vacía. Base stats deliberadamente cerca de la del
   goblin (la identidad viene del comportamiento: rango, cadencia, aggro,
   loot y `stat_daño`); la potencia la pone la región.
 - **10 items de loot regional** (`material`): carina, ascua, núcleos,
