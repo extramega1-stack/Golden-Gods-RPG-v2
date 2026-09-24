@@ -94,7 +94,9 @@ func _t_script_demo() -> void:
 func _t_npcs_texto() -> void:
 	var raw: String = FileAccess.get_file_as_string("res://data/npcs.json")
 	_check(not raw.is_empty(), "npcs.json legible")
-	_check(raw.find("Piedraceniza") < 0, "sin menciones a Piedraceniza")
+	# Fase 23+: Piedraceniza volvió al canon como el barrio viejo
+	# extramuros (Acto I); ya no es una mención rancia.
+	_check(raw.find("Piedraceniza") >= 0, "menciona Piedraceniza (barrio viejo)")
 	_check(raw.find("Moon Town") >= 0, "menciona Moon Town")
 	var parsed: Variant = JSON.parse_string(raw)
 	_check(parsed is Dictionary, "npcs.json parsea")

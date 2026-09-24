@@ -870,3 +870,12 @@ Progresión: 1 punto por nivel, 3 talentos × 4 clases con 3 rangos.
 - Tests: `tests/test_fase28_talentos.gd` — 30/30.
 
 *Fin del documento maestro v3.23 — Fase 28 (talentos).*
+
+## Fase 29 — Diálogos con lore (2026-09-24)
+
+Los 20 NPCs hablan del mundo: sira 4, ambientales 4, porteros 3 (ilya 4 y bram 3 intactos por tests viejos).
+- Cadenas respiradas en boca de sus NPCs (Devorador, Fundidor, Aullido, Susurro, Campeón, Velo, puerta de la Arena) + canon (Hefesto, Sello, Tártaro).
+- Piedraceniza vuelve al canon como barrio viejo (Acto I).
+- Tests: `tests/test_fase29_dialogos.gd` — 33/33.
+
+*Fin del documento maestro v3.24 — Fase 29 (diálogos).*
