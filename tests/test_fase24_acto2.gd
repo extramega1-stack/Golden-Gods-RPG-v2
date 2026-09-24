@@ -69,7 +69,7 @@ func _player() -> Player:
 
 ## (a) Catálogo y prerrequisito.
 func _test_catalogo() -> void:
-	_chk(QD.ids().size() == 32, "a: 32 misiones", str(QD.ids().size()))
+	_chk(QD.ids().size() == 35, "a: 35 misiones", str(QD.ids().size()))
 	_chk(QD.requiere("q_acto2_llamada") == "q_acto1_caida",
 		"a: la llamada exige la caída")
 	_chk(QD.requiere("q_acto2_seis_ecos") == "q_acto2_llamada",

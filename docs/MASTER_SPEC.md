@@ -836,3 +836,11 @@ La caza con los jefes ya puestos (sin tocar el canon: son ecos, no los fragmento
 - Catálogo: 32 misiones. Tests: `tests/test_fase24_acto2.gd` — 26/26.
 
 *Fin del documento maestro v3.19 — Fase 24 (Acto II).*
+
+## Fase 25 — Acto III: la Forja del Molde (2026-09-24)
+
+Durnan + Bram forjan el Molde (no el arma: su promesa).
+- Carbón de hueso (5 colmillos), Limpiar el yunque (3 ogros), El Molde (estudio de Elthar + defender 4 lobos).
+- Catálogo: 35 misiones. Tests: `tests/test_fase25_acto3.gd` — 18/18.
+
+*Fin del documento maestro v3.20 — Fase 25 (Acto III).*
