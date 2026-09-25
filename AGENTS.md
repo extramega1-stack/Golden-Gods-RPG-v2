@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 46.1 terminada.
+Lo que no está en el spec no existe. Estado: Fase 48 terminada.
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -60,7 +60,9 @@ cualquier skill de marketing/crypto/trading.
 - Single-player local. Nada online/competitivo (§7.1).
 - Combate no se rediseña, solo reimplementación fiel (§7.2).
 - Mundo 36.864 u sin reescalar (§7.3). Canon Liberty inviolable (§7.4).
-- Sin assets Blizzard; 85 GLB Meshy solo con autorización Juan Diego (§7.5).
+- Sin assets Blizzard, NUNCA (§7.5). Los 85 GLB de Meshy quedaron AUTORIZADOS
+  por Juan Diego el 2026-09-25 **con licencia CC0/CC-BY** (Fase 48): al meter
+  uno se comprueba su licencia en el commit y se documenta de qué asset es.
 - Una fase a la vez + playtest Juan Diego antes de avanzar (§7.6).
 - UI solo lee `StatBlock`, nunca escribe. Sistemas por señales, API chica (§7.11, §9).
 - Un script, un nodo, una responsabilidad. Registro en grupo `gg_system`, `system_id: StringName`. UI de cada sistema en su CanvasLayer propio (§9.1).

@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.44 — Fase 46.1 (2026-09-24)
+**Versión del documento:** 3.45 — Fase 48 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 46.1 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 48 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -325,7 +325,7 @@ La reimplementación sigue en la Fase 9+ (§11).
 - **Dirección visual UI:** metal oscuro acerado (L2) + dorado viejo y rojo sangre (MU).
 - **Modelos 3D:** el mapa del legado quedó limpio (modelos retirados en v10.18.0;
   respaldo en `~/workspace/backups/golden-gods-models-v10.17.8/`). El remake usa
-  modelos procedurales de respaldo hasta que Juan Diego autorice integrar los
+  modelos procedurales de respaldo (los 85 GLB quedaron autorizados el 2026-09-25 con licencia CC0/CC-BY; ver Fase 48) hasta que Juan Diego autorice integrar los
   85 GLB de Meshy. **Nunca copiar assets de Blizzard**: sustitutos originales,
   licencias permitidas.
 - **Combate:** se reimplementa tal cual el legado ("decente", decisión de
@@ -1280,7 +1280,45 @@ aprende.
   tiene el tamaño suficiente, está anclado a la esquina y pide la ayuda al
   pulsarlo). Suite 100% verde (72 suites + 4 smokes).
 
-*Fin del documento maestro v3.44 — Fase 46.1 (botón ? del manual).*
+## Fase 48 — Tabla de anclajes + presupuesto de GPU (2026-09-24)
+
+Las dos piezas que faltaban para que entrar arte 3D sea una **fase de datos** y
+no una reescritura. Además, Juan Diego **autorizó los 85 GLB de Meshy**
+(licencia CC0/CC-BY, nunca Blizzard): la regla de `AGENTS.md` queda
+actualizada y el bloqueo de §7.5 levanta.
+
+- **`data/anclajes.json`: la tabla de anclajes**, la que el spec prometía desde
+  la fase 43 y que no existía. Un registro por slot de `Equipo.SLOTS` (12) con
+  `{anclaje, mesh_path, offset, rotacion, escala, tinte, forma}`:
+  - `anclaje`: el **hueso del futuro modelo** donde cuelga la pieza
+    (`Hand.R`, `Head`, `Chest`, `Neck`, `Foot.L`...).
+  - `mesh_path`: la ruta del GLB. **Vacío = respaldo procedural**; con ruta =
+    modelo (y si la ruta no existe, avisa y cae al respaldo: el juego no se
+    rompe por un asset que falta).
+  - `forma`: lo que se dibuja mientras no haya modelo (caja, esfera, par,
+    espada de 2 piezas).
+- **`PaperDoll` deja de tener offsets, colores ni formas hardcodeados**: los
+  lee de la tabla. Los nodos conservan sus nombres (`arma/Hoja`, `guantes/*_der`)
+  y las posiciones son las de siempre (la regresión de la fase 36 sigue verde).
+  **Meter un modelo es rellenar `mesh_path` en el JSON.**
+- **`AnclajesDB`**: carga tolerante, ids en orden, accesores por slot y
+  `slots_sin_malla()` = la cola de trabajo de la fase de arte (hoy: los 12).
+- **Presupuesto de render, que no existía** (§9.5 solo decía "mallas
+  compartidas" y la fase 20 solo fijó el p95 de CPU). `MedidorGPU` mide la
+  **GPU real** —draw calls, triángulos, objetos, memoria de vídeo y tiempo de
+  frame— y `tools/bench_gpu.gd` lo ejecuta **sin `--headless`** (con drivers
+  dummy el render da 0, que es justo lo que pasaba con `bench_fps.gd`).
+  - **Medido en la fase 48** (Moon Town, 6 mobs de prueba, vetas de la plaza,
+    RTX 3050 Ti, 1280×720): **233 FPS · 4,36 ms de frame · p95 4,55 ms ·
+    443 draw calls · 285k triángulos · 150 MB de vídeo**.
+  - Presupuesto declarado: p95 ≤ 16,7 ms (el número duro de la fase 20),
+    ≤ 1200 draw calls, ≤ 900k triángulos, ≤ 1 GB de vídeo. Margen de 2,7× en
+    draw calls: 85 modelos a ~10 draw calls cada uno lo saturarían, así que el
+    presupuesto avisa antes de que se rompa.
+- Tests: `tests/test_fase48_anclajes_bench.gd` — 238/238. Suite 100% verde (73
+  suites + 4 smokes) + la regresión del paper-doll de la fase 36.
+
+*Fin del documento maestro v3.45 — Fase 48 (tabla de anclajes + GPU).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

@@ -2,24 +2,28 @@ class_name PaperDoll
 extends Node3D
 ## Muñeco procedural del héroe (fase 36): muestra el equipo equipado en 3D.
 ##
-## Cada slot ocupado de `Equipo` genera una pieza procedural (MeshInstance3D
-## con malla + material COMPARTIDOS por slot): espada y escudo a los lados,
-## casco en la cabeza, coraza en el torso, guantes y botas, y gemas doradas
-## emissive para la joyería. Sin equipo no genera nada (solo la cápsula del
-## tscn). Puro visual: nunca toca stats (los mods los pone `Equipo`).
+## Cada slot ocupado de `Equipo` genera una pieza: un modelo GLB si el slot
+## tiene `mesh_path` en `data/anclajes.json`, y mientras no lo tenga, el
+## RESPALDO PROCEDURAL que la tabla describe (`forma`).
+##
+## Fase 48: aquí ya NO hay offsets, colores ni formas hardcodeadas. Todo sale
+## de `AnclajesDB` (`data/anclajes.json`), la tabla que el spec prometía desde
+## la fase 43. Poner un modelo 3D es rellenar `mesh_path` en el JSON, no
+## reescribir este script. Los 85 GLB de Meshy están autorizados (CC0/CC-BY)
+## pero aún no están en el repo: hoy todas las piezas son procedurales.
+##
+## Las piezas siguen siendo MeshInstance3D con malla y material COMPARTIDOS,
+## con los mismos nombres de nodo de siempre (Arma/Hoja, Escudo, Coraza...).
+## Sin equipo no genera nada (solo la cápsula del tscn). Puro visual: nunca
+## toca stats (los mods los pone `Equipo`).
 ##
 ## Se auto-suscribe a `equipo.cambiado`; como el save REEMPLAZA el objeto
 ## `Equipo`, cada frame verifica la referencia (comparación barata) y si
 ## cambió, re-suscribe y reconstruye. `reconstruir()` también es pública
 ## (demo/tests).
 
-## Colores por slot (acero, madera, cuero, oro).
-const COLOR_ACERO: Color = Color(0.70, 0.72, 0.78)
-const COLOR_MADERA: Color = Color(0.50, 0.35, 0.20)
-const COLOR_CUERO: Color = Color(0.45, 0.30, 0.18)
-const COLOR_ORO: Color = Color(1.00, 0.75, 0.25)
-
 ## Mallas y materiales compartidos por slot (fase 12.1: nada único por pieza).
+## La clave incluye el color porque ahora el tinte sale de la tabla.
 static var _mats: Dictionary = {}
 
 var _jugador: Player = null
@@ -74,89 +78,137 @@ func reconstruir(_arg = null) -> void:
 			add_child(pieza)
 
 
-## Pieza procedural por slot resuelto (pendiente_1 → pendiente…).
+## Pieza de un slot, según la tabla de anclajes. `mesh_path` vacío = respaldo
+## procedural; con ruta = el modelo. Si la ruta no existe (o no hay tabla),
+## avisa y cae al respaldo: el juego nunca se rompe por un asset que falta.
 func _pieza(slot: String) -> Node3D:
-	var base: String = slot.split("_")[0]
-	match base:
-		"arma":
-			return _espada()
-		"escudo":
-			return _caja("Escudo", Vector3(0.10, 0.70, 0.50),
-				Vector3(-0.52, 1.00, 0.0), COLOR_MADERA)
-		"casco":
-			return _esfera("Casco", 0.28, 0.55, Vector3(0, 1.58, 0), COLOR_ACERO)
-		"armadura":
-			return _caja("Coraza", Vector3(0.72, 0.70, 0.46),
-				Vector3(0, 1.00, 0), COLOR_ACERO)
-		"guantes":
-			return _par("Guantes", Vector3(0.16, 0.16, 0.16),
-				Vector3(0.44, 0.95, 0), COLOR_CUERO)
-		"botas":
-			return _par("Botas", Vector3(0.20, 0.26, 0.30),
-				Vector3(0.16, 0.13, 0), COLOR_CUERO)
-		"pendiente":
-			var lado: float = 0.26 if slot == "pendiente_1" else -0.26
-			return _esfera("Pendiente", 0.07, 0.14, Vector3(lado, 1.48, 0.05),
-				COLOR_ORO, true)
-		"collar", "amuleto":
-			return _esfera("Joya", 0.09, 0.18, Vector3(0, 1.28, 0.30),
-				COLOR_ORO, true)
-		"anillo":
-			var x: float = 0.44 if slot == "anillo_1" else -0.44
-			return _esfera("Anillo", 0.06, 0.12, Vector3(x, 0.90, 0.10),
-				COLOR_ORO, true)
-	return null
+	var anclaje: Dictionary = AnclajesDB.obtener(slot)
+	if anclaje.is_empty():
+		push_warning("[PaperDoll] slot sin anclaje en data/anclajes.json: '%s'" % slot)
+		return null
+	var forma: Dictionary = AnclajesDB.forma_de(slot)
+	var tinte: Color = AnclajesDB.tinte_de(slot)
+	var nombre: String = str(forma.get("nombre", slot))
+	var metal: float = float(forma.get("metal", 0.0))
+	var brillo: bool = bool(forma.get("brillo", false))
+	match str(forma.get("tipo", "")):
+		"caja":
+			var caja := _caja(nombre, _vec3(forma.get("tam", [])), tinte, metal, brillo)
+			_aplicar_anclaje(caja, slot)
+			return caja
+		"esfera":
+			var esfe := _esfera(nombre, float(forma.get("radio", 0.1)),
+				float(forma.get("alto", 0.2)), tinte, metal, brillo)
+			_aplicar_anclaje(esfe, slot)
+			return esfe
+		"par":
+			var par := _par(nombre, _vec3(forma.get("tam", [])), tinte, metal, brillo)
+			_aplicar_anclaje(par, slot)
+			return par
+		"espada":
+			var espada := _espada(nombre, forma, tinte, metal, brillo)
+			_aplicar_anclaje(espada, slot)
+			return espada
+		"mesh":
+			var glb: Node3D = _pieza_glb(slot)
+			if glb != null:
+				_aplicar_anclaje(glb, slot)
+				return glb
+	# Sin forma reconocida: respaldo mínimo (una caja) para que el slot no
+	# desaparezca en silencio.
+	push_warning("[PaperDoll] forma desconocida en el slot '%s'" % slot)
+	var caja_vacia := _caja(nombre, Vector3(0.12, 0.12, 0.12), tinte, metal, brillo)
+	_aplicar_anclaje(caja_vacia, slot)
+	return caja_vacia
 
 
-## Espada a la derecha: hoja + guarda.
-func _espada() -> Node3D:
+## Coloca la pieza donde dice la tabla (offset + rotación + escala).
+func _aplicar_anclaje(n: Node3D, slot: String) -> void:
+	if n == null:
+		return
+	n.position = AnclajesDB.offset_de(slot)
+	n.rotation_degrees = AnclajesDB.rotacion_de(slot)
+	var e: float = AnclajesDB.escala_de(slot)
+	if not is_equal_approx(e, 1.0):
+		n.scale = Vector3(e, e, e)
+
+
+## Fase 48: el modelo del slot, si lo hay. Es la vía por la que entrará el
+## primer GLB: basta con poner la ruta en `mesh_path` del JSON.
+func _pieza_glb(slot: String) -> Node3D:
+	var ruta: String = str(AnclajesDB.obtener(slot).get("mesh_path", ""))
+	if ruta == "":
+		return null
+	if not ResourceLoader.exists(ruta):
+		push_warning("[PaperDoll] el modelo de '%s' no existe: %s" % [slot, ruta])
+		return null
+	var ps: PackedScene = load(ruta) as PackedScene
+	if ps == null:
+		push_warning("[PaperDoll] '%s' no es una escena válida: %s" % [slot, ruta])
+		return null
+	var inst: Node3D = ps.instantiate() as Node3D
+	return inst
+
+
+## Lee un tamaño [x, y, z] del JSON (Vector3.ZERO si no viene bien).
+func _vec3(a: Variant) -> Vector3:
+	if not (a is Array):
+		return Vector3.ZERO
+	var arr: Array = a as Array
+	if arr.size() < 3:
+		return Vector3.ZERO
+	return Vector3(float(arr[0]), float(arr[1]), float(arr[2]))
+
+
+## Arma de varias piezas (hoja + guarda): la lista `partes` de la tabla.
+func _espada(nombre: String, forma: Dictionary, color: Color, metal: float,
+		brillo: bool) -> Node3D:
 	var raiz := Node3D.new()
-	raiz.name = "Arma"
-	var hoja := MeshInstance3D.new()
-	hoja.name = "Hoja"
-	var malla := BoxMesh.new()
-	malla.size = Vector3(0.09, 0.95, 0.18)
-	hoja.mesh = malla
-	hoja.material_override = _mat("arma", COLOR_ACERO, 0.6)
-	hoja.position = Vector3(0.50, 1.15, 0.10)
-	raiz.add_child(hoja)
-	var guarda := MeshInstance3D.new()
-	guarda.name = "Guarda"
-	var gm := BoxMesh.new()
-	gm.size = Vector3(0.30, 0.07, 0.24)
-	guarda.mesh = gm
-	guarda.material_override = _mat("arma", COLOR_ACERO, 0.6)
-	guarda.position = Vector3(0.50, 0.66, 0.10)
-	raiz.add_child(guarda)
+	raiz.name = nombre
+	for p in (forma.get("partes", []) as Array):
+		if not (p is Dictionary):
+			continue
+		var pd: Dictionary = p
+		var tipo: String = str(pd.get("tipo", "caja"))
+		var pieza: MeshInstance3D = null
+		if tipo == "esfera":
+			pieza = _esfera(str(pd.get("nombre", "Pieza")),
+				float(pd.get("radio", 0.1)), float(pd.get("alto", 0.2)), color, metal, brillo)
+		else:
+			pieza = _caja(str(pd.get("nombre", "Pieza")),
+				_vec3(pd.get("tam", [])), color, metal, brillo)
+		pieza.position = _vec3(pd.get("pos", []))
+		raiz.add_child(pieza)
 	return raiz
 
 
-func _caja(nombre: String, tam: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+func _caja(nombre: String, tam: Vector3, color: Color, metal: float,
+		brillo: bool) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.name = nombre
 	var malla := BoxMesh.new()
 	malla.size = tam
 	mi.mesh = malla
-	mi.material_override = _mat(nombre, color, 0.0)
-	mi.position = pos
+	mi.material_override = _mat(nombre, color, metal, brillo)
 	return mi
 
 
-func _esfera(nombre: String, radio: float, alto: float, pos: Vector3,
-		color: Color, brillo: bool = false) -> MeshInstance3D:
+func _esfera(nombre: String, radio: float, alto: float, color: Color,
+		metal: float, brillo: bool) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.name = nombre
 	var malla := SphereMesh.new()
 	malla.radius = radio
 	malla.height = alto
 	mi.mesh = malla
-	mi.material_override = _mat(nombre, color, 0.8 if brillo else 0.0)
-	mi.position = pos
+	mi.material_override = _mat(nombre, color, metal, brillo)
 	return mi
 
 
-## Par simétrico (guantes, botas): dos cajas espejadas en x.
-func _par(nombre: String, tam: Vector3, pos: Vector3, color: Color) -> Node3D:
+## Par simétrico (guantes, botas): dos cajas espejadas en x. La posición
+## viene de la tabla (el `offset.x` es la distancia al centro).
+func _par(nombre: String, tam: Vector3, color: Color, metal: float,
+		brillo: bool) -> Node3D:
 	var raiz := Node3D.new()
 	raiz.name = nombre
 	for lado in [1.0, -1.0]:
@@ -165,22 +217,25 @@ func _par(nombre: String, tam: Vector3, pos: Vector3, color: Color) -> Node3D:
 		var malla := BoxMesh.new()
 		malla.size = tam
 		mi.mesh = malla
-		mi.material_override = _mat(nombre, color, 0.0)
-		mi.position = Vector3(pos.x * lado, pos.y, pos.z)
+		mi.material_override = _mat(nombre, color, metal, brillo)
 		raiz.add_child(mi)
 	return raiz
 
 
-## Material compartido por nombre (emissive para joyería).
-static func _mat(nombre: String, color: Color, metal: float) -> StandardMaterial3D:
-	if _mats.has(nombre):
-		return _mats[nombre] as StandardMaterial3D
+## Material compartido por nombre de pieza. `metal` y `brillo` los decide la
+## tabla: el brillo es lo que enciende la emisión (oro y gemas brillan; el
+## acero y el cuero no).
+static func _mat(nombre: String, color: Color, metal: float,
+		brillo: bool) -> StandardMaterial3D:
+	var clave: String = "%s|%s|%.2f|%s" % [nombre, color.to_html(false), metal, str(brillo)]
+	if _mats.has(clave):
+		return _mats[clave] as StandardMaterial3D
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.metallic = metal
 	mat.roughness = 0.55
-	if metal >= 0.8:
-		mat.emission_enabled = true
+	mat.emission_enabled = brillo
+	if brillo:
 		mat.emission = color * 0.6
-	_mats[nombre] = mat
+	_mats[clave] = mat
 	return mat

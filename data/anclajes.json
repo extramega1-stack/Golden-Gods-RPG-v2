@@ -1,0 +1,355 @@
+{
+  "version": 1,
+  "nota": "Fase 48 — TABLA DE ANCLAJES, la que el spec promete desde la fase 43 y que hasta ahora no existía: `slot -> {anclaje, mesh_path, offset, rotacion, escala, tinte}`. Es la FUENTE ÚNICA del paper-doll: `PaperDoll` ya no tiene offsets hardcodeados, lee esto. Cuando entre un modelo GLB se rellena `mesh_path` y `anclaje` pasa a ser el nombre del hueso del modelo; la `forma` (primitivas) se usa solo mientras `mesh_path` esté vacío, y es el respaldo procedural mientras no haya modelo. Sin assets externos todavía: los 85 GLB de Meshy quedaron autorizados (CC0/CC-BY) el 2026-09-25, pero aún no están en el repo.",
+  "campos": {
+    "slot": "Slot de Equipo.SLOTS al que se ancla la pieza",
+    "anclaje": "Hueso del futuro GLB donde cuelga la pieza (Hand.R, Head, Chest...)",
+    "mesh_path": "Ruta del GLB. VACÍO = se usa la forma procedural de abajo",
+    "offset": "Desplazamiento local sobre el anclaje (x, y, z) en metros",
+    "rotacion": "Rotación local en GRADOS (x, y, z)",
+    "escala": "Escala uniforme de la pieza",
+    "tinte": "#rrggbb de la pieza (el color por defecto del slot)",
+    "forma": "Respaldo procedural mientras no haya GLB: {tipo, tam|radio|alto, par, partes, metal, brillo}"
+  },
+  "anclajes": [
+    {
+      "slot": "arma",
+      "anclaje": "Hand.R",
+      "mesh_path": "",
+      "offset": [
+        0.5,
+        1.15,
+        0.1
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#b3b8c7",
+      "forma": {
+        "nombre": "Arma",
+        "tipo": "espada",
+        "metal": 0.6,
+        "partes": [
+          {
+            "nombre": "Hoja",
+            "tipo": "caja",
+            "tam": [
+              0.09,
+              0.95,
+              0.18
+            ],
+            "pos": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "nombre": "Guarda",
+            "tipo": "caja",
+            "tam": [
+              0.3,
+              0.07,
+              0.24
+            ],
+            "pos": [
+              0.0,
+              -0.49,
+              0.0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slot": "escudo",
+      "anclaje": "Hand.L",
+      "mesh_path": "",
+      "offset": [
+        -0.52,
+        1.0,
+        0.0
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#805933",
+      "forma": {
+        "nombre": "Escudo",
+        "tipo": "caja",
+        "tam": [
+          0.1,
+          0.7,
+          0.5
+        ],
+        "metal": 0.0,
+        "brillo": false
+      }
+    },
+    {
+      "slot": "casco",
+      "anclaje": "Head",
+      "mesh_path": "",
+      "offset": [
+        0.0,
+        1.58,
+        0.0
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#b3b8c7",
+      "forma": {
+        "nombre": "Casco",
+        "tipo": "esfera",
+        "radio": 0.28,
+        "alto": 0.55,
+        "metal": 0.0,
+        "brillo": false
+      }
+    },
+    {
+      "slot": "armadura",
+      "anclaje": "Chest",
+      "mesh_path": "",
+      "offset": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#b3b8c7",
+      "forma": {
+        "nombre": "Coraza",
+        "tipo": "caja",
+        "tam": [
+          0.72,
+          0.7,
+          0.46
+        ],
+        "metal": 0.0,
+        "brillo": false
+      }
+    },
+    {
+      "slot": "guantes",
+      "anclaje": "Hand.L + Hand.R",
+      "mesh_path": "",
+      "offset": [
+        0.44,
+        0.95,
+        0.0
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#734d2e",
+      "forma": {
+        "nombre": "Guantes",
+        "tipo": "par",
+        "tam": [
+          0.16,
+          0.16,
+          0.16
+        ],
+        "metal": 0.0,
+        "brillo": false
+      }
+    },
+    {
+      "slot": "botas",
+      "anclaje": "Foot.L + Foot.R",
+      "mesh_path": "",
+      "offset": [
+        0.16,
+        0.13,
+        0.0
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#734d2e",
+      "forma": {
+        "nombre": "Botas",
+        "tipo": "par",
+        "tam": [
+          0.2,
+          0.26,
+          0.3
+        ],
+        "metal": 0.0,
+        "brillo": false
+      }
+    },
+    {
+      "slot": "pendiente_1",
+      "anclaje": "Head",
+      "mesh_path": "",
+      "offset": [
+        0.26,
+        1.48,
+        0.05
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Pendiente",
+        "tipo": "esfera",
+        "radio": 0.07,
+        "alto": 0.14,
+        "metal": 0.8,
+        "brillo": true
+      }
+    },
+    {
+      "slot": "pendiente_2",
+      "anclaje": "Head",
+      "mesh_path": "",
+      "offset": [
+        -0.26,
+        1.48,
+        0.05
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Pendiente",
+        "tipo": "esfera",
+        "radio": 0.07,
+        "alto": 0.14,
+        "metal": 0.8,
+        "brillo": true
+      }
+    },
+    {
+      "slot": "collar",
+      "anclaje": "Neck",
+      "mesh_path": "",
+      "offset": [
+        0.0,
+        1.28,
+        0.3
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Joya",
+        "tipo": "esfera",
+        "radio": 0.09,
+        "alto": 0.18,
+        "metal": 0.8,
+        "brillo": true
+      }
+    },
+    {
+      "slot": "anillo_1",
+      "anclaje": "Hand.R",
+      "mesh_path": "",
+      "offset": [
+        0.44,
+        0.9,
+        0.1
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Anillo",
+        "tipo": "esfera",
+        "radio": 0.06,
+        "alto": 0.12,
+        "metal": 0.8,
+        "brillo": true
+      }
+    },
+    {
+      "slot": "anillo_2",
+      "anclaje": "Hand.L",
+      "mesh_path": "",
+      "offset": [
+        -0.44,
+        0.9,
+        0.1
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Anillo",
+        "tipo": "esfera",
+        "radio": 0.06,
+        "alto": 0.12,
+        "metal": 0.8,
+        "brillo": true
+      }
+    },
+    {
+      "slot": "amuleto",
+      "anclaje": "Chest",
+      "mesh_path": "",
+      "offset": [
+        0.0,
+        1.28,
+        0.3
+      ],
+      "rotacion": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "escala": 1.0,
+      "tinte": "#ffbf40",
+      "forma": {
+        "nombre": "Joya",
+        "tipo": "esfera",
+        "radio": 0.09,
+        "alto": 0.18,
+        "metal": 0.8,
+        "brillo": true
+      }
+    }
+  ]
+}
