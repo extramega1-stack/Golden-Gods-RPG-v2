@@ -109,12 +109,24 @@ func _gestor(p: Player) -> GestorVetas:
 	return g
 
 
+## Distancia de un punto al centro de ciudad más cercano (los 9 centros,
+## los mismos que tools/generar_vetas.py).
+func d_ciudad_a(p: Vector2) -> float:
+	var d: float = INF
+	for c in CIUDADES:
+		d = minf(d, p.distance_to(c))
+	return d
+
+
 ## (a) Datos: el generador y el catálogo.
 func _test_datos() -> void:
-	_chk(VetaDB.ids().size() == TOTAL_VETAS, "a: hay 12 vetas",
+	_chk(VetaDB.ids().size() == TOTAL_VETAS + 1,
+		"a: hay 12 vetas de distribución + 1 de prueba",
 		"hay %d" % VetaDB.ids().size())
 	var regiones: Dictionary = {}
 	var minerales: Dictionary = {}
+	var prueba: int = 0
+	var distribucion: int = 0
 	for vid in VetaDB.ids():
 		var v: Dictionary = VetaDB.obtener(vid)
 		_chk(not v.is_empty(), "a: la veta " + vid + " existe en el JSON")
@@ -139,14 +151,24 @@ func _test_datos() -> void:
 		var z: float = float(v.get("z", 0.0))
 		_chk(absi(x) <= MEDIO_MUNDO and absi(z) <= MEDIO_MUNDO,
 			"a: " + vid + " está dentro del mundo 36.864 u")
-		var d_ciudad: float = INF
-		for c in CIUDADES:
-			d_ciudad = minf(d_ciudad, Vector2(x, z).distance_to(c))
-		_chk(d_ciudad >= R_MIN_CIUDAD,
-			"a: " + vid + " no está dentro de una ciudad", "d=%.1f" % d_ciudad)
+		# La veta de prueba de la plaza está DENTRO de la ciudad a propósito
+		# (fase 45.1, como el pack de mobs de prueba): se exime de la regla
+		# de distribución, igual que aquel.
+		if str(v.get("grupo", "")) == "prueba_mineria":
+			prueba += 1
+			_chk(d_ciudad_a(Vector2(x, z)) < R_MIN_CIUDAD,
+				"a: la veta de prueba sí está en la plaza (para verla al abrir)")
+			_chk(int(v.get("nivel", 0)) == 1, "a: la veta de prueba es de nivel 1")
+		else:
+			distribucion += 1
+			_chk(d_ciudad_a(Vector2(x, z)) >= R_MIN_CIUDAD,
+				"a: " + vid + " no está dentro de una ciudad")
 		regiones[str(v.get("region", ""))] = true
 	_chk(regiones.size() == 10, "a: las 10 regiones tienen veta",
 		"hay %d" % regiones.size())
+	_chk(distribucion == TOTAL_VETAS, "a: 12 vetas de distribución",
+		"hay %d" % distribucion)
+	_chk(prueba == 1, "a: 1 veta de prueba en la plaza")
 	_chk(minerales.size() == MINERALES.size(),
 		"a: 6 minerales distintos", "hay %d" % minerales.size())
 	for m in MINERALES:
@@ -154,7 +176,7 @@ func _test_datos() -> void:
 	_chk(VetaDB.existe("veta_inexistente") == false, "a: id inexistente = false")
 	_chk(VetaDB.obtener("veta_inexistente").is_empty(), "a: id inexistente = {}")
 	_chk(VetaDB.vetas_de_region("velo").size() == 1, "a: el Velo tiene 1 veta")
-	_chk(VetaDB.vetas_de_region("").size() == TOTAL_VETAS, "a: region \"\" = todas")
+	_chk(VetaDB.vetas_de_region("").size() == TOTAL_VETAS + 1, "a: region \"\" = todas")
 	# Posiciones del JSON = posiciones de la DB (contrato con el generador).
 	var pos: Vector3 = VetaDB.posicion_de("veta_moon_town_mineral_cobre")
 	var d: Dictionary = VetaDB.obtener("veta_moon_town_mineral_cobre")
@@ -431,11 +453,17 @@ func _test_jugador() -> void:
 func _test_gestor() -> void:
 	var p: Player = _jugador(30)
 	var g: GestorVetas = _gestor(p)
-	_chk(g.conteo_registros() == TOTAL_VETAS, "e: registra las 12 vetas",
+	_chk(g.conteo_registros() == TOTAL_VETAS + 1, "e: registra las 13 vetas",
 		"hay %d" % g.conteo_registros())
 	_chk(g.conteo_vetas() == 0, "e: sin instanciar, 0 nodos")
-	# Lejos de todo: ninguna veta entra en el mapa.
-	p.global_position = Vector3(0.0, 0.0, 0.0)
+	# En la plaza de Moon Town solo aparece la veta de prueba (fase 45.1).
+	p.global_position = Vector3(0.0, 0.0, 45.0)
+	g.actualizar()
+	_chk(g.conteo_vetas() == 1, "e: en la plaza, 1 veta (la de prueba)",
+		"hay %d" % g.conteo_vetas())
+	_chk(g.veta("veta_prueba_cobre") != null, "e: es la de prueba de la plaza")
+	# Lejos de toda veta: ninguna entra en el mapa.
+	p.global_position = Vector3(5000.0, 0.0, 0.0)
 	g.actualizar()
 	_chk(g.conteo_vetas() == 0, "e: sin vetas cerca, 0 nodos")
 	# Junto a la veta de cobre de Moon Town: solo esa.

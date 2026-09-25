@@ -8,7 +8,10 @@ config_version=5
 
 config/name="Golden Gods RPG — Remake"
 config/description="RPG local para un jugador: rewrite limpio de Golden Gods RPG (Godot 4.7.2)."
-run/main_scene="res://scenes/titulo/pantalla_titulo.tscn"
+; Fase 45.1: F5 entra directo al mundo jugable (la pantalla de
+; titulo sigue existiendo en scenes/titulo/pantalla_titulo.tscn y se
+; llega desde el boton "Salir" o cambiando la escena a mano).
+run/main_scene="res://scenes/demo/fase14_demo.tscn"
 config/features=PackedStringArray("4.7")
 
 [display]

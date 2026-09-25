@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.40 — Fase 45 (2026-09-24)
+**Versión del documento:** 3.41 — Fase 45.1 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 45 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 45.1 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1181,7 +1181,31 @@ al loot.
 - Sin bloque de save nuevo: materiales y equipo ya viajan en el inventario.
 - Tests: `tests/test_fase44_herreria.gd` — 132/132. Suite 100% verde.
 
-*Fin del documento maestro v3.40 — Fase 45 (minería).*
+## Fase 45.1 — F5 ve todo (2026-09-24)
+
+La regla de trabajo del remake es que **abrir el proyecto y darle a F5 debe
+enseñar todo lo que hay hecho**, no una menú desde el que hay que navegar.
+
+- **Main scene = `scenes/demo/fase14_demo.tscn`** (antes
+  `scenes/titulo/pantalla_titulo.tscn`). F5 entra directo al mundo jugable:
+  héroe en la plaza de Moon Town, HUD, barra de 8 skills, minimapa, 6 mobs de
+  prueba y las vetas. Como `DatosSesion.continuar` es `false` por defecto, la
+  rama de "nueva partida" se cumple sola y **el tutorial de la fase 39 arranca
+  automáticamente** (6 pasos por toast: mover, atacar, skill, poción, hablar
+  con Ilya, aceptar misión). La pantalla de título y la creación de personaje
+  siguen existiendo (`scenes/titulo/pantalla_titulo.tscn`) y no se borran:
+  solo dejan de ser el punto de entrada de F5.
+- **Veta de prueba en la plaza** (`veta_prueba_cobre`, `grupo: prueba_mineria`,
+  13 vetas en total): a **27 m** del punto de aparición, 22° a la izquierda de
+  la vista, para que la minería se vea y se pueda probar sin caminar. Mismo
+  criterio que el pack de 6 mobs de prueba de la fase 18.2; se exime de las
+  reglas de distribución y los tests lo tratan aparte.
+- `GestorVetas` avisa por consola cuántas vetas tiene cerca al arrancar
+  (`[Fase45] minería: 13 vetas registradas, 1 en el mapa cerca`).
+- Tests: `tests/test_fase45_mineria.gd` — 335/335. Suite 100% verde (70
+  suites + 4 smokes).
+
+*Fin del documento maestro v3.41 — Fase 45.1 (F5 ve todo).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

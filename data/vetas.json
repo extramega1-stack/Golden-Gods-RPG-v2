@@ -168,6 +168,21 @@
       "tinte": "#7fd4ff",
       "x": 765.998,
       "z": -17729.311
+    },
+    {
+      "id": "veta_prueba_cobre",
+      "nombre": "Veta de Cobre — Moon Town (prueba)",
+      "region": "moon_town",
+      "item_id": "mineral_cobre",
+      "cantidad": 1,
+      "usos": 3,
+      "respawn_s": 180,
+      "xp": 5,
+      "nivel": 1,
+      "tinte": "#b87333",
+      "grupo": "prueba_mineria",
+      "x": -10.0,
+      "z": 20.0
     }
   ]
 }

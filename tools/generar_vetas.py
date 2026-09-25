@@ -9,7 +9,7 @@ Contrato de salida: `data/vetas.json`, objeto `{version, vetas: [...]}` donde
 cada veta es:
 
     {id, nombre, region, item_id, cantidad, usos, respawn_s, xp, nivel, tinte,
-     x, z}
+     x, z}  (+ `grupo` solo en la veta de prueba)
 
 `x`/`z` van en coordenadas Godot (las mismas que `data/spawns.json`). El
 `GestorVetas` las carga y `Veta` las pone en el mundo; la Y sale del terreno
@@ -20,7 +20,9 @@ DISTRIBUCION (semilla fija SEMILLA = 20260924, random.Random determinista):
     centro de SU ciudad (fuera del disco urbano de 800 m, a distancia de
     caminata de la plaza) y dentro del rectangulo de su region.
   - El Velo (sin ciudad propia): posicion uniforme dentro del rectangulo.
-  - Ninguna veta a menos de `R_MIN_CIUDAD` de cualquier centro de ciudad.
+  - Ninguna veta de DISTRIBUCION a menos de `R_MIN_CIUDAD` de cualquier
+    centro de ciudad.
+  - Mas la VETA DE PRUEBA de la plaza (ver VETA_PRUEBA): 12 + 1 = 13.
 
 ESCALA (todo derivado de la region, no escrito a mano):
   - `nivel`   = `nivel_min` de la region (gate: no se mina antes).
@@ -49,6 +51,7 @@ REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
 
 SEMILLA = 20260924
 TOTAL = 12
+VETAS_PRUEBA = 1
 MARGEN = 8.0                # margen dentro de cada rectangulo de region
 R_CIUDAD = 800.0            # disco urbano (lo construye CiudadLuna)
 R_MIN_CIUDAD = 900.0        # las vetas quedan fuera de ese disco
@@ -58,6 +61,26 @@ MAX_INTENTOS = 4000
 USOS = 3
 RESPAWN_S = 180
 XP_MAX = 12
+
+# VETA DE PRUEBA (fase 45.1): la veta de distribucion mas cercana a Moon Town
+# esta a 1.100 m de la plaza (fuera del disco urbano, por diseño). Esta esta
+# DENTRO de la plaza, a 85 m del punto de aparición del jugador, para que al
+# abrir el juego se vea y se pueda minar sin caminar (el mismo criterio que el
+# pack de 6 mobs de prueba de la fase 18.2). Lleva `grupo: prueba_mineria`
+# para eximirla de las reglas de distribución, igual que aquel pack.
+# (-10, 20): 27 m del punto de aparicion (0, 40, 45) y 22 grados a la IZQUIERDA
+# de la vista (el jugador mira al norte, -Z, hacia el monumento). A 27 m la
+# veta se ve de sobra al abrir el juego; a 100+ m con el zoom de camara es un
+# pixel. 22 m del monumento y 145 m del edificio mas cercano (la forja): no
+# cae dentro de ningun edificio ni encima del monumento.
+VETA_PRUEBA = {
+    "id": "veta_prueba_cobre",
+    "region": "moon_town",
+    "item_id": "mineral_cobre",
+    "x": -10.0,
+    "z": 20.0,
+    "grupo": "prueba_mineria",
+}
 
 # Centros de las 9 ciudades (los mismos de generar_spawns_rework.py).
 CIUDADES = [
@@ -203,8 +226,27 @@ def main() -> int:
                 "z": round(z, 3),
             })
 
-    assert len(vetas) == TOTAL, "total=%d != %d" % (len(vetas), TOTAL)
-    assert len({v["id"] for v in vetas}) == TOTAL, "hay ids de veta repetidos"
+    # Veta de prueba (dentro de la plaza, exenta de las reglas de distribución).
+    px, pc = _escala_de(1)
+    vetas.append({
+        "id": VETA_PRUEBA["id"],
+        "nombre": "%s — Moon Town (prueba)" % NOMBRE_MINERAL[VETA_PRUEBA["item_id"]],
+        "region": VETA_PRUEBA["region"],
+        "item_id": VETA_PRUEBA["item_id"],
+        "cantidad": pc,
+        "usos": USOS,
+        "respawn_s": RESPAWN_S,
+        "xp": px,
+        "nivel": 1,
+        "tinte": TINTE_DE_MINERAL[VETA_PRUEBA["item_id"]],
+        "grupo": VETA_PRUEBA["grupo"],
+        "x": VETA_PRUEBA["x"],
+        "z": VETA_PRUEBA["z"],
+    })
+
+    assert len(vetas) == TOTAL + VETAS_PRUEBA, "total=%d != %d" % (
+        len(vetas), TOTAL + VETAS_PRUEBA)
+    assert len({v["id"] for v in vetas}) == len(vetas), "hay ids de veta repetidos"
 
     datos = {"version": 1, "vetas": vetas}
     with open(DESTINO, "w", encoding="utf-8") as f:

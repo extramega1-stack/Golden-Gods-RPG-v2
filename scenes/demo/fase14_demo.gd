@@ -128,6 +128,8 @@ func _al_mundo_listo() -> void:
 	_mineria.minado.connect(_al_minado)
 	_guardado.mineria = _mineria
 	_mineria.actualizar()
+	print("[Fase45] minería: %d vetas registradas, %d en el mapa cerca"
+			% [_mineria.conteo_registros(), _mineria.conteo_vetas()])
 	super._al_mundo_listo()
 
 
