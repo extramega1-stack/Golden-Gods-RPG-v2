@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.41 — Fase 45.1 (2026-09-24)
+**Versión del documento:** 3.42 — Fase 45.2 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 45.1 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 45.2 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1205,7 +1205,34 @@ enseñar todo lo que hay hecho**, no una menú desde el que hay que navegar.
 - Tests: `tests/test_fase45_mineria.gd` — 335/335. Suite 100% verde (70
   suites + 4 smokes).
 
-*Fin del documento maestro v3.41 — Fase 45.1 (F5 ve todo).*
+## Fase 45.2 — Los avisos se ven (2026-09-24)
+
+El tutorial existía (fase 39, 6 pasos) y **nunca se vio**. Dos bugs
+encadenados, ambos de "avisos", no del tutorial:
+
+1. **El feed de avisos colgaba del panel cerrado.** El `CanvasLayer` del
+   toast (capa 15, el feed global) era hijo de `PanelMisiones`, que arranca
+   `visible = false` (§9: los paneles nacen ocultos). Ningún aviso se veía
+   **nunca**: ni el tutorial, ni los avisos de arena, ni los de viaje rápido.
+   Nadie lo cazó porque el test de la fase 39 le pasa un `Callable` de
+   mentira y nunca monta el panel real. Ahora el layer cuelga de la **escena**.
+2. **`add_child` directo fallaba.** Al colgarlo de la escena, el `add_child`
+   desde el `_ready` del panel se estrella con *"Parent node is busy setting
+   up children"* (la escena está añadiendo sus propios hijos): el layer se
+   quedaba **huérfano**, con el padre a null. Va con `add_child.call_deferred`.
+3. **El tutorial arrancaba durante la pantalla de carga.** `empezar()` se
+   llamaba en el `_ready` (fase 11), con el mundo a medio construir: sus
+   avisos se perdían detrás del velo de carga y el paso "mover" **se completaba
+   solo**, porque el arranque recoloca al jugador en la plaza (se entraba al
+   paso 1 sin haber jugado). Ahora arranca en `_al_mundo_listo()`, con el
+   mundo construido, el velo fuera y el jugador en su sitio.
+
+Verificado con una captura del frame real en que el aviso se enciende
+("Muévete con WASD o clic izquierdo" sobre la barra de acciones) y con
+`tests/test_fase45_2_toast.gd` — 15/15, que monta el panel y el tutorial
+**reales**. Suite 100% verde (71 suites + 4 smokes).
+
+*Fin del documento maestro v3.42 — Fase 45.2 (los avisos se ven).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

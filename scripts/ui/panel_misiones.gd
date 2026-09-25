@@ -122,12 +122,27 @@ func _construir() -> void:
 	fila.add_child(cerrar)
 
 
+## Fase 45.2: el toast es un feed GLOBAL (capa 15, rango HUD del §9.2), no
+## parte del panel de misiones. Si cuelga del panel, el `visible = false` de
+## arranque del panel lo oculta y NINGÚN aviso se ve nunca (tutorial de la
+## fase 39, avisos de arena y de viaje rápido incluidos: era un bug de la
+## fase 39 que nadie cazó porque el test le pasa un Callable de mentira).
+## Por eso se cuelga de la ESCENA, no del panel: sobrevive a que el panel se
+## abra y se cierre.
 func _construir_toast() -> void:
 	_toast_layer = CanvasLayer.new()
 	_toast_layer.name = "Toast"
 	_toast_layer.layer = 15
 	_toast_layer.visible = false
-	add_child(_toast_layer)
+	var escena: Node = get_parent()
+	# DIFERIDO a propósito: este _ready corre mientras la escena está
+	# "ocupada añadiendo sus hijos", y un `add_child` directo falla con
+	# "Parent node is busy setting up children" (el layer se quedaba sin
+	# colgar de nada y ningún aviso se veía nunca).
+	if escena != null:
+		escena.add_child.call_deferred(_toast_layer)
+	else:
+		add_child.call_deferred(_toast_layer)
 
 	# Toast normal: abajo-centro, discreto (números idénticos a la fase 8).
 	_toast_panel = _caja_toast(Vector2(400, 0), Vector2(200, 140),

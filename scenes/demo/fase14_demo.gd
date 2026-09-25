@@ -131,6 +131,11 @@ func _al_mundo_listo() -> void:
 	print("[Fase45] minería: %d vetas registradas, %d en el mapa cerca"
 			% [_mineria.conteo_registros(), _mineria.conteo_vetas()])
 	super._al_mundo_listo()
+	# Fase 45.2: con el mundo ya construido, la pantalla de carga fuera y el
+	# jugador colocado en su punto, arranca el tutorial (nueva partida). Es el
+	# primer momento en que sus avisos se ven de verdad.
+	if _tutorial != null:
+		_tutorial.empezar()
 
 
 ## Fase 20: el gate añade las 9 ciudades al terreno de la base.

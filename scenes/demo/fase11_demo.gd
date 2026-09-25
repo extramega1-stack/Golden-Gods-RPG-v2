@@ -26,8 +26,9 @@ func _al_iniciar() -> void:
 		# (skills de la clase) y el libro de habilidades.
 		_barra.restablecer_defecto()
 		_barra.reconstruir_libro()
-		# Fase 39: nueva partida → arranca el tutorial (al continuar lo
-		# restaura el save y no se muestra).
-		if _tutorial != null:
-			_tutorial.empezar()
+		# Fase 45.2: el tutorial NO arranca aquí, sino cuando el mundo esté
+		# listo (`fase14_demo._al_mundo_listo`). Arrancando en el _ready pasaba
+		# dos cosas: sus avisos se perdían detrás de la pantalla de carga y el
+		# paso "mover" se completaba solo, porque el arranque recoloca al
+		# jugador en la plaza (el juego entraba en el paso 1 sin jugar).
 	DatosSesion.limpiar()
