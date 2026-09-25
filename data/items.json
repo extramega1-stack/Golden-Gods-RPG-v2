@@ -475,6 +475,7 @@
   },
   {
    "id": "escorpion_carina",
+   "apilable": true,
    "nombre": "Carina de Escorpión",
    "descripcion": "Placa quitinosa del desierto. Material de artesanía.",
    "tipo": "material",
@@ -485,6 +486,7 @@
   },
   {
    "id": "ascua_viva",
+   "apilable": true,
    "nombre": "Ascua Viva",
    "descripcion": "Brasa que nunca enfría en la mano. Material de forja.",
    "tipo": "material",
@@ -495,6 +497,7 @@
   },
   {
    "id": "nucleo_ascua",
+   "apilable": true,
    "nombre": "Núcleo de Ascua",
    "descripcion": "Corazón de un gólem de ceniza. Material de forja.",
    "tipo": "material",
@@ -505,6 +508,7 @@
   },
   {
    "id": "nucleo_hielo",
+   "apilable": true,
    "nombre": "Núcleo de Hielo",
    "descripcion": "Núcleo de hielo eterno. Material prizeso.",
    "tipo": "material",
@@ -515,6 +519,7 @@
   },
   {
    "id": "seda_venenosa",
+   "apilable": true,
    "nombre": "Seda Venenosa",
    "descripcion": "Hilo del Velo que sigue envenenando. Material.",
    "tipo": "material",
@@ -525,6 +530,7 @@
   },
   {
    "id": "eco_umbral",
+   "apilable": true,
    "nombre": "Eco del Umbral",
    "descripcion": "Susurro que repite lo que oye. Material arcano.",
    "tipo": "material",
@@ -535,6 +541,7 @@
   },
   {
    "id": "perla_rio",
+   "apilable": true,
    "nombre": "Perla del Abismo",
    "descripcion": "Perla negra del río sin nombre. Material.",
    "tipo": "material",
@@ -545,6 +552,7 @@
   },
   {
    "id": "lamento_eco",
+   "apilable": true,
    "nombre": "Eco del Lamento",
    "descripcion": "El último canto de la costa. Material.",
    "tipo": "material",
@@ -555,6 +563,7 @@
   },
   {
    "id": "lingote_oro",
+   "apilable": true,
    "nombre": "Lingote Ancestral",
    "descripcion": "Oro de la Corona Quebrada. Material de lujo.",
    "tipo": "material",
@@ -565,6 +574,7 @@
   },
   {
    "id": "sello_vacio",
+   "apilable": true,
    "nombre": "Sello Vacío",
    "descripcion": "Cera negra sin nombre. Material del Velo.",
    "tipo": "material",
@@ -842,8 +852,74 @@
      "kind": 0
     }
    ]
+  },
+  {
+   "id": "mineral_cobre",
+   "apilable": true,
+   "nombre": "Mineral de Cobre",
+   "descripcion": "Vena rojiza de las Tierras Francas. El primer metal de todo herrero.",
+   "tipo": "material",
+   "rareza": "comun",
+   "precio_venta": 18,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "mineral_hierro",
+   "apilable": true,
+   "nombre": "Mineral de Hierro",
+   "descripcion": "Bloque gris y pesado. Aguanta el golpe: base de armas y armaduras.",
+   "tipo": "material",
+   "rareza": "comun",
+   "precio_venta": 26,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "mineral_plata",
+   "apilable": true,
+   "nombre": "Mineral de Plata",
+   "descripcion": "Metal pálido y frío. Se afila fino: herramientas de calidad.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 45,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "mineral_obsidiana",
+   "apilable": true,
+   "nombre": "Mineral de Obsidiana",
+   "descripcion": "Vidrio volcánico negro. Corta el acero y pesa como una maldición.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 60,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "mineral_cristal",
+   "apilable": true,
+   "nombre": "Mineral de Cristal",
+   "descripcion": "Prisma de luz fría. Late solo, incluso de noche.",
+   "tipo": "material",
+   "rareza": "rara",
+   "precio_venta": 80,
+   "max_stack": 99,
+   "mods": []
+  },
+  {
+   "id": "mineral_esmeralda",
+   "apilable": true,
+   "nombre": "Mineral de Esmeralda",
+   "descripcion": "Verde profundo del Bosque Hondo. Concentra más luz de la que emite.",
+   "tipo": "material",
+   "rareza": "magico",
+   "precio_venta": 110,
+   "max_stack": 99,
+   "mods": []
   }
  ],
- "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo.",
+ "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo. Fase 45 (minería): 6 minerales de veta (`mineral_*`), apilables. Los 10 materiales de la F43.sin `apilable` tampoco apilaban: con 20 slots la mochila se llenaba minando.",
  "version": 1
 }

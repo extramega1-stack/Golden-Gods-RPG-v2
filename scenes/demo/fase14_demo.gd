@@ -56,6 +56,8 @@ var _viaje: ViajeRapido = null
 var _arena: Arena = null
 ## Punto de retorno al salir de la arena (plaza del Maestro).
 var _retorno_arena: Vector3 = Vector3.ZERO
+## Fase 45: minería (coloca las vetas de la región y las hace minar con E).
+var _mineria: GestorVetas = null
 
 
 func _ready() -> void:
@@ -114,6 +116,18 @@ func _al_mundo_listo() -> void:
 	_arena.ayuda_oleada.connect(_al_arena_ayuda)
 	_dialogo.arena_solicitada.connect(_al_arena_dialogo)
 	_guardado.arena = _arena
+	# Fase 45: minería — 12 vetas de `data/vetas.json`, instanciadas por
+	# región (histéresis 700/900 m). El jugador las mina con el segundo clic o
+	# con E; el estado de cada veta (usos + respawn) viaja en el save.
+	_mineria = GestorVetas.new()
+	_mineria.name = "GestorVetas"
+	add_child(_mineria)
+	_mineria.configurar_desde_datos()
+	_mineria.fijar_terreno($Terreno as Terreno)
+	_mineria.fijar_jugador(_jugador)
+	_mineria.minado.connect(_al_minado)
+	_guardado.mineria = _mineria
+	_mineria.actualizar()
 	super._al_mundo_listo()
 
 
@@ -152,6 +166,12 @@ func _fraccion_ciudades() -> float:
 	if n <= 0:
 		return 1.0
 	return suma / float(n)
+
+
+## Fase 45: se	minó un golpe. El aviso flotante de la veta ya lo dice en el
+## mundo; aquí solo queda el registro para el playtest.
+func _al_minado(veta_id: String, item_id: String, cantidad: int, xp: int) -> void:
+	print("[Minería] %s → +%d %s (+%d XP)" % [veta_id, cantidad, item_id, xp])
 
 
 ## Fase 41 — entrada a la arena: guarda el retorno, teletransporta al

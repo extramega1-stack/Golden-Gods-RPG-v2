@@ -18,6 +18,9 @@ extends Entity
 ##   violencia: los NPCs nunca reciben daño). Si ya está cerca, el segundo
 ##   clic abre el diálogo directo (igual que E).
 ##   Sin animaciones todavía: solo el número.
+## - Clic izquierdo en veta (fase 45): el primer clic la selecciona; el
+##   SEGUNDO clic (o la tecla E) la mina: si está lejos camina hasta ella y
+##   mina al llegar. Igual que el NPC, sin violencia (no es combatible).
 ## Sin referencias a UI ni a ningún otro sistema.
 
 signal intencion_atacar(objetivo: Entity)
@@ -29,6 +32,10 @@ signal seleccion_cambiada(entidad: Entity)
 ## La emite solo Player; la demo abre la VentanaDialogo (la UI no toca
 ## al Player ni a sus stats).
 signal hablar_con(npc: NPC)
+## Fase 45: el jugador quiere minar esta veta (tecla E con la veta
+## seleccionada, o segundo clic sobre ella). La emite solo Player; la
+## escucha `GestorVetas`, que coloca las vetas y tiene la `Mineria`.
+signal minar_solicitado(veta: Veta)
 ## Fase 11: cambió la identidad del héroe (nombre y/o clase visible en la
 ## UI). La emiten `fijar_identidad` y la carga del save; la escuchan el
 ## retrato del HUD y la UI futura (solo lectura).
@@ -67,7 +74,9 @@ const RADIO_INTERACCION: float = 3.0
 ## - Segundo clic en la misma selección no atacable y no NPC → NADA.
 ## - Clic en otra entidad distinta → SELECCIONAR (ni ataca ni mueve).
 ## - Clic en suelo / nada → orden de mover (+ deselecciona).
-enum AccionClic { SELECCIONAR, ATACAR, NADA, INTERACTUAR }
+## - Fase 45: segundo clic en la MISMA veta → MINAR (una veta nunca es
+##   objetivo de ataque: no es combatible, como los NPCs).
+enum AccionClic { SELECCIONAR, ATACAR, NADA, INTERACTUAR, MINAR }
 
 ## Ruta al CameraRig en la escena (se asigna en el .tscn; sin esto el WASD
 ## usa yaw 0 y el clic no tiene cámara para proyectar).
@@ -120,6 +129,11 @@ var _pend_objetivo: Entity = null
 ## pendiente). Se cancela si el NPC muere, se deselecciona o el jugador
 ## toma el control manual (WASD) u ordena otro movimiento.
 var _pend_npc: NPC = null
+## Fase 45: minado pendiente — segundo clic (o E) en una veta que estaba
+## lejos. Mismo patrón que `_pend_npc`: el jugador camina hasta ella y al
+## llegar emite `minar_solicitado`. Se cancela igual (WASD, ESC, clic en
+## suelo, muerte o veta agotada).
+var _pend_veta: Veta = null
 
 
 func _ready() -> void:
@@ -260,6 +274,11 @@ func tiene_interaccion_pendiente() -> bool:
 	return _pend_npc != null
 
 
+## Fase 45: ¿hay un minado pendiente de resolverse? (tests).
+func tiene_minado_pendiente() -> bool:
+	return _pend_veta != null
+
+
 ## Fase 6 — interacción contextual (tecla E): con un NPC vivo
 ## seleccionado se quiere hablar. Fase 9.2: E respeta el radio de
 ## interacción. Si el NPC está LEJOS, NO abre el diálogo de inmediato:
@@ -269,8 +288,14 @@ func tiene_interaccion_pendiente() -> bool:
 ## Nunca fija objetivo de ataque ni emite `intencion_atacar`.
 ## Sin selección útil (nada, un enemigo, o un NPC muerto) no hace nada y
 ## no falla: los enemigos no abren diálogo. Pública para tests y la UI.
+## Fase 45: si lo seleccionado es una VETA, E mina en vez de hablar (mismo
+## idioma de interacción, sin abrir ningún diálogo).
 func interactuar() -> void:
 	if not esta_vivo():
+		return
+	var veta: Veta = seleccion as Veta
+	if veta != null:
+		_acercarse_a_veta(veta)
 		return
 	var npc: NPC = seleccion as NPC
 	if npc == null or not npc.esta_vivo():
@@ -302,9 +327,11 @@ func deseleccionar() -> void:
 	intent.tiene_destino = false
 	if seleccion == null:
 		_pend_npc = null
+		_pend_veta = null
 		return
 	seleccion = null
 	_pend_npc = null
+	_pend_veta = null
 	seleccion_cambiada.emit(null)
 
 
@@ -484,6 +511,11 @@ func _resolver_clic_entidad(e: Entity) -> int:
 		var n: NPC = e as NPC
 		if n != null and n.esta_vivo():
 			return AccionClic.INTERACTUAR
+		# Fase 45: la veta se mina con el mismo gesto (segundo clic). Una veta
+		# agotada no es seleccionable: su colisión está apagada y el raycast
+		# ni la encuentra.
+		if e is Veta:
+			return AccionClic.MINAR if (e as Veta).esta_minable() else AccionClic.NADA
 		return AccionClic.NADA
 	# Otra entidad distinta: solo seleccionar (ni atacar ni mover).
 	return AccionClic.SELECCIONAR
@@ -510,6 +542,10 @@ func _aplicar_clic(e: Entity, accion: int) -> void:
 			# Fase 9.1: segundo clic en el NPC seleccionado. Sin violencia:
 			# no fija objetivo de ataque ni emite intencion_atacar.
 			_acercarse_a_npc(e as NPC)
+		AccionClic.MINAR:
+			# Fase 45: segundo clic en la veta seleccionada. Tampoco fija
+			# objetivo de ataque (no es combatible): camina y mina al llegar.
+			_acercarse_a_veta(e as Veta)
 		_:
 			pass
 
@@ -536,11 +572,16 @@ func _physics_process(delta: float) -> void:
 		skills.tick(delta)
 	_cd_ataque = maxf(_cd_ataque - delta, 0.0)
 	# Fase 5.1: la selección muerta se limpia sola (el indicador se oculta).
+	# Fase 45: también se suelta una veta que se agotó al minarla (si no,
+	# el indicador quedaría flotando sobre el aire).
 	if seleccion != null and not seleccion.esta_vivo():
+		deseleccionar()
+	elif seleccion is Veta and not (seleccion as Veta).esta_minable():
 		deseleccionar()
 	_construir_intent()
 	_actualizar_lanzamiento_pendiente()
 	_actualizar_interaccion_pendiente()
+	_actualizar_minado_pendiente()
 	_consumir_intent(delta)
 	_actualizar_ataque(delta)
 	# Fase 12: el héroe camina pegado al terreno del mundo abierto.
@@ -559,6 +600,7 @@ func _construir_intent() -> void:
 		_tiene_destino = false
 		objetivo_ataque = null
 		_pend_npc = null
+		_pend_veta = null
 	intent.tiene_destino = _tiene_destino
 	intent.destino = _destino
 
@@ -637,6 +679,45 @@ func _acercarse_a_npc(n: NPC) -> void:
 	_pend_npc = n
 	_tiene_destino = true
 	_destino = n.global_position
+
+
+## Fase 45 — segundo clic en una veta ya seleccionada (y la tecla E): si está
+## dentro del radio de interacción mina al instante (emite `minar_solicitado`
+## y la `GestorVetas` la mina); si está lejos queda un minado pendiente y el
+## jugador camina hasta ella. Sin violencia: una veta nunca es objetivo de
+## ataque. Pública para tests.
+func _acercarse_a_veta(v: Veta) -> void:
+	if v == null or not is_instance_valid(v):
+		return
+	if not v.esta_minable():
+		# Agotada: no hay nada que hacer (ni la selecciona).
+		return
+	if _dist_a(v) <= RADIO_INTERACCION:
+		minar_solicitado.emit(v)
+		return
+	_pend_veta = v
+	_tiene_destino = true
+	_destino = v.global_position
+
+
+## Fase 45 — resuelve el minado pendiente: si la veta se agotó, dejó de ser la
+## selección (ESC, WASD, clic en suelo) o ya no es válida, se cancela; si está
+## dentro del radio, mina; si no, sigue acercándose (mismo patrón que el
+## diálogo pendiente).
+func _actualizar_minado_pendiente() -> void:
+	if _pend_veta == null:
+		return
+	var v: Veta = _pend_veta
+	if not is_instance_valid(v) or not v.esta_minable() or v != seleccion:
+		_pend_veta = null
+		return
+	if _dist_a(v) <= RADIO_INTERACCION:
+		_pend_veta = null
+		_tiene_destino = false
+		minar_solicitado.emit(v)
+	else:
+		_destino = v.global_position
+		_tiene_destino = true
 
 
 ## Si hay objetivo de ataque: lo persigue hasta el rango; en rango se queda

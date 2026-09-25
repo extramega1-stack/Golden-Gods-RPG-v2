@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.11 — Fase 17 (2026-09-22)
+**Versión del documento:** 3.40 — Fase 45 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,9 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 9 terminada — Detalle de misión + respawn de mobs:
+**Estado:** Fase 45 terminada (la de abajo es la última; el detalle de cada
+fase vive en su sección, desde "Fase 0" hasta el final del documento) —
+Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
   canon Liberty) en cada misión de `data/quests.json` — *Goblins fuera*
   (Ilya: los titanes se agitan, goblins rondando Piedraceniza, la defensa
@@ -1179,4 +1181,55 @@ al loot.
 - Sin bloque de save nuevo: materiales y equipo ya viajan en el inventario.
 - Tests: `tests/test_fase44_herreria.gd` — 132/132. Suite 100% verde.
 
-*Fin del documento maestro v3.39 — Fase 44 (herrería).*
+*Fin del documento maestro v3.40 — Fase 45 (minería).*
+
+
+## Fase 45 — Minería: vetas por bioma (2026-09-24)
+
+La primera de las dos profesiones que quedaban (la otra, cocina, es la fase
+46). Hasta aquí los 17 materiales de la Fase 43 solo servían para la
+herrería: ahora el jugador también puede **extraer** los suyos, y cada región
+del mundo expone el mineral con el que se identifica.
+
+- **12 vetas** en `data/vetas.json`, producidas por
+  `tools/generar_vetas.py` (determinista, semilla 20260924, dos corridas →
+  mismo SHA-256, igual que el terreno y los spawns). Una por cada una de las
+  **10 regiones** + 2 repetidas (hierro junto a Moon Town, esmeraldas en el
+  Umbral de Ladon). Se colocan en el anillo 900–1500 m del centro de su
+  ciudad, fuera del disco urbano y fuera de la zona segura de 40 m; el Velo
+  (sin ciudad propia) se reparte uniforme en su rectángulo.
+- **6 minerales** nuevos en `data/items.json` (`mineral_cobre`, `mineral_hierro`,
+  `mineral_plata`, `mineral_obsidiana`, `mineral_cristal`, `mineral_esmeralda`),
+  cada uno con su tinte: el color ES la identidad de la veta en el mapa.
+- **Escala data-driven, derivada de la región** (nada escrito a mano):
+  `nivel` = `nivel_min` de la región (gate), `xp` = `min(12, 5 + nivel/3)` →
+  5 XP al principio y 12 en endgame, `cantidad` = `min(3, 1 + nivel/15)` → de
+  1 a 3 minerales por golpe.
+- **3 usos + 180 s de respawn** (decidido por Juan Diego en la fase 45).
+  Minar es **instantáneo**, da el XP de la veta, **no da oro** (el oro es de
+  las recetas) y **no toca stats**.
+- `VetaDB` (datos) · `Veta` (nodo: estado + visual + aviso flotante +
+  guardado) · `Mineria` (lógica pura, sin estado ni nodo) · `GestorVetas`
+  (coloca las vetas de la región con histéresis 700/900 m, como el streaming
+  de mobs, y guarda su estado).
+- **La veta es una `Entity` no combatible** (`combatible = false`, igual que
+  los NPCs): así el raycast del clic la encuentra sin tocar al jugador y
+  habla el mismo idioma — primer clic selecciona, segundo clic o **E** mina;
+  si está lejos, el jugador camina hasta ella y mina al llegar
+  (`minar_solicitado`, mismo patrón que `_pend_npc`). Nunca es objetivo de
+  ataque ni entra en el foco de combate.
+- **Aviso flotante** `Label3D` sobre la veta ("+2 Mineral de Cobre (+9 XP)"),
+  reutilizado y apagado solo: sin UI nueva y sin acoplar la UI al mundo.
+- **Nodos con nombre fijo** (`Cuerpo`, `Colision`, `Aviso`, `Cristal0..2`) para
+  que la fase 47 sea un *swap* a modelos GLB y no una reescritura. Mallas,
+  esfera de colisión y materiales **compartidos** (uno por mineral, no uno por
+  veta) y la veta **no se procesa en reposo** (`set_process(false)`).
+- **Save v13**: bloque `mineria` con los usos y la cuenta atrás de respawn de
+  cada veta tocada (guardado mínimo). Una partida v12 sin bloque deja las
+  vetas intactas. El estado de una veta lejana no se pierde al alejarse (si no,
+  minar sería infinito: te ibas, volvías y la veta estaba llena).
+- **Arreglo de datos**: los 10 materiales de la Fase 43 no tenían `apilable`,
+  así que cada unidad ocupaba uno de los 20 slots y la mochila se llenaba
+  minando. Con `apilable: true` el mineral apila (verificado por test).
+- Tests: `tests/test_fase45_mineria.gd` — 318/318. Suite 100% verde (70
+  suites + 4 smokes) + regresión de los conteos de items y la versión de save.

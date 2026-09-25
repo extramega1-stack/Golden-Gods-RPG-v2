@@ -9,7 +9,7 @@ extends RefCounted
 ## El archivo vive en user://partida.json. Ante versiones desconocidas o
 ## JSON corrupto: push_warning y la carga no revienta (retorna false).
 
-const SAVE_VERSION: int = 12
+const SAVE_VERSION: int = 13
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
@@ -33,6 +33,10 @@ var tutorial: Tutorial = null
 ## Fase 41: arena PvE (mejor oleada + victorias). Sin asignar, el bloque
 ## "arena" se guarda a cero y la carga avisa sin reventar.
 var arena: Arena = null
+## Fase 45: minería (usos que le quedan a cada veta + cuenta atrás de
+## respawn). Sin asignar, el bloque "mineria" se guarda vacío y la carga
+## avisa sin reventar.
+var mineria: GestorVetas = null
 
 
 func hay_partida() -> bool:
@@ -68,6 +72,8 @@ func guardar() -> bool:
 		"barra_acciones": barra_acciones.to_dict() if barra_acciones != null else {},
 		"tutorial": tutorial.to_dict() if tutorial != null else {"version": Tutorial.SAVE_VERSION_TUTORIAL, "hecho": false, "paso": 0},
 		"arena": arena.to_dict() if arena != null else {"version": Arena.SAVE_VERSION_ARENA, "mejor_oleada": 0, "victorias": 0},
+		# Fase 45: bloque "mineria" — usos y respawn de cada veta.
+		"mineria": mineria.estado_para_guardar() if mineria != null else {},
 	}
 	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
 	if f == null:
@@ -101,6 +107,7 @@ func cargar() -> bool:
 	_cargar_barra(datos.get("barra_acciones", {}))
 	_cargar_tutorial(datos.get("tutorial", {}), version)
 	_cargar_arena(datos.get("arena", {}))
+	_cargar_mineria(datos.get("mineria", {}))
 	return true
 
 
@@ -293,6 +300,18 @@ func _cargar_arena(bloque: Dictionary) -> void:
 		arena.cargar_estado({})
 		return
 	arena.cargar_estado(bloque)
+
+
+## Fase 45 — minería. Tolerante: sin bloque (partidas v12 y anteriores, cuando
+## las vetas no existían) TODAS las vetas vuelven a sus usos completos: es el
+## mismo criterio que "trofeos frescos" en la arena.
+func _cargar_mineria(bloque: Dictionary) -> void:
+	if mineria == null:
+		push_warning("[SaveSystem] sin gestor de vetas asignado; el estado de las vetas queda sin cargar")
+		return
+	if bloque.is_empty():
+		return
+	mineria.cargar_estado(bloque)
 
 
 ## Fase 6 — NPCs: se guarda solo id + posición (no mueren, no hay vida que

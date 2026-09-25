@@ -50,7 +50,7 @@ func _nueva_entidad() -> Entity:
 func _t_itemdb() -> void:
 	IDB.cargar()
 	# Fase 22: 16 = 10 + 6 fragmentos de jefe.
-	_check(IDB.ids().size() == 47, "ItemDB carga 47 items (16 + Eco + 10 f31 + 10 regionales + 10 forjadas)", str(IDB.ids().size()))
+	_check(IDB.ids().size() == 53, "ItemDB carga 53 items (16 + Eco + 10 f31 + 10 regionales + 10 forjadas + 6 minerales)", str(IDB.ids().size()))
 	_check(IDB.existe("pocion_vida"), "existe pocion_vida (drop de enemies.json)")
 	_check(IDB.existe("daga_gastada"), "existe daga_gastada (drop de enemies.json)")
 	_check(IDB.existe("colmillo"), "existe colmillo (drop de enemies.json)")

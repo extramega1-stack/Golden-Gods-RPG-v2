@@ -196,7 +196,7 @@ func _t_save_v7() -> void:
 	_check(s.guardar(), "save v9: guardar() true")
 	var crudo: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveSystem.RUTA))
 	var version: int = int((crudo as Dictionary).get("version", 0))
-	_check(version == 12, "save v12: version 12 en disco (fase 41)", "version=%d" % version)
+	_check(version == 13, "save v13: version 13 en disco (fase 45)", "version=%d" % version)
 	var dj: Dictionary = (crudo as Dictionary).get("jugador", {})
 	_check(str(dj.get("clase_id", "")) == "mago", "save v9: clase_id guardada")
 	var p2: Player = PL.new()

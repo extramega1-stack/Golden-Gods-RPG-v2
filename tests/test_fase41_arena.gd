@@ -181,7 +181,7 @@ func _test_victoria() -> void:
 
 ## (e) Save v12 + round-trip + sin bloque.
 func _test_save() -> void:
-	_chk(SaveSystem.SAVE_VERSION == 12, "e: save v12")
+	_chk(SaveSystem.SAVE_VERSION == 13, "e: save v13")
 	var a: Arena = AR.new()
 	_basura.append(a)
 	a.mejor_oleada = 7

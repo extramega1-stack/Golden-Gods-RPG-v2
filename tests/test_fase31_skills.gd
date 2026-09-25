@@ -197,8 +197,8 @@ func _test_player_save() -> void:
 	_chk(s.guardar(), "e: guardar() true")
 	var crudo: Variant = JSON.parse_string(FileAccess.get_file_as_string(SaveSystem.RUTA))
 	var dj: Dictionary = (crudo as Dictionary).get("jugador", {})
-	_chk(int((crudo as Dictionary).get("version", 0)) == 12,
-		"e: version 12 en disco (fase 41)")
+	_chk(int((crudo as Dictionary).get("version", 0)) == 13,
+		"e: version 13 en disco (fase 45)")
 	var blk: Dictionary = dj.get("skills", {})
 	_chk(int(blk.get("version", 0)) == 1, "e: bloque skills v1")
 	_chk(int(blk.get("puntos_skill", -1)) == p.skills.puntos_skill,
