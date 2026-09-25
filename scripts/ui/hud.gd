@@ -10,8 +10,14 @@ extends CanvasLayer
 ## Todos los controles llevan mouse_filter IGNORE para no comerse ni un
 ## clic del juego (lección 11 de AGENTS.md).
 
+## Fase 46.1: el jugador pidió el botón de la ayuda. La emite el HUD (que
+## solo hace de botón) y la escucha quien tenga el `PanelAyuda` (la demo).
+signal ayuda_solicitada
+
 var _jugador: Player = null
 var _conectado: bool = false
+## Botón "?" del manual (esquina superior derecha).
+var _boton_ayuda: Button = null
 
 var _barra_vida: ProgressBar = null
 var _barra_mana: ProgressBar = null
@@ -62,6 +68,9 @@ func _construir() -> void:
 	_valor_mana = _nuevo_valor()
 	col.add_child(_fila_barra(_barra_mana, _valor_mana))
 
+	_boton_ayuda = _nuevo_boton_ayuda()
+	add_child(_boton_ayuda)
+
 	# XP: fina, de ancho completo al filo inferior (como antes).
 	_barra_xp = _nueva_barra(TemaFlyFF.XP, Vector2(1, 10))
 	_barra_xp.anchor_left = 0.0
@@ -76,6 +85,46 @@ func _construir() -> void:
 
 
 ## Fila barra + valor "actual/máx" a la derecha (FlyFF).
+## Fase 46.1 — botón "?" del manual, arriba a la derecha (esquina libre del
+## HUD: el marco de estado vive arriba a la izquierda, la brújula arriba en el
+## centro y el minimapa abajo a la derecha). Con la misma piel dorada del
+## resto, y con tooltip: si el jugador no lo vio, le basta con pasar el ratón.
+func _nuevo_boton_ayuda() -> Button:
+	var b := Button.new()
+	b.name = "BotonAyuda"
+	b.text = "?"
+	b.tooltip_text = "Manual de controles y mecánicas (tecla ?)"
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(38, 38)
+	b.size = Vector2(38, 38)
+	b.anchor_left = 1.0
+	b.anchor_right = 1.0
+	b.anchor_top = 0.0
+	b.anchor_bottom = 0.0
+	b.offset_left = -54.0
+	b.offset_right = -16.0
+	b.offset_top = 12.0
+	b.offset_bottom = 50.0
+	b.add_theme_font_size_override("font_size", 22)
+	b.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.70))
+	b.add_theme_color_override("font_pressed_color", Color(0.95, 0.76, 0.32))
+	b.add_theme_stylebox_override("normal", _estilo_ayuda(Color(0.10, 0.09, 0.07, 0.92)))
+	b.add_theme_stylebox_override("hover", _estilo_ayuda(Color(0.18, 0.15, 0.10, 0.96)))
+	b.add_theme_stylebox_override("pressed", _estilo_ayuda(Color(0.24, 0.19, 0.11, 0.98)))
+	b.pressed.connect(func() -> void: ayuda_solicitada.emit())
+	return b
+
+
+func _estilo_ayuda(fondo: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fondo
+	sb.border_color = Color(0.85, 0.68, 0.30)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(4)
+	return sb
+
+
 func _fila_barra(barra: ProgressBar, valor: Label) -> HBoxContainer:
 	var fila := HBoxContainer.new()
 	fila.add_theme_constant_override("separation", 8)
@@ -163,6 +212,11 @@ static func tramo_xp(actual: int, nivel: int) -> Vector2:
 	var maximo: float = float(maxi(siguiente - base, 1))
 	var valor: float = clampf(float(actual - base), 0.0, maximo)
 	return Vector2(valor, maximo)
+
+
+## El botón "?" del manual (para tests).
+func boton_ayuda() -> Button:
+	return _boton_ayuda
 
 
 func _nivel_actual() -> int:

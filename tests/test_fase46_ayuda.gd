@@ -23,6 +23,8 @@ var _fallos: int = 0
 var _f: int = 0
 var _hecho: bool = false
 var _panel: PanelAyuda = null
+## Contador para el botón "?" del HUD (las lambdas capturan por valor).
+var _pedidos_ayuda: int = 0
 
 
 func _init() -> void:
@@ -48,6 +50,7 @@ func _process(_d: float) -> bool:
 	_test_mecanicas()
 	_test_teclas()
 	_test_solo_lectura()
+	_test_boton_hud()
 	print("[TEST] fase46_ayuda: %d ok, %d fallos" % [_ok, _fallos])
 	quit(_fallos)
 	return true
@@ -209,6 +212,34 @@ func _test_teclas() -> void:
 	_panel.cerrar_panel()
 	_panel._unhandled_input(esc)
 	_chk(not _panel.esta_abierta(), "f: ESC con el panel cerrado no hace nada")
+
+
+## (h) El botón "?" del HUD: tiene que EXISTIR y ser visible, porque una
+## tecla que no se ve no se aprende (el jugador no lo encontraba).
+func _test_boton_hud() -> void:
+	var hud: HUD = preload("res://scripts/ui/hud.gd").new()
+	root.add_child(hud)
+	var b: Button = hud.boton_ayuda()
+	_chk(b != null, "h: el HUD tiene botón de ayuda")
+	if b == null:
+		return
+	_chk(str(b.text) == "?", "h: pone una interrogación", str(b.text))
+	_chk(b.visible, "h: el botón se ve")
+	_chk(b.tooltip_text.contains("?"), "h: el tooltip dice la tecla", b.tooltip_text)
+	_chk(b.custom_minimum_size.x >= 32.0, "h: es lo bastante grande para pulsarlo",
+		str(b.custom_minimum_size))
+	# Anclado arriba a la derecha (esquina libre del HUD).
+	_chk(b.anchor_left == 1.0 and b.anchor_right == 1.0,
+		"h: anclado a la esquina derecha")
+	_chk(b.offset_right < 0.0, "h: con margen respecto al borde", str(b.offset_right))
+	# Al pulsarlo pide la ayuda (la demo es quien la abre). El contador es un
+	# miembro de la clase porque las lambdas de GDScript capturan por valor.
+	hud.ayuda_solicitada.connect(func() -> void: _pedidos_ayuda += 1)
+	b.pressed.emit()
+	_chk(_pedidos_ayuda == 1, "h: al pulsarlo pide la ayuda", str(_pedidos_ayuda))
+	b.pressed.emit()
+	_chk(_pedidos_ayuda == 2, "h: y otra vez también (no se queda abierto)",
+		str(_pedidos_ayuda))
 
 
 ## (g) La UI solo lee: el panel no toca el juego.

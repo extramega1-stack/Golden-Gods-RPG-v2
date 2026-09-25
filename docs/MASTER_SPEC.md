@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.43 — Fase 46 (2026-09-24)
+**Versión del documento:** 3.44 — Fase 46.1 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 46 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 46.1 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1263,7 +1263,24 @@ jugador ni el reviewer tenían a mano cómo se juega.
 - Tests: `tests/test_fase46_ayuda.gd` — 148/148. Suite 100% verde (72 suites +
   4 smokes).
 
-*Fin del documento maestro v3.43 — Fase 46 (manual de ayuda).*
+## Fase 46.1 — El botón "?" del manual (2026-09-24)
+
+El manual existía pero **solo se abría con una tecla que no se ve**: el
+jugador no encontraba el signo `?` en ninguna parte. Una tecla invisible no se
+aprende.
+
+- **Botón `?` en el HUD**, esquina superior derecha (la única libre: el marco
+  de estado vive arriba a la izquierda, la brújula arriba en el centro y el
+  minimapa abajo a la derecha), con la misma piel dorada del resto y
+  `tooltip` con la tecla. 38×38 px, pulsable.
+- El HUD solo emite `ayuda_solicitada` (es un botón, no un sistema: no toca
+  nada); la **demo** es quien abre el `PanelAyuda`. Igual idioma que el resto
+  de señales de la fase 9.
+- Tests: `test_fase46_ayuda` — 157/157 (incluye que el botón existe, se ve,
+  tiene el tamaño suficiente, está anclado a la esquina y pide la ayuda al
+  pulsarlo). Suite 100% verde (72 suites + 4 smokes).
+
+*Fin del documento maestro v3.44 — Fase 46.1 (botón ? del manual).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

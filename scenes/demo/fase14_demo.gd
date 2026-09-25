@@ -131,6 +131,8 @@ func _al_mundo_listo() -> void:
 	_mineria.minado.connect(_al_minado)
 	_guardado.mineria = _mineria
 	_mineria.actualizar()
+	if _hud != null and is_instance_valid(_hud) and _hud.boton_ayuda() != null:
+		print("[Fase46] manual de ayuda listo: botón ? arriba a la derecha, o tecla ?")
 	print("[Fase45] minería: %d vetas registradas, %d en el mapa cerca"
 			% [_mineria.conteo_registros(), _mineria.conteo_vetas()])
 	# Fase 46: el manual de ayuda. Se pone `abrir_al_arrancar = false` porque
@@ -138,6 +140,9 @@ func _al_mundo_listo() -> void:
 	_ayuda = ESCENA_AYUDA.instantiate() as PanelAyuda
 	_ayuda.abrir_al_arrancar = false
 	add_child(_ayuda)
+	# El botón "?" del HUD abre el mismo manual que la tecla.
+	if _hud != null and is_instance_valid(_hud):
+		_hud.ayuda_solicitada.connect(_al_ayuda_hud)
 	super._al_mundo_listo()
 	# Fase 45.2: con el mundo ya construido, la pantalla de carga fuera y el
 	# jugador colocado en su punto, arranca el tutorial (nueva partida). Es el
@@ -181,6 +186,12 @@ func _fraccion_ciudades() -> float:
 	if n <= 0:
 		return 1.0
 	return suma / float(n)
+
+
+## Fase 46.1: el botón "?" del HUD abre el manual (la tecla ? también).
+func _al_ayuda_hud() -> void:
+	if _ayuda != null and is_instance_valid(_ayuda):
+		_ayuda.mostrar_manual()
 
 
 ## Fase 45: se	minó un golpe. El aviso flotante de la veta ya lo dice en el
