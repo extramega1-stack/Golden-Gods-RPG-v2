@@ -42,6 +42,7 @@ func _process(_d: float) -> bool:
 	_test_modelo_ausente()
 	_test_medidor()
 	_test_presupuesto()
+	_test_modelos()
 	print("[TEST] fase48_anclajes_bench: %d ok, %d fallos" % [_ok, _fallos])
 	for n in _basura:
 		if is_instance_valid(n):
@@ -311,6 +312,70 @@ func _test_medidor() -> void:
 	_chk(linea.contains("BENCH-GPU") and linea.contains("draw"), "e: la línea es legible",
 		linea)
 	_chk(MD.linea_informe({}).contains("sin muestras"), "e: y avisa si no hay muestras")
+
+
+## (g) El manifiesto de modelos: la puerta de la licencia. Un `.glb` sin
+## entrada en `data/modelos.json`, o con una licencia que no sea CC0/CC-BY, es
+## un test que falla (regla dura §7.5: nunca Blizzard, y la autorización de los
+## 85 GLB de Meshy es con licencia CC0/CC-BY).
+func _test_modelos() -> void:
+	var texto: String = FileAccess.get_file_as_string("res://data/modelos.json")
+	_chk(not texto.is_empty(), "g: existe data/modelos.json")
+	var crudo: Variant = JSON.parse_string(texto)
+	_chk(crudo is Dictionary, "g: el manifiesto es JSON válido")
+	var d: Dictionary = crudo as Dictionary
+	var permitidas: Array = d.get("licencias_permitidas", [])
+	_chk(permitidas.has("CC0") and permitidas.has("CC-BY"),
+		"g: solo se admiten CC0 y CC-BY", str(permitidas))
+	var declarados: Dictionary = {}
+	for m in (d.get("modelos", []) as Array):
+		if not (m is Dictionary):
+			continue
+		var md: Dictionary = m
+		var arch: String = str(md.get("archivo", ""))
+		_chk(arch.ends_with(".glb"), "g: el manifiesto solo lista .glb", arch)
+		_chk(str(md.get("fuente", "")) != "", "g: " + arch + " dice su fuente")
+		_chk(str(md.get("autor", "")) != "", "g: " + arch + " dice su autor")
+		_chk(permitidas.has(str(md.get("licencia", ""))),
+			"g: " + arch + " tiene licencia permitida", str(md.get("licencia", "")))
+		declarados[arch] = md
+	# Todo .glb de la carpeta tiene que estar declarado.
+	var encontrados: int = 0
+	for archivo in _glb_de("res://models"):
+		encontrados += 1
+		var nombre: String = str(archivo).get_file()
+		_chk(declarados.has(nombre),
+			"g: models/" + nombre + " está declarado en el manifiesto")
+		_chk(FileAccess.file_exists("res://models/" + nombre),
+			"g: models/" + nombre + " existe de verdad")
+	# Y al revés: un modelo declarado tiene que estar en la carpeta.
+	for arch in declarados:
+		_chk(FileAccess.file_exists("res://models/" + str(arch)),
+			"g: el modelo declarado existe: " + str(arch))
+	# Los mesh_path de la tabla tienen que existir o estar vacíos.
+	for slot in AnclajesDB.slots():
+		var mp: String = str(AnclajesDB.obtener(slot).get("mesh_path", ""))
+		if mp == "":
+			continue
+		_chk(mp.begins_with("res://models/"),
+			"g: " + slot + " apunta dentro de models/", mp)
+		_chk(ResourceLoader.exists(mp), "g: " + slot + " apunta a algo que existe", mp)
+		_chk(declarados.has(mp.get_file()), "g: " + slot + " está en el manifiesto", mp)
+	_chk(encontrados == declarados.size(),
+		"g: manifiesto y carpeta dicen lo mismo",
+		"%d en disco vs %d declarados" % [encontrados, declarados.size()])
+
+
+func _glb_de(dir: String) -> Array[String]:
+	var res: Array[String] = []
+	var d: DirAccess = DirAccess.open(dir)
+	if d == null:
+		return res
+	for f in d.get_files():
+		if str(f).to_lower().ends_with(".glb"):
+			res.append("res://models/" + str(f))
+	d.list_dir_end()
+	return res
 
 
 ## (f) El presupuesto sigue siendo el de la fase 20.

@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.46 — Fase 47 (2026-09-24)
+**Versión del documento:** 3.47 — Fase 48.1 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 47 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 48.1 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1337,7 +1337,28 @@ de la barra de acciones no correspondían con ninguna tecla real**.
 - El manual de la Fase 46 (datos y nota del panel) actualizado a F1–F8.
 - Suite 100% verde (74 suites + 4 smokes).
 
-*Fin del documento maestro v3.46 — Fase 47 (teclas de la barra).*
+## Fase 48.1 — `models/` con puerta de licencia (2026-09-24)
+
+Para que Juan Diego pueda meter los GLB a mano, con reglas y sin sorpresas.
+
+- **`models/`** con `README.md`: qué va ahí, qué no (el terreno **no**: es el
+  heightmap de `data/terreno.bin`; y nada que no sea `.glb`/`.gltf`), la
+  convención de huesos para las animaciones (`Hand.R`, `Head`, `Chest`,
+  `Neck`, `Foot.L/R` y clips `idle/walk/attack/die` nombrados como la FSM) y
+  el presupuesto de render de la fase 48.
+- **`data/modelos.json`**: manifiesto de los modelos. Un `.glb` sin entrada
+  aquí **no pasa los tests**, igual que un `.glb` con licencia que no sea
+  CC0/CC-BY. Es la puerta automática de la regla dura §7.5 (nunca Blizzard).
+- **`test_fase48` ampliado** (242/242) con esa comprobación en los dos
+  sentidos: `models/` y el manifiesto tienen que decir lo mismo, y cada
+  `mesh_path` de la tabla tiene que apuntar a un archivo que exista y esté
+  declarado. Verificado metiendo un `.glb` falso: el test falla, y también
+  falla al declararlo con `CC-BY-NC`.
+- Meter un modelo son 3 pasos: copiar el `.glb`, registrarlo en el manifiesto,
+  y poner su ruta en el `mesh_path` de `data/anclajes.json`.
+- Suite 100% verde (74 suites + 4 smokes).
+
+*Fin del documento maestro v3.47 — Fase 48.1 (models/ con puerta de licencia).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

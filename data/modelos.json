@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "nota": "Fase 48 — Manifiesto de los modelos 3D. `tests/test_fase48_anclajes_bench.gd` falla si un `.glb` de `models/` no está aquí, o si su licencia no es CC0/CC-BY, o si un `mesh_path` de `data/anclajes.json` apunta a un archivo que no existe. Cada modelo que entra, entra aquí: es la garantía de que no aparece un asset sin licencia (regla dura §7.5: NUNCA Blizzard).",
+  "licencias_permitidas": [
+    "CC0",
+    "CC-BY"
+  ],
+  "campos": {
+    "archivo": "Nombre del archivo dentro de models/ (con .glb)",
+    "nombre": "Nombre legible del asset",
+    "categoria": "personaje | criatura | edificio | prop | arma | montura | ui",
+    "licencia": "CC0 o CC-BY (obligatorio)",
+    "autor": "Quién hizo el asset",
+    "fuente": "Dónde se descargó o de qué asset sale (obligatorio)",
+    "anclajes": "A qué va montado: 'jugador', nombres de slot de Equipo.SLOTS, o nombres de arquetipo de data/enemies.json",
+    "notas": "Opcional: convención de huesos, origen de las animaciones, etc."
+  },
+  "modelos": []
+}
