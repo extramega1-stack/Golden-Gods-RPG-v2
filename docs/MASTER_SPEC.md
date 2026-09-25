@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.42 — Fase 45.2 (2026-09-24)
+**Versión del documento:** 3.43 — Fase 46 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 45.2 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 46 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1232,7 +1232,38 @@ Verificado con una captura del frame real en que el aviso se enciende
 `tests/test_fase45_2_toast.gd` — 15/15, que monta el panel y el tutorial
 **reales**. Suite 100% verde (71 suites + 4 smokes).
 
-*Fin del documento maestro v3.42 — Fase 45.2 (los avisos se ven).*
+## Fase 46 — Manual de ayuda: controles y mecánicas (2026-09-24)
+
+Había 27 acciones en el Input Map y **ni una página que las explicara**: ni el
+jugador ni el reviewer tenían a mano cómo se juega.
+
+- **`PanelAyuda`** (CanvasLayer propio, capa 32) con **dos pestañas**:
+  - **Controles**: se generan del **Input Map en runtime**
+    (`InputMap.get_actions()` + `OS.get_keycode_string()`), ordenados por tecla.
+    Deliberadamente **no** es un JSON: así no puede desincronizarse ni del
+    rebind por slot de la fase 38 ni de las teclas que se añadan después.
+  - **Mecánicas**: 9 secciones, 26 entradas, en `data/mecanicas.json` (texto
+    editorial → datos, §9.4): primeros pasos, movimiento y cámara, combate y
+    selección, skills y barra, inventario/equipo/talentos/personaje, misiones y
+    NPCs, profesiones (minería y herrería), mundo/viaje/regiones, arena y
+    guardado.
+- **Se abre con `?`** (acción `abrir_ayuda` del Input Map, tecla 47: sirve `/`
+  y también `?`) y se cierra con ESC o con la misma tecla. Botón **Ayuda** en
+  la pantalla de título.
+- **Escena propia** `scenes/ui/panel_ayuda.tscn` (`abrir_al_arrancar = true`):
+  se puede correr **sola con F6** desde el editor para revisarla sin entrar al
+  juego. En la demo se instancia con el flag a `false`.
+- **Adaptativo**: el panel va anclado a pantalla completa con margen, nunca
+  centrado con tamaño fijo: con una ventana pequeña se encoge en vez de salirse.
+- La UI solo lee: no toca stats, inventario ni oro (verificado por test).
+- **Bug que el manual destapa** (arreglado en la fase 47, no aquí): `F9` está
+  en `guardar_partida` **y** en `barra_6`, y `F10` en `cargar_partida` **y** en
+  `barra_7`. La barra es F4–F11, no F1–F8 como dice el spec. El manual lo
+  muestra tal cual es, sin maquillar.
+- Tests: `tests/test_fase46_ayuda.gd` — 148/148. Suite 100% verde (72 suites +
+  4 smokes).
+
+*Fin del documento maestro v3.43 — Fase 46 (manual de ayuda).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

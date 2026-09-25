@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "nota": "Fase 46 (manual de ayuda). Contenido del panel: MECÁNICAS. La columna de CONTROLES no está aquí a propósito: se lee del InputMap en runtime (`InputMap.get_actions()`), así que no puede desincronizarse nunca de las teclas reales ni del rebind de la fase 38. Cada sección: {id, titulo, entradas: [{titulo, texto, teclas}]}.",
+  "secciones": [
+    {
+      "id": "primeros_pasos",
+      "titulo": "Primeros pasos",
+      "entradas": [
+        {
+          "titulo": "Eres el héroe de Liberty",
+          "texto": "Sales en la plaza de Moon Town con 200 de oro y una barra de 8 slots. A la izquierda de la plaza hay una veta de cobre: es una veta minera, y se mina con el segundo clic o con E.",
+          "teclas": []
+        },
+        {
+          "titulo": "Este manual",
+          "texto": "Se abre y se cierra con la tecla ? (la de debajo del punto, también sirve /). A la izquierda tienes TODOS los controles, leídos del juego; a la derecha, las mecánicas. Se cierra con ESC o con esa misma tecla.",
+          "teclas": [
+            "?"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "movimiento",
+      "titulo": "Movimiento y cámara",
+      "entradas": [
+        {
+          "titulo": "Andar",
+          "texto": "WASD mueve en la dirección de la cámara (giras con el ratón). Un clic en el suelo hace que el héroe camine hasta ahí. La rueda acerca y aleja; con el botón derecho se gira la cámara.",
+          "teclas": [
+            "W",
+            "A",
+            "S",
+            "D"
+          ]
+        },
+        {
+          "titulo": "Cancelar",
+          "texto": "ESC solta la selección, borra el destino y detiene el autoataque. También sirve para cerrar cualquier panel abierto, incluido este manual.",
+          "teclas": [
+            "ESC"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "combate",
+      "titulo": "Combate y selección (modelo de dos clics)",
+      "entradas": [
+        {
+          "titulo": "Seleccionar",
+          "texto": "Un clic en un enemigo, NPC o veta lo selecciona y lo marca. Un clic en el suelo o ESC quita la selección.",
+          "teclas": []
+        },
+        {
+          "titulo": "Atacar",
+          "texto": "El SEGUNDO clic sobre el mismo enemigo seleccionado lo fija como objetivo: el héroe lo persigue hasta su rango y golpea solo. La tecla T ataca lo que tengas seleccionado.",
+          "teclas": [
+            "T"
+          ]
+        },
+        {
+          "titulo": "Autoataque",
+          "texto": "Lanzar una skill dañina deja al enemigo como objetivo: el héroe sigue pegándole hasta que muere, se aleja o le ordenes otra cosa. WASD siempre tiene prioridad: en cuanto tocas el teclado, tomas el control.",
+          "teclas": []
+        },
+        {
+          "titulo": "Niveles y daño",
+          "texto": "El daño sale de tus atributos y del equipo: fuerza para la clase de ataque físico, inteligencia para la de poder, y así cada clase pega distinto. Los enemigos de cada región escalan con ella: cuanto más lejos de Moon Town, más nivel y más vida tienen.",
+          "teclas": []
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "titulo": "Skills y barra de acciones",
+      "entradas": [
+        {
+          "titulo": "Lanzar",
+          "texto": "Las teclas del 1 al 5 lanzan las skills de tu clase. El slot 1 es el ataque básico.",
+          "teclas": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ]
+        },
+        {
+          "titulo": "Slots F4-F11",
+          "texto": "La barra de abajo tiene 8 slots y se lanzan con F4 a F11. Puedes arrastrar una skill de un slot a otro para reordenarlas, y con SUPR (Intro del teclado numérico) vaciar el slot que tengas delante.",
+          "teclas": [
+            "F4",
+            "F11"
+          ]
+        },
+        {
+          "titulo": "Maná",
+          "texto": "Las skills cuestan maná. Si no tienes, no salen: el botón se queda en gris. El maná se regenera solo, despacio, y los curatives y las pociones lo rellenan.",
+          "teclas": []
+        }
+      ]
+    },
+    {
+      "id": "inventario",
+      "titulo": "Inventario, equipo y personaje",
+      "entradas": [
+        {
+          "titulo": "Inventario (I)",
+          "texto": "20 slots. Las pociones y la comida se USAN desde aquí; el resto de cosas se guarda. Los materiales se apilan.",
+          "teclas": [
+            "I"
+          ]
+        },
+        {
+          "titulo": "Equipo (C)",
+          "texto": "12 huecos: arma, escudo, casco, armadura, guantes, botas y 4 accesorios. Los mods del equipo se aplican solos y se quitan al desequipar.",
+          "teclas": [
+            "C"
+          ]
+        },
+        {
+          "titulo": "Habilidades y talentos (K)",
+          "texto": "Dos pestañas: Skills (tus niveles y puntos) y Talentos (3 ramas por clase, 1 punto por nivel desde el 10). Los talentos se reparten con los puntos que dan las misiones y los jefes.",
+          "teclas": [
+            "K"
+          ]
+        },
+        {
+          "titulo": "Personaje (H)",
+          "texto": "Atributos (fuerza, aguante, destreza, inteligencia), nivel, experiencia y los puntos sin gastar. Cada nivel da 2 puntos de atributo.",
+          "teclas": [
+            "H"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "misiones",
+      "titulo": "Misiones y NPCs",
+      "entradas": [
+        {
+          "titulo": "Hablar",
+          "texto": "Un clic en un NPC lo selecciona; el segundo clic (o la tecla E) abre el diálogo. Si está lejos, el héroe camina hasta él y habla solo al llegar.",
+          "teclas": [
+            "E"
+          ]
+        },
+        {
+          "titulo": "Marcadores",
+          "texto": "El ! dorado sobre un NPC significa que tiene misión para ti. El ? significa que la tienes lista para entregar. El panel de misiones (J) lista todo lo que tienes en curso.",
+          "teclas": [
+            "J"
+          ]
+        },
+        {
+          "titulo": "La cadena",
+          "texto": "El mundo tiene 10 regiones y 5 actos. Las misiones dan experiencia, oro y objetos: muchas de las piezas que se forjan salen de aquí.",
+          "teclas": []
+        }
+      ]
+    },
+    {
+      "id": "profesiones",
+      "titulo": "Profesiones: minería y herrería",
+      "entradas": [
+        {
+          "titulo": "Minar",
+          "texto": "Las vetas son puntos de mineral clavados en el terreno. Selecciona la veta y dale al segundo clic o a E: el héroe camina hasta ella y extrae. Cada golpe da mineral y experiencia.",
+          "teclas": [
+            "E"
+          ]
+        },
+        {
+          "titulo": "Vetas",
+          "texto": "Cada veta tiene 3 usos. Al agotarse desaparece y vuelve a los 3 minutos. Cada región expone un mineral propio (cobre en las Tierras Francas, obsidiana en la Forja, cristales en el Trueno, esmeraldas en el Bosque Hondo...) y la veta solo se puede minar a partir del nivel de su región.",
+          "teclas": []
+        },
+        {
+          "titulo": "Forjar",
+          "texto": "Habla con Bram (Moon Town) o con Durnan (volcán) y pulsa Forjar en el diálogo. Las recetas consumen materiales y oro, y no dan experiencia. Bram tiene las recetas generales, Durnan las de fuego.",
+          "teclas": []
+        }
+      ]
+    },
+    {
+      "id": "mundo",
+      "titulo": "Mundo, viaje y regiones",
+      "entradas": [
+        {
+          "titulo": "Viaje rápido",
+          "texto": "Cada ciudad tiene un portero. Habla con él y elige destino. Desde la Fase 16 el viaje es temporal y gratis, y no pide nivel: es la forma rápida de volver tras Dead una región.",
+          "teclas": []
+        },
+        {
+          "titulo": "Regiones",
+          "texto": "El mapa tiene 6 regiones fuera de Moon Town. Al entrar en una te avisa de qué esperar: su nivel y los enemigos que la habitan. Ladificultad sube por región, no por zona.",
+          "teclas": []
+        },
+        {
+          "titulo": "Mobs",
+          "texto": "Los enemigos aparecen cerca de ti y se van cuando te alejas (streaming). Los que sueltan más oro son los élites: se distinguen por el nombre dorado y son más duros.",
+          "teclas": []
+        }
+      ]
+    },
+    {
+      "id": "arena_guardado",
+      "titulo": "Arena y guardado",
+      "entradas": [
+        {
+          "titulo": "Arena",
+          "texto": "Maestro Renn y Puno te teletransportan al campo de entrenamiento. Son 10 oleadas de enemigos cada vez más duros; si caes, vuelves a hablar con ellos para repetir. La arena es PvE: no hay apuestas ni Vida por vida.",
+          "teclas": []
+        },
+        {
+          "titulo": "Guardar y cargar",
+          "texto": "F9 guarda la partida y F10 la carga. La partida guarda tu nivel, oro, inventario, equipo, talentos, skills, posición, las misiones, la barra, el estado del tutorial, tus trofeos de arena y los usos que le quedan a cada veta.",
+          "teclas": [
+            "F9",
+            "F10"
+          ]
+        }
+      ]
+    }
+  ]
+}

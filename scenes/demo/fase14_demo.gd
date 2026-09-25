@@ -58,6 +58,9 @@ var _arena: Arena = null
 var _retorno_arena: Vector3 = Vector3.ZERO
 ## Fase 45: minería (coloca las vetas de la región y las hace minar con E).
 var _mineria: GestorVetas = null
+## Fase 46: manual de ayuda (controles y mecánicas), con la tecla `?`.
+var _ayuda: PanelAyuda = null
+const ESCENA_AYUDA: PackedScene = preload("res://scenes/ui/panel_ayuda.tscn")
 
 
 func _ready() -> void:
@@ -130,6 +133,11 @@ func _al_mundo_listo() -> void:
 	_mineria.actualizar()
 	print("[Fase45] minería: %d vetas registradas, %d en el mapa cerca"
 			% [_mineria.conteo_registros(), _mineria.conteo_vetas()])
+	# Fase 46: el manual de ayuda. Se pone `abrir_al_arrancar = false` porque
+	# en la ESCENA va en true (para poder correrla sola con F6 y revisarla).
+	_ayuda = ESCENA_AYUDA.instantiate() as PanelAyuda
+	_ayuda.abrir_al_arrancar = false
+	add_child(_ayuda)
 	super._al_mundo_listo()
 	# Fase 45.2: con el mundo ya construido, la pantalla de carga fuera y el
 	# jugador colocado en su punto, arranca el tutorial (nueva partida). Es el

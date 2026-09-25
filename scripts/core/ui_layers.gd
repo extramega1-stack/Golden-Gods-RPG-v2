@@ -31,6 +31,8 @@ const PANEL_VIAJE: int = 29
 const PANEL_HABILIDADES: int = 30
 ## Fase 30: ventana de personaje estilo FlyFF (rango 20–69).
 const PANEL_PERSONAJE: int = 31
+## Fase 46: manual de ayuda — controles y mecánicas (rango 20–69).
+const PANEL_AYUDA: int = 32
 const VENTANA_DIALOGO: int = 81
 ## Fase 7: panel de tienda (rango 80–89 = tiendas/diálogos).
 const PANEL_TIENDA: int = 82

@@ -22,6 +22,9 @@ const VEL_ORBITA: float = 0.10
 var _camara: Camera3D = null
 var _angulo: float = 0.6
 var _boton_continuar: Button = null
+## Fase 46: el manual de ayuda (controles y mecánicas), se abre con ? o aquí.
+var _ayuda: PanelAyuda = null
+const ESCENA_AYUDA: PackedScene = preload("res://scenes/ui/panel_ayuda.tscn")
 
 
 ## ¿Hay partida guardada para continuar? Ruta inyectable para tests (por
@@ -181,9 +184,22 @@ func _construir_ui() -> void:
 	_boton_continuar.pressed.connect(_al_continuar)
 	caja.add_child(_boton_continuar)
 
+	# Fase 46: el manual de controles y mecánicas, también desde el título.
+	var b_ayuda: Button = _nuevo_boton("Ayuda (?)")
+	b_ayuda.pressed.connect(_al_ayuda)
+	caja.add_child(b_ayuda)
+
 	var b_salir: Button = _nuevo_boton("Salir")
 	b_salir.pressed.connect(_al_salir)
 	caja.add_child(b_salir)
+
+
+## Fase 46: abre el manual (el mismo panel que se abre con la tecla ?).
+func _al_ayuda() -> void:
+	if _ayuda == null or not is_instance_valid(_ayuda):
+		_ayuda = ESCENA_AYUDA.instantiate() as PanelAyuda
+		add_child(_ayuda)
+	_ayuda.alternar()
 
 
 func _nuevo_boton(texto: String) -> Button:
