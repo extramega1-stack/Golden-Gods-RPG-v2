@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.45 — Fase 48 (2026-09-24)
+**Versión del documento:** 3.46 — Fase 47 (2026-09-24)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 48 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 47 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1318,7 +1318,26 @@ actualizada y el bloqueo de §7.5 levanta.
 - Tests: `tests/test_fase48_anclajes_bench.gd` — 238/238. Suite 100% verde (73
   suites + 4 smokes) + la regresión del paper-doll de la fase 36.
 
-*Fin del documento maestro v3.45 — Fase 48 (tabla de anclajes + GPU).*
+## Fase 47 — Las teclas de la barra decían mentira (2026-09-24)
+
+La Fase 46 dejó al descubierto algo peor que una colisión: **las etiquetas F
+de la barra de acciones no correspondían con ninguna tecla real**.
+
+- Los 8 slots estaban ligados en el Input Map a **F4–F11**, mientras el HUD
+  los rotula `"1/F1", "2/F2" … "4/F4" … "F8"`. O sea: **las ocho etiquetas F
+  mentían**, F1–F3 no hacían nada, y F9/F10 disparaban a la vez *guardar* /
+  *cargar* **y** un slot (el 6 y el 7).
+- **Arreglo**: `barra_1..8` pasan a **F1–F8** (4194332–4194339). Con eso las
+  etiquetas dicen la verdad, F1–F3 dejan de estar muertas, y **F9/F10 quedan
+  solo para guardar y cargar**. Colisiones de teclas: 0.
+- **El invariante que faltaba** (`tests/test_fase47_teclas.gd`, 41/41): ninguna
+  tecla del juego puede estar en dos acciones a la vez, y cada etiqueta del
+  HUD tiene que coincidir con la tecla real de su slot. Nadie lo tenía: cada
+  test miraba su propio trozo y por eso el bug pasó 45 fases.
+- El manual de la Fase 46 (datos y nota del panel) actualizado a F1–F8.
+- Suite 100% verde (74 suites + 4 smokes).
+
+*Fin del documento maestro v3.46 — Fase 47 (teclas de la barra).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

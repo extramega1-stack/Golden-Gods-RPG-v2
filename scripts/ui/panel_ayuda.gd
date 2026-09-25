@@ -240,7 +240,7 @@ func _rellenar_controles() -> void:
 	for c in lista_controles():
 		_controles.add_child(_fila_control(c))
 	_controles.add_child(_nota(
-		"F4-F11 son los 8 slots de la barra; 1-5 lanzan las skills de tu clase. "
+		"F1-F8 son los 8 slots de la barra; 1-5 lanzan las skills de tu clase. "
 		+ "El 1 también es el ataque básico. Esta lista se genera del Input Map: "
 		+ "si reasignas una tecla, aquí cambia sola."))
 

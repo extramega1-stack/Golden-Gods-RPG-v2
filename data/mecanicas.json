@@ -87,11 +87,11 @@
           ]
         },
         {
-          "titulo": "Slots F4-F11",
-          "texto": "La barra de abajo tiene 8 slots y se lanzan con F4 a F11. Puedes arrastrar una skill de un slot a otro para reordenarlas, y con SUPR (Intro del teclado numérico) vaciar el slot que tengas delante.",
+          "titulo": "Slots F1-F8",
+          "texto": "La barra de abajo tiene 8 slots y se lanzan con F1 a F8. Puedes arrastrar una skill de un slot a otro para reordenarlas, y con SUPR (Intro del teclado numérico) vaciar el slot que tengas delante.",
           "teclas": [
-            "F4",
-            "F11"
+            "F1",
+            "F8"
           ]
         },
         {
@@ -217,8 +217,8 @@
           "titulo": "Guardar y cargar",
           "texto": "F9 guarda la partida y F10 la carga. La partida guarda tu nivel, oro, inventario, equipo, talentos, skills, posición, las misiones, la barra, el estado del tutorial, tus trofeos de arena y los usos que le quedan a cada veta.",
           "teclas": [
-            "F9",
-            "F10"
+            "F1",
+            "F8"
           ]
         }
       ]

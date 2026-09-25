@@ -95,8 +95,9 @@ func _test_defecto() -> void:
 		"a: setup cura en slot 4")
 	p.take_damage(200.0, null)
 	# Teclas físicas como en el juego real: 4 = physical 52 (habilidad_4),
-	# F4 = physical 4194338 (barra_4). Los InputEventAction solo casan por
-	# nombre exacto y no ejercitan el mapeo físico del slot.
+	# F4 = physical 4194335 (barra_4, desde la fase 47: la barra es F1-F8).
+	# Los InputEventAction solo casan por nombre exacto y no ejercitan el
+	# mapeo físico del slot.
 	b._unhandled_input(_tecla(52))
 	_chk(_usadas.has("curacion_menor"), "a: tecla 4 → slot 4", str(_usadas))
 	# Kit fresco para F4 (la cura del check anterior dejó cooldown).
@@ -108,7 +109,7 @@ func _test_defecto() -> void:
 	_chk(b2.asignar(3, {"tipo": "skill", "id": "curacion_menor"}),
 		"a: setup cura en slot 4 (kit2)")
 	p2.take_damage(200.0, null)
-	b2._unhandled_input(_tecla(4194338))
+	b2._unhandled_input(_tecla(4194335))
 	_chk(_usadas.has("curacion_menor"), "a: F4 → slot 4", str(_usadas))
 	_chk(b.atajo_texto(3) == "4/F4", "a: etiqueta defecto", b.atajo_texto(3))
 
