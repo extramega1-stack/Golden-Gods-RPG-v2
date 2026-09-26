@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.47 — Fase 48.1 (2026-09-24)
+**Versión del documento:** 3.48 — Fase 49 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 48.1 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 49 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1359,6 +1359,60 @@ Para que Juan Diego pueda meter los GLB a mano, con reglas y sin sorpresas.
 - Suite 100% verde (74 suites + 4 smokes).
 
 *Fin del documento maestro v3.47 — Fase 48.1 (models/ con puerta de licencia).*
+
+## Fase 49 — El primer modelo 3D real dentro del juego (2026-09-26)
+
+Juan Diego autorizó los 85 GLB del release `modelos-3d-v1` (CC0/CC-BY, prohibida
+cualquier cosa de Blizzard). Antes de tocar el juego se midió el pack entero:
+**96.760.060 triángulos, 3,25 GB, 255 texturas, 0 esqueletos, 0 animaciones y 0
+nodos con nombre.** Todos son exports estáticos de Meshy de un nodo, y uno solo
+ya revienta el techo de 900k triángulos por entidad de la fase 48. Ninguno es
+usable tal cual: esta fase construye el camino y mete UNO de verdad.
+
+- **`tools/preparar_modelo.py`** (Blender headless, portable en `~/Tools/blender`):
+  importa el `.glb`, une las mallas, decima en 3 pasadas hasta el objetivo, lo
+  **posa en el suelo** (min z = 0 y centrado en x/y, que si no el bicho aparece
+  enterrado porque Meshy exporta centrado en el origen) y exporta. El piloto:
+  **1.704.220 → 20.000 triángulos en 37 s**, 1,90 m de alto, 8,2 MB.
+- **`data/enemies.json`**: el arquetipo declara `"modelo"` y `"modelo_escala"`.
+  Solo datos; el código no menciona ningún archivo. `goblin` usa de momento
+  `bandido.glb` (1,18 m con escala 0,62) — el mapping es **provisional**: los
+  nombres del pack son del legacy y no coinciden con los 19 arquetipos, y por eso
+  se cambia en el JSON y no en el código.
+- **`scripts/enemy/enemy.gd`**: `configurar()` sustituye la malla de `Cuerpo` por
+  la del modelo. No cambia el nodo (se llama igual), así que la colisión, el
+  indicador de selección y `mostrar/ocultar_cuerpo` siguen funcionando. Cosas
+  que este diseño resuelve a propósito:
+  - **el pool**: siempre devuelve el nodo a la cápsula ANTES de decidir. Sin ese
+    reset, un goblin con modelo se convertiría en el cuerpo del siguiente
+    arquetipo que pasara por el pool.
+  - **una malla en memoria, N instancias**: la malla se cachea por ruta en una
+    `static var` (fase 12.1), no se copia por enemigo.
+  - **sin `material_override`**: un tinte plano se comería la textura, así que un
+    arquetipo con modelo se dibuja con el material del modelo. Los que no lo
+    traen se siguen tiñendo igual que siempre.
+  - **asset ausente**: si el `.glb` no está, avisa y cae a la cápsula. El juego no
+    se rompe por un archivo que falte.
+- **`test_fase49_modelos_3d.gd`** (34/34): manifiesto y licencias, el modelo
+  declarado por datos, la sustitución de la malla, la textura a la vista, la
+  malla compartida, el reset del pool, el camino del asset ausente, el techo de
+  triángulos por entidad y el contrato de "pies en el suelo".
+- **Presupuesto de GPU, con el modelo dentro** (pasada con la ventana enfocada,
+  600 muestras): **206,6 FPS · p50 4,76 ms · p95 5,56 ms · max 8,43 ms · 435 draw
+  calls · 279.637 primitivas · 270,8 MB · OK**. Los tres goblins de la plaza
+  aportan 1 draw call y 20k triángulos cada uno.
+- **Texturas**: por defecto en **Lossless** (`compress/mode=0`). Con VRAM
+  Compressed el modelo baja de 271 a 214 MB, pero el material obliga a convertir
+  `RGB8 → RGBA8` en tiempo de carga y no se ha podido medir en condiciones
+  limpias; el ahorro no compensa el riesgo mientras el presupuesto sea de 1 GB.
+- **`tools/bench_gpu.gd`**: ahora avisa si la ventana **no tiene el foco** y
+  guarda `ventana_en_foco` en el informe. Sin eso, bajo Wayland el compositor
+  estrangula el presenting a ~7,5 Hz (133 ms clavados en cada frame con la GPU al
+  0%) y el veredicto sale "FUERA DE PRESUPUESTO" por algo que no es el juego: es
+  un artefacto de medir sin foco, no una regresión.
+- Suite 100% verde (75 suites + 4 smokes).
+
+*Fin del documento maestro v3.48 — Fase 49 (el primer modelo 3D real en el juego).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

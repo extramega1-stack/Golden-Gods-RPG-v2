@@ -40,8 +40,20 @@ func _initialize() -> void:
 	print("[BENCH-GPU] frames=%d warmup=%d" % [_n_frames, _n_warmup])
 	if DisplayServer.get_name() == "headless":
 		printerr("[BENCH-GPU] AVISO: sin ventana el render es dummy; los valores de GPU serán 0")
+	# El p95 mide el tiempo de frame REAL, que incluye la espera por presentar.
+	# En Wayland, una ventana sin el foco la estrangula el compositor (~7 Hz:
+	# 133 ms clavados en cada frame con la GPU al 0%), y el veredicto sale
+	# "FUERA DE PRESUPUESTO" por algo que NO es el juego. Se registra si la
+	# ventana tenía el foco, para que el número venga con su contexto.
+	if not root.has_focus():
+		printerr("[BENCH-GPU] AVISO: la ventana NO tiene el foco. Bajo Wayland el "
+			+ "compositor estrangula el presenting y el p95 sale inventado; "
+			+ "dale foco a la ventana y vuelve a correrlo. El p50 sigue valiendo.")
 	_demo = load("res://scenes/demo/fase14_demo.tscn").instantiate()
 	root.add_child(_demo)
+	# Pide el foco una vez mapeada la ventana: sin esto, en Wayland el
+	# compositor estrangula el presenting a ~7 Hz y el p95 no mide el juego.
+	root.request_focus()
 
 
 func _process(delta: float) -> bool:
@@ -80,6 +92,8 @@ func _mundo_listo() -> bool:
 
 func _informe() -> void:
 	var res: Dictionary = _medidor.informe()
+	res["ventana_en_foco"] = root.has_focus()
+	res["display"] = DisplayServer.get_name()
 	print(MEDIDOR.linea_informe(res))
 	if not (res.get("fallos", []) as Array).is_empty():
 		for f in (res.get("fallos", []) as Array):

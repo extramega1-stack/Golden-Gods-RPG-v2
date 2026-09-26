@@ -12,3 +12,7 @@ Thumbs.db
 
 # Artefactos de export locales (los builds se distribuyen por releases, no por git)
 build/
+
+# Python (retopologia Blender)
+__pycache__/
+*.pyc

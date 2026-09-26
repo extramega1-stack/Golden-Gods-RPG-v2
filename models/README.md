@@ -3,10 +3,12 @@
 Aquí van los **`.glb`** (glTF binarios). Godot los importa solo al abrir el
 proyecto o con `godot --headless --path . --import`.
 
-> **Estado actual: 0 modelos.** El juego es 100% procedural. Cada modelo que
-> se meta tiene que estar **registrado en `data/modelos.json`** con su licencia
-> y su origen: hay un test (`test_fase48_anclajes_bench`) que falla si un `.glb`
-> no está en el manifiesto o si la licencia no es CC0/CC-BY.
+> **Estado actual: 1 modelo** — `bandido.glb` (el piloto de la Fase 49, ya
+> puesto a un `goblin` de la plaza). El resto del juego sigue siendo
+> procedural. Cada modelo que se meta tiene que estar **registrado en
+> `data/modelos.json`** con su licencia y su origen: hay un test
+> (`test_fase48_anclajes_bench`) que falla si un `.glb` no está en el manifiesto
+> o si la licencia no es CC0/CC-BY.
 
 ## Reglas duras (§7.5)
 
@@ -16,11 +18,46 @@ proyecto o con `godot --headless --path . --import`.
    con licencia CC0/CC-BY. Al meter uno, su entrada en `data/modelos.json`
    dice de qué asset es.
 
+## Antes de meter un `.glb`: retopologízalo
+
+Los 85 GLB del release `modelos-3d-v1` son **estáticos y enormes**: 96.760.060
+triángulos en total, 255 texturas, **0 esqueletos, 0 animaciones, 0 nodos con
+nombre**, y uno solo ya pasa de 900k triángulos (el techo por entidad). No se
+mueven ni se animan solos: hay que ponerles un esqueleto.
+
+El paso 0 es retopologizar con Blender headless:
+
+```sh
+~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
+  ~/ruta/creep-bandido-1.glb models/bandido.glb 20000 0
+#                                              ^triángulos  ^rig (0 = aún no)
+```
+
+Qué hace: une las mallas, decima en 3 pasadas hasta el objetivo, **posa el
+modelo en el suelo** (min z = 0, centrado en x/y — los exports de Meshy vienen
+centrados en el origen y el bicho aparece enterrado) y exporta. El piloto:
+1.704.220 → 20.000 triángulos en 37 s, 1,90 m, 8,2 MB.
+
+Godot extrae las texturas del `.glb` a `models/*.jpg` e importa cada una por
+separado: **déjalas en Lossless** (`compress/mode=0`). Con VRAM Compressed este
+modelo baja de 271 a 214 MB, pero su material fuerza una conversión
+`RGB8 → RGBA8` al cargar y no se ha podido medir limpio; con 1 GB de presupuesto
+no compensa.
+
 ## Cómo se conecta un modelo (3 pasos)
 
-1. **Copia el `.glb` aquí.** Ejemplo: `models/heroe.glb`.
+1. **Retopologízalo y copia el `.glb` aquí.** Ejemplo: `models/heroe.glb`.
 2. **Regístralo en `data/modelos.json`** (licencia, autor, fuente).
-3. **Pon su ruta en `data/anclajes.json`**, en el slot que corresponda:
+3. **Pon su ruta donde lo consuma un `data/*.json`**:
+   - cuerpo de un enemigo → `data/enemies.json`, en el arquetipo:
+     ```json
+     "modelo": "res://models/bandido.glb",
+     "modelo_escala": 0.62
+     ```
+     `scripts/enemy/enemy.gd` sustituye la cápsula por la malla (sin tocar el
+     nodo `Cuerpo`, y siempre volviendo a la cápsula si el siguiente arquetipo
+     del pool no tiene modelo).
+   - pieza de equipo → `data/anclajes.json`, en el slot que corresponda:
    ```json
    "slot": "arma",
    "mesh_path": "res://models/espada_hierro.glb",
@@ -58,8 +95,11 @@ Huesos que usa la tabla hoy: `Hand.R`, `Hand.L`, `Head`, `Chest`, `Neck`,
 
 ## Presupuesto de render (§9.5, Fase 48)
 
-Medido con el mundo entero: **443 draw calls, 285k triángulos, 233 FPS**.
-Presupuesto: **≤ 1200 draw calls, ≤ 900k triángulos, ≤ 1 GB de vídeo**.
+Medido con el mundo entero, antes del modelo: **443 draw calls, 285k
+triángulos, 233 FPS**. Con el bandido puesto (3 goblins en la plaza, Fase 49):
+**435 draw calls, 279.637 primitivas, 206,6 FPS · p50 4,76 ms · p95 5,56 ms ·
+270,8 MB**. Presupuesto: **≤ 1200 draw calls, ≤ 900k triángulos, ≤ 1 GB de
+vídeo**, y ≤ 30k triángulos por entidad.
 
 Cada modelo con su propio material cuesta draw calls aunque se repita. Antes
 de meter 85 modelos, conviene agrupar por material y reusar. El bench:
@@ -67,3 +107,9 @@ de meter 85 modelos, conviene agrupar por material y reusar. El bench:
 ```sh
 godot --path . --script res://tools/bench_gpu.gd -- --frames=400 --warmup=150
 ```
+
+**Con la ventana enfocada.** Bajo Wayland, una ventana sin foco la estrangula
+el compositor a ~7,5 Hz (133 ms clavados en cada frame, con la GPU al 0% de uso)
+y el veredicto sale "FUERA DE PRESUPUESTO" por el present, no por el juego. El
+bench avisa si no tiene el foco y anota `ventana_en_foco` en el JSON: si ves ese
+aviso, el p95 no vale.

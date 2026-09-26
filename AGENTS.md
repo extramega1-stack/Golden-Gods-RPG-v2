@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 48.1 terminada.
+Lo que no está en el spec no existe. Estado: Fase 49 terminada.
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -64,6 +64,10 @@ cualquier skill de marketing/crypto/trading.
   por Juan Diego el 2026-09-25 **con licencia CC0/CC-BY** (Fase 48): al meter
   uno se registra en `data/modelos.json` (obligatorio: `test_fase48` falla
   si un `.glb` de `models/` no está declarado o no es CC0/CC-BY).
+- Los 85 GLB del release son **estáticos y enormes** (96,7M triángulos, 0
+  huesos, 0 animaciones). Antes de meter uno: `tools/preparar_modelo.py` con
+  Blender headless. El arquetipo lo declara por datos con `modelo` +
+  `modelo_escala`; el código nunca nombra un archivo (Fase 49).
 - Una fase a la vez + playtest Juan Diego antes de avanzar (§7.6).
 - UI solo lee `StatBlock`, nunca escribe. Sistemas por señales, API chica (§7.11, §9).
 - Un script, un nodo, una responsabilidad. Registro en grupo `gg_system`, `system_id: StringName`. UI de cada sistema en su CanvasLayer propio (§9.1).
@@ -90,3 +94,28 @@ godot --headless --path . --check-only --script res://scripts/<dominio>/<script>
 godot --headless --path . --script res://tests/test_faseNN_<tema>.gd
 godot --headless --path . --import
 ```
+
+## Modelo 3D: retopología (Fase 49)
+
+Los `.glb` del pack no se pueden meter tal cual. Se retopologizan con Blender
+portable (sin root, `~/Tools/blender/blender`, 4.5 LTS):
+
+```sh
+~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
+  entrada.glb models/salida.glb 20000 0
+#                                            ^objetivo  ^rig (0 = sin rig)
+```
+
+Después: registrar en `data/modelos.json` (con licencia y procedencia), y en el
+`data/*.json` del consumidor poner `"modelo": "res://models/salida.glb"` +
+`"modelo_escala"`. El test `test_fase49_modelos_3d` comprueba el camino entero.
+
+Dos trampas ya pagadas, no repetirlas:
+
+- **El bench necesita la ventana con el foco.** Bajo Wayland el compositor
+  estrangula el presenting a ~7,5 Hz (133 ms clavados, GPU al 0%) y el veredicto
+  sale "FUERA DE PRESUPUESTO" por nada. `tools/bench_gpu.gd` avisa y anota
+  `ventana_en_foco` en el informe; si aparece ese aviso, el p95 no mide el juego.
+- **Texturas en Lossless** (`compress/mode=0`). Con VRAM Compressed el modelo
+  baja de 271 a 214 MB, pero el material fuerza una conversión `RGB8 → RGBA8`
+  al cargar. Con 1 GB de presupuesto no compensa el riesgo.

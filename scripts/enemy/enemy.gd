@@ -81,6 +81,14 @@ func _ready() -> void:
 		objetivo = get_tree().get_first_node_in_group("jugador") as Entity
 
 
+## Fase 49: mallas de modelo 3D por ruta, compartidas entre todos los enemigos
+## de ese arquetipo (12.1/§9.5: una malla en memoria, N instancias). Y la
+## cápsula de la escena, guardada para poder volver atrás cuando el pool
+## reutiliza el nodo con un arquetipo que NO tiene modelo.
+static var _mallas_modelo: Dictionary = {}
+static var _malla_capsula: Mesh = null
+
+
 ## Aplica un arquetipo de datos (data/enemies.json): stats, IA, loot y color.
 ## Fase 33: resetea el estado élite (el pool reutiliza nodos).
 func configurar(arquetipo: Dictionary) -> void:
@@ -124,7 +132,11 @@ func configurar(arquetipo: Dictionary) -> void:
 	if mv != 1.0:
 		stats.add_mod("balance:vida", "vida_max", StatBlock.ModKind.PORCENTUAL, mv - 1.0)
 		vida_actual = stats.vida_max
-	_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
+	# Fase 49: si el arquetipo trae modelo 3D, la cápsula se sustituye por él
+	# (y NO se tiñe: un `material_override` plano se comería la textura). Si no
+	# lo trae, se vuelve a la cápsula (el pool reutiliza el nodo) y se tiñe.
+	if not _aplicar_modelo(arquetipo):
+		_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
 
 
 ## Fase 43 — escala regional (data/regiones.json → bloque `escala`):
@@ -210,6 +222,69 @@ func sortear_elite(arquetipo: Dictionary) -> bool:
 	if rng.randf() < prob_elite(arquetipo):
 		hacer_elite(arquetipo.get("elite", {}))
 	return es_elite
+
+
+## Fase 49 — pone el modelo 3D del arquetipo en el nodo `Cuerpo`.
+##
+## No reemplaza el nodo (que se llama igual), solo su `mesh`: así
+## `mostrar_cuerpo`/`ocultar_cuerpo`, la colisión, el indicador de selección y
+## los tests que buscan "Cuerpo" siguen funcionando sin tocar nada.
+##
+## Siempre devuelve el cuerpo a la cápsula ANTES de decidir: el pool reutiliza
+## el nodo entre arquetipos y sin ese reset un goblin con modelo se
+## convertiría en el cuerpo del siguiente arquetipo que pasara por el pool.
+##
+## Campos del arquetipo: `modelo` (ruta del GLB) y `modelo_escala`.
+func _aplicar_modelo(arquetipo: Dictionary) -> bool:
+	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
+	if cuerpo == null:
+		return false
+	if _malla_capsula == null:
+		_malla_capsula = cuerpo.mesh
+	cuerpo.mesh = _malla_capsula
+	cuerpo.scale = Vector3.ONE
+	cuerpo.material_override = null
+	var ruta: String = str(arquetipo.get("modelo", ""))
+	if ruta == "":
+		return false
+	if not ruta.begins_with("res://"):
+		push_warning("[Enemy] la ruta de modelo no es res://: %s" % ruta)
+		return false
+	if not ResourceLoader.exists(ruta):
+		# Sin modelo se juega con la cápsula: el juego nunca se rompe por un
+		# asset que falte (misma política que el paper-doll).
+		push_warning("[Enemy] el modelo de '%s' no existe: %s" % [nombre_mostrado, ruta])
+		return false
+	if not _mallas_modelo.has(ruta):
+		var ps: PackedScene = load(ruta) as PackedScene
+		if ps == null:
+			push_warning("[Enemy] '%s' no es una escena importable: %s" % [nombre_mostrado, ruta])
+			return false
+		var inst: Node = ps.instantiate()
+		var mi: MeshInstance3D = _primera_malla(inst)
+		if mi == null:
+			push_warning("[Enemy] '%s' no trae malla" % ruta)
+			inst.free()
+			return false
+		_mallas_modelo[ruta] = mi.mesh
+		inst.free()
+	cuerpo.mesh = _mallas_modelo[ruta]
+	var esc: float = float(arquetipo.get("modelo_escala", 1.0))
+	if esc > 0.0 and not is_equal_approx(esc, 1.0):
+		cuerpo.scale = Vector3(esc, esc, esc)
+	return true
+
+
+## Primera MeshInstance3D de un modelo instanciado (el pack trae una sola, pero
+## no se fía: un GLB puede traer varias).
+func _primera_malla(n: Node) -> MeshInstance3D:
+	if n is MeshInstance3D:
+		return n as MeshInstance3D
+	for c in n.get_children():
+		var hallada: MeshInstance3D = _primera_malla(c)
+		if hallada != null:
+			return hallada
+	return null
 
 
 ## Color del cuerpo según el arquetipo (material COMPARTIDO por color:

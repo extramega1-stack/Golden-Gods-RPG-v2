@@ -15,5 +15,18 @@
     "anclajes": "A qué va montado: 'jugador', nombres de slot de Equipo.SLOTS, o nombres de arquetipo de data/enemies.json",
     "notas": "Opcional: convención de huesos, origen de las animaciones, etc."
   },
-  "modelos": []
+  "modelos": [
+    {
+      "archivo": "bandido.glb",
+      "nombre": "Bandido (piloto de la fase 49)",
+      "categoria": "criatura",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-creep-v1.zip, archivo creep-bandido-1.glb",
+      "anclajes": [
+        "arquetipo:goblin"
+      ],
+      "notas": "PILOTO: retopologizado de 1.704.220 a 20.000 triangulos con tools/preparar_modelo.py (Blender headless). El nombre del pack es del legacy y NO coincide con los 19 arquetipos del remake: el mapeo a 'goblin' es provisional por rol (mob humanoide de nivel bajo) y se cambia en data/enemies.json, no en codigo. SIN esqueleto todavia (Fase 49b le pone rig y clips)."
+    }
+  ]
 }

@@ -186,6 +186,8 @@
         0.75,
         0.35
       ],
+      "modelo": "res://models/bandido.glb",
+      "modelo_escala": 0.62,
       "cooldown_ataque": 1.6,
       "destreza": 12.0,
       "fuerza": 10.0,
