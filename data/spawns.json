@@ -7848,8 +7848,8 @@
   },
   {
     "arquetipo": "goblin",
-    "x": 130.0,
-    "z": 70.0,
+    "x": 20.0,
+    "z": 0.0,
     "nivel": 2,
     "grupo": "prueba_combate"
   },
