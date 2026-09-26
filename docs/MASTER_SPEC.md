@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.48 — Fase 49 (2026-09-26)
+**Versión del documento:** 3.49 — Fase 49.1 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 49 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 49.1 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1413,6 +1413,66 @@ usable tal cual: esta fase construye el camino y mete UNO de verdad.
 - Suite 100% verde (75 suites + 4 smokes).
 
 *Fin del documento maestro v3.48 — Fase 49 (el primer modelo 3D real en el juego).*
+
+## Fase 49.1 — Esqueleto y los cuatro clips de la FSM (2026-09-26)
+
+El modelo de la fase 49 se quedaba quieto: era una malla con textura, sin un
+hueso. Esta fase le pone esqueleto y los cuatro clips que la FSM ya nombra, y
+conecta la animación al estado del enemigo.
+
+- **`tools/rig.py`** (módulo hermano de `preparar_modelo.py`, se activa con el
+  cuarto argumento en 1): esqueleto humanoide de **19 huesos** y los cuatro
+  clips **procedurales** —sin Mixamo, sin keys escritos a mano, el mismo
+  resultado en cada corrida—:
+  - Nombres pensados para que el modelo **sirva tal cual al paper-doll**: los
+    7 anclajes de `data/anclajes.json` (`Chest`, `Neck`, `Head`, `Hand.L/R`,
+    `Foot.L/R`) están en el esqueleto. Se comprueba en el test.
+  - `idle` 2,04 s (respiración y balanceo, cicla), `walk` 1,04 s (piernas y
+    brazos alternos, con rodilla que solo dobla hacia atrás, cicla), `attack`
+    0,83 s (carga, tajo y recuperación, cicla) y `die` 1,21 s (rodillas que
+    ceden y torso al suelo, **no** cicla: un cadáver que se levanta solo).
+  - El esqueleto se escala a la altura real de cada modelo (el pack va de 0,9
+    a 3,8 m), así que sirve para los humanoides sin tocar nada.
+- **Los pesos van por envolvente, no por "bone heat"**: el solucionador de
+  heat falla en headless (`failed to find solution for one or more bones`) y
+  deja la malla **sin un solo peso**, o sea que el `.glb` salía sin skin: 19
+  huesos y 4 clips de adorno, y el modelo sin deformar. La envolvente solo
+  necesita un radio por hueso (`ENVOLVENTE`), es determinista y no necesita
+  ventana. El script avisa si se queda fuera más del 5% de la malla.
+- **`scripts/enemy/enemy.gd`**: el modelo se cuelga **instanciado** como nodo
+  `Modelo`, en vez de cambiar la malla de `Cuerpo`. Es lo único que funciona
+  con piel: una malla skinned pegada a un `MeshInstance3D` suelto no se deforma
+  porque necesita el esqueleto en la misma rama. De ahí:
+  - `estado` pasa a ser **propiedad**: los 9 sitios que lo asignan pasaban por
+    el mismo setter, que pone el clip que toca. Setear el mismo estado no
+    repite el clip (el pool reinicia estados en cada `_ready`).
+  - `idle`/`walk`/`attack` ciclan y `die` no, marcado una vez sobre el recurso
+    `Animation` compartido.
+  - El pool desmonta el modelo con `remove_child` + `queue_free`: con solo
+    `queue_free` el nodo sigue en el árbol un frame y el pool ve dos cuerpos.
+- **`scripts/core/cuerpo.gd`** (nuevo): el flash de daño y los FX de skill
+  tiñen `Cuerpo`, que con el rig ya no es un hijo directo. El helper resuelve
+  la malla visual (cápsula o la que cuelgue de `Modelo`) y los dos sistemas lo
+  usan; el jugador y los NPC siguen por la vía rápida.
+- **`tests/fixtures/estatico.glb`** (53 KB, 800 triángulos, sin piel ni
+  textura): los otros 84 modelos del pack son estáticos y el único asset real
+  del repo es riggeado. El fixture cubre esa rama sin meter 16 MB de más.
+- **`test_fase49_modelos_3d` ampliado (76/76)**: esqueleto con los 7 anclajes,
+  `Skin` con bones, los 4 clips, el clip correcto por estado, el bucle de cada
+  uno, que setear el mismo estado no reinicie la animación, la rama estática
+  sin `AnimationPlayer`, el reset del pool y el contrato de pies en el suelo.
+- **Presupuesto de GPU, con el rig puesto** (3 pasadas seguidas, 90 muestras,
+  sin tirones: `veredicto OK`): **p50 4,17 ms · p95 4,17–4,24 ms · 424 draw
+  calls · 263.070 primitivas · 258 MB**. Sale **más barato** que el modelo
+  estático (435 draws, 279.637 primitivas, 271 MB): el esqueleto no cuesta
+  frame, y el `AnimationPlayer` no añade draw call.
+- El goblin con modelo se movió a **(36, -21)**: la zona segura es un radio de
+  40 m desde el **origen**, no desde la plaza, así que fuera de ella, dentro
+  del encuadre inicial y a más de 10 m (el radio de aggro) el punto más
+  cercano posible está a 74 m. Es la mitad de los 132 m del pack original.
+- Suite 100% verde (75 suites + 4 smokes).
+
+*Fin del documento maestro v3.49 — Fase 49.1 (esqueleto y clips de la FSM).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

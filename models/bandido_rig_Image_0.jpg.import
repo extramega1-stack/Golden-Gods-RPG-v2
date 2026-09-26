@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bydea0e7edipp"
-path="res://.godot/imported/bandido_Image_0.jpg-235a36b0d11e9571430ab6421a7f4abf.ctex"
+uid="uid://dpnkb84c5y3rq"
+path="res://.godot/imported/bandido_rig_Image_0.jpg-dcb911e4af4310e9d1b1442933cc5f2f.ctex"
 metadata={
 "vram_texture": false
 }
@@ -13,8 +13,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://models/bandido_Image_0.jpg"
-dest_files=["res://.godot/imported/bandido_Image_0.jpg-235a36b0d11e9571430ab6421a7f4abf.ctex"]
+source_file="res://models/bandido_rig_Image_0.jpg"
+dest_files=["res://.godot/imported/bandido_rig_Image_0.jpg-dcb911e4af4310e9d1b1442933cc5f2f.ctex"]
 
 [params]
 

@@ -3,9 +3,9 @@
 Aquí van los **`.glb`** (glTF binarios). Godot los importa solo al abrir el
 proyecto o con `godot --headless --path . --import`.
 
-> **Estado actual: 1 modelo** — `bandido.glb` (el piloto de la Fase 49, ya
-> puesto a un `goblin` de la plaza). El resto del juego sigue siendo
-> procedural. Cada modelo que se meta tiene que estar **registrado en
+> **Estado actual: 1 modelo** — `bandido_rig.glb` (el piloto de las Fases 49 y
+> 49.1, riggeado, puesto a un `goblin` de la plaza). El resto del juego sigue
+> siendo procedural. Cada modelo que se meta tiene que estar **registrado en
 > `data/modelos.json`** con su licencia y su origen: hay un test
 > (`test_fase48_anclajes_bench`) que falla si un `.glb` no está en el manifiesto
 > o si la licencia no es CC0/CC-BY.
@@ -25,13 +25,17 @@ triángulos en total, 255 texturas, **0 esqueletos, 0 animaciones, 0 nodos con
 nombre**, y uno solo ya pasa de 900k triángulos (el techo por entidad). No se
 mueven ni se animan solos: hay que ponerles un esqueleto.
 
-El paso 0 es retopologizar con Blender headless:
+El paso 0 es retopologizar (y riggear) con Blender headless:
 
 ```sh
 ~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
-  ~/ruta/creep-bandido-1.glb models/bandido.glb 20000 0
-#                                              ^triángulos  ^rig (0 = aún no)
+  ~/ruta/creep-bandido-1.glb models/bandido_rig.glb 20000 1
+#                                                   ^tris  ^rig (1 = con esqueleto)
 ```
+
+Con `rig 1` entra `tools/rig.py`: 19 huesos con los nombres de
+`data/anclajes.json` y los 4 clips de la FSM (`idle`, `walk`, `attack`, `die`),
+generados por procedimiento y con el mismo resultado en cada corrida.
 
 Qué hace: une las mallas, decima en 3 pasadas hasta el objetivo, **posa el
 modelo en el suelo** (min z = 0, centrado en x/y — los exports de Meshy vienen
@@ -51,7 +55,7 @@ no compensa.
 3. **Pon su ruta donde lo consuma un `data/*.json`**:
    - cuerpo de un enemigo → `data/enemies.json`, en el arquetipo:
      ```json
-     "modelo": "res://models/bandido.glb",
+     "modelo": "res://models/bandido_rig.glb",
      "modelo_escala": 0.62
      ```
      `scripts/enemy/enemy.gd` sustituye la cápsula por la malla (sin tocar el
@@ -91,7 +95,14 @@ la FSM que ya tiene el juego:
 
 Huesos que usa la tabla hoy: `Hand.R`, `Hand.L`, `Head`, `Chest`, `Neck`,
 `Foot.L`, `Foot.R`. Si tu modelo usa otros nombres, se cambian en
-`data/anclajes.json` (no hay que tocar código).
+`data/anclajes.json` (no hay que tocar código). El bandido ya los trae todos:
+sale de `tools/rig.py` con esos nombres a propósito, para que el paper-doll
+funcione con él sin tocar nada.
+
+Los clips se reproducen solos según el estado del enemigo (`estado` es una
+propiedad en `scripts/enemy/enemy.gd`). `idle`, `walk` y `attack` ciclan;
+`die` no. Si tu modelo no trae `AnimationPlayer`, el enemigo se dibuja igual,
+solo que quieto.
 
 ## Presupuesto de render (§9.5, Fase 48)
 
@@ -112,4 +123,6 @@ godot --path . --script res://tools/bench_gpu.gd -- --frames=400 --warmup=150
 el compositor a ~7,5 Hz (133 ms clavados en cada frame, con la GPU al 0% de uso)
 y el veredicto sale "FUERA DE PRESUPUESTO" por el present, no por el juego. El
 bench avisa si no tiene el foco y anota `ventana_en_foco` en el JSON: si ves ese
-aviso, el p95 no vale.
+aviso, el p95 no vale. Con el rig: **p50 4,17 ms · p95 4,17–4,24 ms · 424 draws ·
+263.070 primitivas · 258 MB** (sale más barato que el modelo estático: el
+esqueleto no cuesta frame).

@@ -17,8 +17,8 @@
   },
   "modelos": [
     {
-      "archivo": "bandido.glb",
-      "nombre": "Bandido (piloto de la fase 49)",
+      "archivo": "bandido_rig.glb",
+      "nombre": "Bandido (piloto de la fase 49, riggeado)",
       "categoria": "criatura",
       "licencia": "CC-BY",
       "autor": "Juan Diego (generado con Meshy)",
@@ -26,7 +26,34 @@
       "anclajes": [
         "arquetipo:goblin"
       ],
-      "notas": "PILOTO: retopologizado de 1.704.220 a 20.000 triangulos con tools/preparar_modelo.py (Blender headless). El nombre del pack es del legacy y NO coincide con los 19 arquetipos del remake: el mapeo a 'goblin' es provisional por rol (mob humanoide de nivel bajo) y se cambia en data/enemies.json, no en codigo. SIN esqueleto todavia (Fase 49b le pone rig y clips)."
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "PILOTO. Retopologizado de 1.704.220 a 20.000 triangulos y riggeado con tools/preparar_modelo.py + tools/rig.py (Blender headless): 19 huesos, pesos por envolvente y los 4 clips de la FSM. Los 7 anclajes de data/anclajes.json (Chest, Neck, Head, Hand.L/R, Foot.L/R) estan en el esqueleto, asi que el paper-doll funciona con este modelo. El nombre del pack es del legacy y NO coincide con los 19 arquetipos del remake: el mapeo a 'goblin' es provisional por rol y se cambia en data/enemies.json, no en codigo. Godot extrae 3 texturas a models/bandido_rig_Image_*.jpg en Lossless."
     }
   ]
 }

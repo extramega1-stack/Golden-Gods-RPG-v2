@@ -73,12 +73,13 @@ MARGEN = 8.0                # margen dentro de cada rectangulo de region
 # La regla nivel -> arquetipo SI se cumple (goblin<=30, lobo 31-200,
 # ogro>200) para no romper ese contrato.
 PACK_PRUEBA = [
-    # El primero va a 49 m del spawn, al NNE (el jugador mira al norte, hacia
-    # el monumento) y a 45 m del centro de Moon Town, o sea FUERA de la zona
-    # segura de 40 m para que no aparezca en la plaza. Es el que lleva el
-    # modelo 3D de la fase 49: la regla del repo es que al abrir y pulsar F5
-    # se vea el cambio sin tener que caminar 130 m.
-    {"arquetipo": "goblin", "x": 20.0, "z": 0.0, "nivel": 2,
+    # El primero lleva el modelo 3D de la fase 49, asi que va fuera de la zona
+    # segura (radio 40 m desde el ORIGEN, que es lo que comprueban
+    # test_fase12_spawns y test_fase14_terreno), dentro del encuadre que se ve
+    # al abrir (la camara mira al norte) y a mas de 10 m para que no entre en
+    # aggro solo. Con esas tres condiciones el punto mas cercano posible es
+    # este, a 74 m: dentro de la zona segura caeria a 6 m del jugador.
+    {"arquetipo": "goblin", "x": 36.0, "z": -21.0, "nivel": 2,
      "grupo": "prueba_combate"},
     {"arquetipo": "goblin", "x": 165.0, "z": 115.0, "nivel": 3,
      "grupo": "prueba_combate"},

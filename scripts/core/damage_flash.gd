@@ -27,9 +27,9 @@ func _ready() -> void:
 		push_warning("[DamageFlash] el padre no es Entity; me desactivo")
 		set_process(false)
 		return
-	_cuerpo = _dueno.get_node_or_null("Cuerpo") as MeshInstance3D
+	_cuerpo = Cuerpo.malla(_dueno)
 	if _cuerpo == null:
-		push_warning("[DamageFlash] '%s' no tiene nodo 'Cuerpo'" % _dueno.name)
+		push_warning("[DamageFlash] '%s' no tiene cuerpo visual" % _dueno.name)
 		set_process(false)
 
 

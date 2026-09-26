@@ -31,7 +31,35 @@ const MASCARA_VIVA: int = 1
 @export var arquetipo_id: String = ""
 
 var nombre_mostrado: String = "Enemigo"
-var estado: Estado = Estado.QUIETO
+
+## Fase 49 — el estado es una propiedad para que el clip de animación cambie
+## en los 9 sitios que lo asignan, no en uno. `_estado` guarda el valor; la
+## propiedad solo lo reenvía y, si el modelo tiene `AnimationPlayer`, pone el
+## clip que le toca a la FSM. Setear el mismo estado no repite el clip (el
+## pool reinicia estados en cada `_ready` y no queremos que el bicho se
+## reinicie solo).
+var _estado: Estado = Estado.QUIETO
+var estado: Estado:
+	get: return _estado
+	set(v):
+		if v == _estado:
+			return
+		_estado = v
+		_reproducir_estado(v)
+
+## Fase 49: el modelo 3D del arquetipo, si lo hay, y su reproductor. El
+## `AnimationPlayer` solo existe si el `.glb` viene riggeado; con un modelo
+## estatico se queda en null y el bicho se dibuja igual que antes.
+var _modelo: Node3D = null
+var _anim: AnimationPlayer = null
+
+## Clip por estado de la FSM. Los nombres son los de `data/anclajes.json`.
+const CLIP_POR_ESTADO: Dictionary = {
+	Estado.QUIETO: "idle",
+	Estado.PERSEGUIR: "walk",
+	Estado.ATACAR: "attack",
+	Estado.MUERTO: "die",
+}
 var radio_aggro: float = 10.0
 var rango_ataque: float = 2.2
 var cooldown_ataque: float = 1.6
@@ -81,12 +109,114 @@ func _ready() -> void:
 		objetivo = get_tree().get_first_node_in_group("jugador") as Entity
 
 
-## Fase 49: mallas de modelo 3D por ruta, compartidas entre todos los enemigos
-## de ese arquetipo (12.1/§9.5: una malla en memoria, N instancias). Y la
-## cápsula de la escena, guardada para poder volver atrás cuando el pool
-## reutiliza el nodo con un arquetipo que NO tiene modelo.
-static var _mallas_modelo: Dictionary = {}
-static var _malla_capsula: Mesh = null
+## Fase 49 — pone el modelo 3D del arquetipo debajo del enemigo.
+##
+## Instancia el `.glb` entero como nodo `Modelo` en vez de cambiar la malla de
+## `Cuerpo`. Es lo que permite que traiga `Skeleton3D` y `AnimationPlayer`: una
+## malla con skin pegada a un `MeshInstance3D` suelto no se deforma, porque la
+## piel necesita el esqueleto en la misma rama.
+##
+## Siempre desmonta lo anterior ANTES de decidir: el pool reutiliza el nodo
+## entre arquetipos y sin ese reset un goblin con modelo arrastraría el modelo
+## al siguiente arquetipo que pasara por el pool.
+##
+## Campos del arquetipo: `modelo` (ruta del `.glb`) y `modelo_escala`.
+## Devuelve true si queda un modelo puesto.
+func _aplicar_modelo(arquetipo: Dictionary) -> bool:
+	_desmontar_modelo()
+	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
+	if cuerpo == null:
+		return false
+	var ruta: String = str(arquetipo.get("modelo", ""))
+	if ruta == "":
+		return false
+	if not ruta.begins_with("res://"):
+		push_warning("[Enemy] la ruta de modelo no es res://: %s" % ruta)
+		return false
+	if not ResourceLoader.exists(ruta):
+		# Sin modelo se juega con la capsula: el juego nunca se rompe por un
+		# asset que falte (misma politica que el paper-doll).
+		push_warning("[Enemy] el modelo de '%s' no existe: %s" % [nombre_mostrado, ruta])
+		return false
+	var ps: PackedScene = load(ruta) as PackedScene
+	if ps == null:
+		push_warning("[Enemy] '%s' no es una escena importable: %s" % [nombre_mostrado, ruta])
+		return false
+	var inst: Node3D = ps.instantiate() as Node3D
+	if inst == null:
+		push_warning("[Enemy] '%s' no instancia a un Node3D" % ruta)
+		return false
+	inst.name = "Modelo"
+	add_child(inst)
+	_modelo = inst
+	var esc: float = float(arquetipo.get("modelo_escala", 1.0))
+	if esc > 0.0 and not is_equal_approx(esc, 1.0):
+		_modelo.scale = Vector3(esc, esc, esc)
+	# La capsula se apaga: si no, se ven las dos.
+	cuerpo.visible = false
+	_anim = _buscar_anim(inst)
+	_preparar_clips()
+	_reproducir_estado(_estado)
+	return true
+
+
+## Casi todos los clips tienen que ciclar: importados asi vienen lineales, y
+## sin bucle el bicho se congela a media pose y vuelve de golpe. `attack`
+## tambien cicla porque el estado ATACAR dura mas que el clip (el cooldown es
+## de ~1,6 s y el clip dura 0,83): si no, el bicho se queda con el ultimo
+## frame del tajo entre golpe y golpe. `die` es el unico lineal: un cadaver
+## que se levanta solo cada 1,2 s. Se marca una sola vez por modelo (el
+## recurso Animation es compartido, que es lo que se quiere).
+func _preparar_clips() -> void:
+	if _anim == null:
+		return
+	for nombre in ["idle", "walk", "attack"]:
+		if _anim.has_animation(nombre):
+			_anim.get_animation(nombre).loop_mode = Animation.LOOP_LINEAR
+	if _anim.has_animation("die"):
+		_anim.get_animation("die").loop_mode = Animation.LOOP_NONE
+
+
+## Quita el modelo y deja la capsula como estaba. La parte que se puede
+## equivocar (pool), y por eso va al principio de `_aplicar_modelo`.
+func _desmontar_modelo() -> void:
+	if _modelo != null and is_instance_valid(_modelo):
+		# Fuera del arbol en el acto, freeing al final del frame: si solo se
+		# hiciera queue_free(), el pool veria el modelo viejo un frame mas.
+		remove_child(_modelo)
+		_modelo.queue_free()
+	_modelo = null
+	_anim = null
+	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
+	if cuerpo != null:
+		cuerpo.visible = estado != Estado.MUERTO
+		cuerpo.scale = Vector3.ONE
+		cuerpo.material_override = null
+
+
+## Primer `AnimationPlayer` del subarbol del modelo (el importador lo deja en
+## la raiz del `.glb`, pero no se fia).
+func _buscar_anim(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n as AnimationPlayer
+	for c in n.get_children():
+		var hallada: AnimationPlayer = _buscar_anim(c)
+		if hallada != null:
+			return hallada
+	return null
+
+
+## Pone el clip que le toca al estado. Sin modelo, o sin ese clip, no hace
+## nada: el enemigo se queda con su animacion anterior en vez de rayar.
+func _reproducir_estado(v: Estado) -> void:
+	if _anim == null or not is_instance_valid(_anim):
+		return
+	var clip: String = str(CLIP_POR_ESTADO.get(v, ""))
+	if clip == "" or not _anim.has_animation(clip):
+		return
+	# Sin parametros: el 3er argumento de play() es la VELOCIDAD, y con -1.0
+	# reproducia del reves. El bucle va en el recurso (ver _preparar_clips).
+	_anim.play(clip)
 
 
 ## Aplica un arquetipo de datos (data/enemies.json): stats, IA, loot y color.
@@ -224,67 +354,6 @@ func sortear_elite(arquetipo: Dictionary) -> bool:
 	return es_elite
 
 
-## Fase 49 — pone el modelo 3D del arquetipo en el nodo `Cuerpo`.
-##
-## No reemplaza el nodo (que se llama igual), solo su `mesh`: así
-## `mostrar_cuerpo`/`ocultar_cuerpo`, la colisión, el indicador de selección y
-## los tests que buscan "Cuerpo" siguen funcionando sin tocar nada.
-##
-## Siempre devuelve el cuerpo a la cápsula ANTES de decidir: el pool reutiliza
-## el nodo entre arquetipos y sin ese reset un goblin con modelo se
-## convertiría en el cuerpo del siguiente arquetipo que pasara por el pool.
-##
-## Campos del arquetipo: `modelo` (ruta del GLB) y `modelo_escala`.
-func _aplicar_modelo(arquetipo: Dictionary) -> bool:
-	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
-	if cuerpo == null:
-		return false
-	if _malla_capsula == null:
-		_malla_capsula = cuerpo.mesh
-	cuerpo.mesh = _malla_capsula
-	cuerpo.scale = Vector3.ONE
-	cuerpo.material_override = null
-	var ruta: String = str(arquetipo.get("modelo", ""))
-	if ruta == "":
-		return false
-	if not ruta.begins_with("res://"):
-		push_warning("[Enemy] la ruta de modelo no es res://: %s" % ruta)
-		return false
-	if not ResourceLoader.exists(ruta):
-		# Sin modelo se juega con la cápsula: el juego nunca se rompe por un
-		# asset que falte (misma política que el paper-doll).
-		push_warning("[Enemy] el modelo de '%s' no existe: %s" % [nombre_mostrado, ruta])
-		return false
-	if not _mallas_modelo.has(ruta):
-		var ps: PackedScene = load(ruta) as PackedScene
-		if ps == null:
-			push_warning("[Enemy] '%s' no es una escena importable: %s" % [nombre_mostrado, ruta])
-			return false
-		var inst: Node = ps.instantiate()
-		var mi: MeshInstance3D = _primera_malla(inst)
-		if mi == null:
-			push_warning("[Enemy] '%s' no trae malla" % ruta)
-			inst.free()
-			return false
-		_mallas_modelo[ruta] = mi.mesh
-		inst.free()
-	cuerpo.mesh = _mallas_modelo[ruta]
-	var esc: float = float(arquetipo.get("modelo_escala", 1.0))
-	if esc > 0.0 and not is_equal_approx(esc, 1.0):
-		cuerpo.scale = Vector3(esc, esc, esc)
-	return true
-
-
-## Primera MeshInstance3D de un modelo instanciado (el pack trae una sola, pero
-## no se fía: un GLB puede traer varias).
-func _primera_malla(n: Node) -> MeshInstance3D:
-	if n is MeshInstance3D:
-		return n as MeshInstance3D
-	for c in n.get_children():
-		var hallada: MeshInstance3D = _primera_malla(c)
-		if hallada != null:
-			return hallada
-	return null
 
 
 ## Color del cuerpo según el arquetipo (material COMPARTIDO por color:
@@ -306,16 +375,23 @@ func _tintar(c: Variant) -> void:
 	cuerpo.material_override = _mats_cache[clave]
 
 
+## Fase 49: con modelo puesto hay dos nodos que dibujar (la capsula apagada y
+## `Modelo`), y los dos tienen que moverse a la vez o se ve la capsula
+## apareciendo encima del personaje.
 func ocultar_cuerpo() -> void:
 	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
 	if cuerpo != null:
 		cuerpo.visible = false
+	if _modelo != null and is_instance_valid(_modelo):
+		_modelo.visible = false
 
 
 func mostrar_cuerpo() -> void:
 	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
 	if cuerpo != null:
-		cuerpo.visible = true
+		cuerpo.visible = _modelo == null
+	if _modelo != null and is_instance_valid(_modelo):
+		_modelo.visible = true
 
 
 func _physics_process(delta: float) -> void:

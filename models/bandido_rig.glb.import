@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bea62diu8uk3s"
-path="res://.godot/imported/bandido.glb-39aae0b997917b89cef20d2fb1058022.scn"
+uid="uid://cc61h5to85okh"
+path="res://.godot/imported/bandido_rig.glb-4dd7e91b277115669cfea0fd463f1bc6.scn"
 
 [deps]
 
-source_file="res://models/bandido.glb"
-dest_files=["res://.godot/imported/bandido.glb-39aae0b997917b89cef20d2fb1058022.scn"]
+source_file="res://models/bandido_rig.glb"
+dest_files=["res://.godot/imported/bandido_rig.glb-4dd7e91b277115669cfea0fd463f1bc6.scn"]
 
 [params]
 

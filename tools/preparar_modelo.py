@@ -22,6 +22,7 @@ pasadas al 33% dan un reparto mucho más limpio con el mismo resultado final.
 """
 from __future__ import annotations
 
+import os
 import sys
 
 import bpy  # type: ignore
@@ -131,6 +132,7 @@ def main() -> int:
     print(f"[PREP] posado: {info(cuerpo)}")
 
     if hacer_rig:
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         import rig  # type: ignore  (módulo hermano, opcional)
 
         rig.enrutar(cuerpo)
@@ -141,6 +143,12 @@ def main() -> int:
         export_format="GLB",
         export_apply=True,
         export_animations=bool(hacer_rig),
+        # Un clip por acción, que es como los nombra la FSM del juego
+        # (idle/walk/attack/die). Con NLA no saldrían separados.
+        export_animation_mode="ACTIONS" if hacer_rig else "NONE",
+        export_skins=bool(hacer_rig),
+        # Los pesos se calculan en Blender; sin esto el motor no los interpola.
+        export_try_sparse_sk=False,
         export_yup=True,
     )
     print(f"[PREP] escrito {salida}")

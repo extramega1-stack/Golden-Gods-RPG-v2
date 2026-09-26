@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 49 terminada.
+Lo que no está en el spec no existe. Estado: Fase 49.1 terminada.
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -66,8 +66,9 @@ cualquier skill de marketing/crypto/trading.
   si un `.glb` de `models/` no está declarado o no es CC0/CC-BY).
 - Los 85 GLB del release son **estáticos y enormes** (96,7M triángulos, 0
   huesos, 0 animaciones). Antes de meter uno: `tools/preparar_modelo.py` con
-  Blender headless. El arquetipo lo declara por datos con `modelo` +
-  `modelo_escala`; el código nunca nombra un archivo (Fase 49).
+  Blender headless (el 4º argumento en 1 añade esqueleto y los 4 clips). El
+  arquetipo lo declara por datos con `modelo` + `modelo_escala`; el código
+  nunca nombra un archivo (Fases 49 y 49.1).
 - Una fase a la vez + playtest Juan Diego antes de avanzar (§7.6).
 - UI solo lee `StatBlock`, nunca escribe. Sistemas por señales, API chica (§7.11, §9).
 - Un script, un nodo, una responsabilidad. Registro en grupo `gg_system`, `system_id: StringName`. UI de cada sistema en su CanvasLayer propio (§9.1).
@@ -103,8 +104,21 @@ portable (sin root, `~/Tools/blender/blender`, 4.5 LTS):
 ```sh
 ~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
   entrada.glb models/salida.glb 20000 0
-#                                            ^objetivo  ^rig (0 = sin rig)
+#                                            ^objetivo  ^rig (1 = esqueleto + clips)
 ```
+
+Tres trampas de Blender que ya están pagadas:
+
+- **Los pesos van por envolvente, no por "bone heat"** (`tools/rig.py`). El
+  solucionador de heat falla en headless y deja la malla con **0 vértices con
+  peso**: el `.glb` sale sin skin y el modelo no se deforma, aunque lleve 19
+  huesos y 4 clips. El script avisa si se queda fuera más del 5%.
+- **En espacio de hueso, el eje vertical es la Y** (la Y local es el largo del
+  hueso). Bajar la cadera con `location.z` la mueve **horizontalmente** y el
+  cadáver se queda flotando con las rodillas dobladas.
+- **`AnimationPlayer.play(nombre, blend, velocidad)`**: el 3er argumento es la
+  velocidad, no el bucle. Con `-1.0` reproduce del revés. El bucle va en el
+  recurso (`loop_mode`).
 
 Después: registrar en `data/modelos.json` (con licencia y procedencia), y en el
 `data/*.json` del consumidor poner `"modelo": "res://models/salida.glb"` +
@@ -119,3 +133,11 @@ Dos trampas ya pagadas, no repetirlas:
 - **Texturas en Lossless** (`compress/mode=0`). Con VRAM Compressed el modelo
   baja de 271 a 214 MB, pero el material fuerza una conversión `RGB8 → RGBA8`
   al cargar. Con 1 GB de presupuesto no compensa el riesgo.
+- **Un modelo con piel se cuelga instanciado, no cambiando la malla.** Una
+  malla skinned en un `MeshInstance3D` suelto no se deforma: necesita el
+  `Skeleton3D` en la misma rama. Por eso va como nodo `Modelo` y la malla que
+  se tiñe se resuelve con `Cuerpo.malla(entidad)` (`scripts/core/cuerpo.gd`).
+- **La zona segura es un radio de 40 m desde el ORIGEN**, no desde la plaza.
+  Los tests `test_fase12_spawns` y `test_fase14_terreno` la comprueban, y el
+  jugador está a 45 m: por eso el goblin con modelo quedó a 74 m y no se puede
+  closer sin tocar esas reglas.
