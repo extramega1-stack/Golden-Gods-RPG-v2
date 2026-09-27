@@ -37,6 +37,12 @@ PROP = {
 }
 
 
+def alto_de(malla: object) -> float:
+    """Altura de la malla en metros, en el espacio del mundo."""
+    bbs = [malla.matrix_world @ Vector(c) for c in malla.bound_box]
+    return max(v.z for v in bbs) - min(v.z for v in bbs)
+
+
 def _huesos(p: dict) -> list:
     """Cadena de huesos (nombre, cabeza, cola, padre) en metros."""
     L, R = "L", "R"
@@ -46,16 +52,7 @@ def _huesos(p: dict) -> list:
         ("Chest", (0, 0, p["chest_z"]), (0, 0, p["neck_z"]), "Spine"),
         ("Neck", (0, 0, p["neck_z"]), (0, 0, p["head_z"]), "Chest"),
         ("Head", (0, 0, p["head_z"]), (0, 0, p["top_z"]), "Neck"),
-    ] + [
-        # Brazo: hombro sale del pecho, luego brazo, antebrazo y mano.
-        ("Shoulder." + L, (p["shoulder_in_x"], 0, p["shoulder_z"]), (p["shoulder_x"], 0, p["shoulder_z"]), "Chest"),
-        ("UpperArm." + L, (p["shoulder_x"], 0, p["shoulder_z"]), (p["elbow_x"], 0, p["elbow_z"]), "Shoulder." + L),
-        ("LowerArm." + L, (p["elbow_x"], 0, p["elbow_z"]), (p["wrist_x"], 0, p["wrist_z"]), "UpperArm." + L),
-        ("Hand." + L, (p["wrist_x"], 0, p["wrist_z"]), (p["wrist_x"], -0.06, p["hand_z"]), "LowerArm." + L),
-        ("Shoulder." + R, (-p["shoulder_in_x"], 0, p["shoulder_z"]), (-p["shoulder_x"], 0, p["shoulder_z"]), "Chest"),
-        ("UpperArm." + R, (-p["shoulder_x"], 0, p["shoulder_z"]), (-p["elbow_x"], 0, p["elbow_z"]), "Shoulder." + R),
-        ("LowerArm." + R, (-p["elbow_x"], 0, p["elbow_z"]), (-p["wrist_x"], 0, p["wrist_z"]), "UpperArm." + R),
-        ("Hand." + R, (-p["wrist_x"], 0, p["wrist_z"]), (-p["wrist_x"], -0.06, p["hand_z"]), "LowerArm." + R),
+    ] + _brazos(p) + [
         # Pierna: muslo, tibia, pie y punta (para el apoyo al caminar).
         ("Thigh." + L, (p["hip_x"], 0, p["hip_z"]), (p["foot_x"], 0, p["knee_z"]), "Hips"),
         ("Shin." + L, (p["foot_x"], 0, p["knee_z"]), (p["foot_x"], 0, p["ankle_z"]), "Thigh." + L),
@@ -66,13 +63,51 @@ def _huesos(p: dict) -> list:
     ]
 
 
-# Radio de la envolvente de cada hueso, en metros. Cubre el cuerpo entero sin
-# que las puntas de los dedos se ganen el muslo.
+# Radio de la envolvente de cada hueso, en metros.
+#
+# Estos numeros son ANATOMICOS a proposito. Con los primeros (0,55 en la
+# cadera, 0,50 en el pecho) el pecho y la cadera se tragaban los brazos: el
+# brazo izquierdo salia con Chest 34% / Hips 33% / Thigh 31%, o sea que los
+# huesos del brazo no tenian NINGUN peso y al animarlos no se movia nada. Y al
+# reves, la cabeza salia con LowerArm en vez de con Head.
 ENVOLVENTE = {
-    "Hips": 0.55, "Spine": 0.45, "Chest": 0.50, "Neck": 0.20, "Head": 0.28,
-    "Shoulder": 0.24, "UpperArm": 0.30, "LowerArm": 0.26, "Hand": 0.18,
-    "Thigh": 0.42, "Shin": 0.36, "Foot": 0.24,
+    "Hips": 0.22, "Spine": 0.17, "Chest": 0.21, "Neck": 0.10, "Head": 0.17,
+    "Shoulder": 0.10, "UpperArm": 0.13, "LowerArm": 0.12, "Hand": 0.09,
+    "Thigh": 0.16, "Shin": 0.14, "Foot": 0.11,
 }
+
+
+def _brazos(p: dict) -> list:
+    """Huesos del brazo siguiendo la direccion real del brazo de la malla.
+
+    `p["ang_brazo"]` es el angulo desde la vertical (0 = colgando, 1.3 = T).
+    La cadena sale del pecho: hombro, brazo, antebrazo y mano.
+    """
+    import math as _m
+    a: float = float(p.get("ang_brazo", 0.15))
+    dz: float = -_m.cos(a)
+    dx: float = _m.sin(a)
+    hombro: Vector = Vector((p["shoulder_x"], 0.0, p["shoulder_z"]))
+    # Longitudes POSITIVAS: hombro - codo y codo - muñeca. Al revés (codo -
+    # hombro = -0.33) el codo salia hacia arriba y hacia dentro, o sea que la
+    # cadena del brazo acababa en la cabeza: los pesos se los comia el muslo, al
+    # girar el brazo no se movia nada y al animar se retorcia el casco.
+    largo1: float = p["shoulder_z"] - p["elbow_z"]
+    largo2: float = p["elbow_z"] - p["wrist_z"]
+    codo: Vector = hombro + Vector((dx * largo1, 0.0, dz * largo1))
+    muneca: Vector = hombro + Vector((dx * (largo1 + largo2), 0.0, dz * (largo1 + largo2)))
+    mano: Vector = muneca + Vector((dx * 0.08, -0.06, dz * 0.08))
+    out: list = []
+    for lado, sg in (("L", 1.0), ("R", -1.0)):
+        h = Vector((hombro.x * sg, hombro.y, hombro.z))
+        c = Vector((codo.x * sg, codo.y, codo.z))
+        m = Vector((muneca.x * sg, muneca.y, muneca.z))
+        f = Vector((mano.x * sg, mano.y, mano.z))
+        out.append(("Shoulder." + lado, (h.x - sg * 0.12, h.y, h.z), (h.x, h.y, h.z), "Chest"))
+        out.append(("UpperArm." + lado, (h.x, h.y, h.z), (c.x, c.y, c.z), "Shoulder." + lado))
+        out.append(("LowerArm." + lado, (c.x, c.y, c.z), (m.x, m.y, m.z), "UpperArm." + lado))
+        out.append(("Hand." + lado, (m.x, m.y, m.z), (f.x, f.y, f.z), "LowerArm." + lado))
+    return out
 
 
 def _crear_esqueleto(nombre: str, p: dict) -> object:
@@ -88,6 +123,11 @@ def _crear_esqueleto(nombre: str, p: dict) -> object:
         eb.head = cabeza
         eb.tail = cola
         eb.envelope_distance = ENVOLVENTE.get(nombre_h.split(".")[0], 0.30)
+        if nombre_h.split(".")[0] in ("UpperArm", "LowerArm", "Shoulder"):
+            # Eje Z local hacia delante: con eso, rotar en Z baja/sube el brazo
+            # en el plano frontal. Sin esto, animar un brazo abierto depende de
+            # como haya caído el roll y los clips salen en diagonales.
+            eb.align_roll(Vector((0.0, -1.0, 0.0)))
         if padre is not None:
             eb.parent = datos.edit_bones[padre]
             eb.use_connect = False
@@ -124,11 +164,40 @@ def _clave(arm: object, hueso: str, frame: int, rot=(0.0, 0.0, 0.0), loc=None) -
         pb.keyframe_insert(data_path="location", frame=frame)
 
 
+# Cuanto hay que BAJAR el brazo de su pose de reposo (la detectada) a una
+# natural (colgado, ~0.20 rad). Llena `enrutar()`; lo consume `_clave_lista`.
+BASE_BRAZO: dict = {"L": 0.0, "R": 0.0}
+
+# En espacio de hueso, rotar en Z baja el brazo en el plano frontal. El signo
+# se midio mirando el render, no deducido: al reves el luchador se quedaba con
+# el brazo izquierdo arriba (un "stop") y el derecho colgando, en vez de los dos
+# colgando. Con este signo, la izquierda suma y la derecha resta.
+HUESOS_DE_BRAZO: tuple = ("UpperArm", "LowerArm", "Hand")
+
+REPOSO_NATURAL: float = 0.20
+
+## Angulo por defecto del brazo desde la vertical, en radianes. Corresponde a la
+## A en la que viene el pack de Meshy; se sobreescribe por asset.
+POSE_POR_DEFECTO: float = 0.70
+
+## Cuantos huesos pueden influences un mismo vertice (los mas cercanos).
+MAX_HUESOS: int = 4
+
+
 def _clave_lista(arm: object, huesos: dict, frame: int) -> None:
-    """`huesos` = {nombre: (rx, ry, rz)}; `None` = hueso quieto."""
+    """`huesos` = {nombre: (rx, ry, rz)}; `None` = hueso quieto.
+
+    A los huesos de brazo se les suma la base: asi un modelo que viene en T
+    aparece con los brazos colgando en el idle, sin tener que escribir la
+    compensacion clip a clip.
+    """
     for nombre, rot in huesos.items():
         if rot is None:
             continue
+        partes = nombre.split(".")
+        if partes[0] in HUESOS_DE_BRAZO and len(partes) > 1:
+            sg: float = 1.0 if partes[1] == "L" else -1.0
+            rot = (rot[0], rot[1], rot[2] + sg * BASE_BRAZO[partes[1]])
         _clave(arm, nombre, frame, rot)
 
 
@@ -260,9 +329,87 @@ def _die(arm: object, fps: int) -> None:
 CLIPS = (("idle", _idle), ("walk", _walk), ("attack", _attack), ("die", _die))
 
 
-def enrutar(malla: object) -> object:
-    """Le pone esqueleto, pesos y los cuatro clips a `malla`. Devuelve el rig."""
+def _poner_en_reposo(arm: object) -> None:
+    """Deja todos los huesos en su pose de reposo (sin rotar)."""
+    for pb in arm.pose.bones:
+        pb.rotation_mode = "XYZ"
+        pb.rotation_euler = (0.0, 0.0, 0.0)
+        pb.location = (0.0, 0.0, 0.0)
+        pb.scale = (1.0, 1.0, 1.0)
+
+
+def _distancia_segmento(p: Vector, a: Vector, b: Vector) -> float:
+    """Distancia de un punto al segmento a-b."""
+    ab = b - a
+    largo2 = ab.dot(ab)
+    if largo2 < 1e-9:
+        return (p - a).length
+    t = max(0.0, min(1.0, (p - a).dot(ab) / largo2))
+    return (p - (a + ab * t)).length
+
+
+def pesos_proprios(malla: object, arm: object) -> int:
+    """Reparte los pesos a mano: distancia a cada hueso, caida cuadrada.
+
+    Blender tiene dos formas de hacerlo y aqui ninguna servia:
+
+    - "bone heat" (laautomatica de verdad) falla en headless con
+      "failed to find solution" y deja la malla sin un solo peso.
+    - "envelope" reparte la influencia entre todos los huesos cercano, y con un
+      torso gordo el pecho y la cadera se quedan con el 67% del brazo. Medido:
+      el brazo se movia 2 grados cuando se le pedian 23.
+
+    Aqui cada vertice se queda con los `MAX_HUESOS` huesos mas cercanos, con
+    peso (1 - d/r)^2 (el cuadrado hace que mande el mas cercano en vez de
+    repartirse) y normalizado a 1. Determinista, sin ventana, y con la
+    correccion de los pesos al alcance.
+    """
+    print("[RIG] calculando pesos a mano (%d vertices x %d huesos)" % (
+        len(malla.data.vertices), len(arm.data.bones)))
+    segmentos = []
+    for i, hueso in enumerate(arm.data.bones):
+        segmentos.append((i, hueso.head_local.copy(), hueso.tail_local.copy(),
+                          ENVOLVENTE.get(hueso.name.split(".")[0], 0.12)))
+    grupos = {}
+    for hueso in arm.data.bones:
+        g = malla.vertex_groups.new(name=hueso.name)
+        grupos[hueso.name] = g.index
+    for v in malla.data.vertices:
+        candidatos = []
+        for idx, a, b, radio in segmentos:
+            d = _distancia_segmento(v.co, a, b)
+            if d < radio:
+                candidatos.append((d, radio, idx))
+        if not candidatos:
+            candidatos = [min(
+                ((_distancia_segmento(v.co, a, b), r, i) for i, a, b, r in segmentos),
+                key=lambda t: t[0])]
+        candidatos.sort(key=lambda t: t[0])
+        pesos = []
+        for d, radio, idx in candidatos[:MAX_HUESOS]:
+            w = max(0.0, 1.0 - d / radio) ** 2
+            if w > 0.0:
+                pesos.append((idx, w))
+        total = sum(w for _, w in pesos)
+        if total <= 0.0:
+            pesos = [(candidatos[0][2], 1.0)]
+            total = 1.0
+        for idx, w in pesos:
+            malla.vertex_groups[grupos[arm.data.bones[idx].name]].add([v.index], w / total, "REPLACE")
+    return len(malla.data.vertices)
+
+
+def enrutar(malla: object, ang_brazo: float = None) -> object:
+    """Le pone esqueleto, pesos y los cuatro clips a `malla`. Devuelve el rig.
+
+    `ang_brazo` es el angulo del brazo DESDE LA VERTICAL, en radianes: 0.2 son
+    los brazos colgando, 0.7 (40 grados) es la A en la que viene todo el pack de
+    Meshy, 1.3 es la T horizontal. Lo declara el asset en `data/modelos.json`
+    (`pose_brazos`) y lo pasa `preparar_modelo.py`; no se deduce de la malla
+    porque con faldones y capas la silueta no lo distingue.
+    """
     prop = dict(PROP)
+    p_ang_brazo: float = POSE_POR_DEFECTO if ang_brazo is None else float(ang_brazo)
     # Las proporciones estan calibradas para 1,90 m: si el modelo mide otra
     # cosa, se escala el esqueleto con el (el pack va de 0,9 a 3,8 m).
     alto = max((malla.matrix_world @ Vector(c)).z for c in malla.bound_box) \
@@ -271,26 +418,34 @@ def enrutar(malla: object) -> object:
         k = alto / PROP["top_z"]
         for key in list(prop):
             prop[key] = prop[key] * k
+    ang: float = float(p_ang_brazo)
+    prop["ang_brazo"] = ang
+    global BASE_BRAZO
+    BASE_BRAZO = {"L": (ang - REPOSO_NATURAL), "R": -(ang - REPOSO_NATURAL)}
+    print("[RIG] pose de brazos declarada: %.0f grados (%.2f rad) | alto %.2f m"
+          % (math.degrees(ang), ang, alto_de(malla)))
     rig = _crear_esqueleto("Rig", prop)
     bpy.ops.object.select_all(action="DESELECT")
     malla.select_set(True)
     bpy.context.view_layer.objects.active = rig
     rig.select_set(True)
-    # Los pesos van por ENVOLVENTE, no por "bone heat". El solucionador de
-    # heat falla en headless ("failed to find solution for one or more bones")
-    # y deja la malla sin un solo peso, o sea que el .glb salia sin skin: bones
-    # y clips de adorno, y el modelo ni se deforma. La envolvente solo necesita
-    # los radios de ENVOLVENTE, es determinista y funciona sin ventana.
-    bpy.ops.object.parent_set(type="ARMATURE_ENVELOPE")
+    # Parentear SIN que Blender reparta pesos: se hace a mano despues
+    # (pesos_proprios), porque ni el heat ni las envolventes sirven aqui.
+    bpy.ops.object.parent_set(type="ARMATURE")
+    pesos_proprios(malla, rig)
     for md in malla.modifiers:
         if md.type == "ARMATURE":
-            md.use_bone_envelopes = True
-            md.use_vertex_groups = False
+            md.use_bone_envelopes = False
+            md.use_vertex_groups = True
     fps = 24
     bpy.context.scene.render.fps = fps
     for nombre_clip, fn in CLIPS:
         fn(rig, fps)
     rig.animation_data.action = None
+    # Los huesos guardan los valores del ULTIMO clip escrito (el `die`), y sin
+    # accion no los reinicia nadie: la malla se queda congelada en el desplome
+    # y cualquier render o preview sale con el cadaver. Se dejan en reposo.
+    _poner_en_reposo(rig)
     bpy.context.scene.frame_set(1)
     con_peso = sum(1 for v in malla.data.vertices if len(v.groups) > 0)
     total = max(1, len(malla.data.vertices))

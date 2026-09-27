@@ -3,9 +3,10 @@
 Aquí van los **`.glb`** (glTF binarios). Godot los importa solo al abrir el
 proyecto o con `godot --headless --path . --import`.
 
-> **Estado actual: 1 modelo** — `bandido_rig.glb` (el piloto de las Fases 49 y
-> 49.1, riggeado, puesto a un `goblin` de la plaza). El resto del juego sigue
-> siendo procedural. Cada modelo que se meta tiene que estar **registrado en
+> **Estado actual: 6 modelos** — `bandido_rig.glb` (un `goblin` de la plaza) y
+> los cinco de clase (`clase_arquero`, `clase_daguero`, `clase_mago`,
+> `clase_clerigo`, `clase_guerrero`), que son los que lleva el jugador. Los 79
+> restantes del pack siguen sin entrar. Cada modelo que se meta tiene que estar **registrado en
 > `data/modelos.json`** con su licencia y su origen: hay un test
 > (`test_fase48_anclajes_bench`) que falla si un `.glb` no está en el manifiesto
 > o si la licencia no es CC0/CC-BY.
@@ -35,7 +36,11 @@ El paso 0 es retopologizar (y riggear) con Blender headless:
 
 Con `rig 1` entra `tools/rig.py`: 19 huesos con los nombres de
 `data/anclajes.json` y los 4 clips de la FSM (`idle`, `walk`, `attack`, `die`),
-generados por procedimiento y con el mismo resultado en cada corrida.
+generados por procedimiento y con el mismo resultado en cada corrida. El
+**quinto argumento son los grados del brazo** desde la vertical: el pack viene
+en A (~40°) y el bandido traía los brazos más bajos (~30°). No se deduce de la
+malla —con faldones y capas la silueta miente—; se declara en
+`data/modelos.json` con la clave `pose_brazos`.
 
 Qué hace: une las mallas, decima en 3 pasadas hasta el objetivo, **posa el
 modelo en el suelo** (min z = 0, centrado en x/y — los exports de Meshy vienen
@@ -53,6 +58,14 @@ no compensa.
 1. **Retopologízalo y copia el `.glb` aquí.** Ejemplo: `models/heroe.glb`.
 2. **Regístralo en `data/modelos.json`** (licencia, autor, fuente).
 3. **Pon su ruta donde lo consuma un `data/*.json`**:
+   - cuerpo del jugador → `data/clases.json`, en la clase:
+     ```json
+     "modelo": "res://models/clase_guerrero.glb",
+     "modelo_escala": 0.90
+     ```
+     `aplicar_clase()` lo cuelga y apaga la cápsula. El equipo (paper-doll) se
+     queda en su sitio porque sus offsets son absolutos en metros y el modelo
+     mide lo mismo que la cápsula.
    - cuerpo de un enemigo → `data/enemies.json`, en el arquetipo:
      ```json
      "modelo": "res://models/bandido_rig.glb",
@@ -123,6 +136,8 @@ godot --path . --script res://tools/bench_gpu.gd -- --frames=400 --warmup=150
 el compositor a ~7,5 Hz (133 ms clavados en cada frame, con la GPU al 0% de uso)
 y el veredicto sale "FUERA DE PRESUPUESTO" por el present, no por el juego. El
 bench avisa si no tiene el foco y anota `ventana_en_foco` en el JSON: si ves ese
-aviso, el p95 no vale. Con el rig: **p50 4,17 ms · p95 4,17–4,24 ms · 424 draws ·
-263.070 primitivas · 258 MB** (sale más barato que el modelo estático: el
-esqueleto no cuesta frame).
+aviso, el p95 no vale. Con el rig: **p50 4,17 ms · p95 4,17–4,24 ms · 424 draws · 263.070 primitivas ·
+258 MB** (sale más barato que el modelo estático: el esqueleto no cuesta frame).
+Con el jugador ya con modelo de clase: **p50 4,17–4,55 ms · p95 4,55–4,76 ms ·
+439 draws · 410.770 primitivas · 335 MB**. Los 6 modelos ocupan 104 MB (la mitad
+son los `.jpg` que Godot extrae de cada `.glb`).

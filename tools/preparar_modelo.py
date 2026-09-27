@@ -33,7 +33,7 @@ PASADAS = 3
 
 def args() -> list[str]:
     if "--" not in sys.argv:
-        print("[PREP] faltan argumentos: entrada.glb salida.glb [tris] [rig]")
+        print("[PREP] faltan argumentos: entrada.glb salida.glb [tris] [rig] [brazo_grados]")
         sys.exit(2)
     return sys.argv[sys.argv.index("--") + 1 :]
 
@@ -100,9 +100,15 @@ def posar(obj: object) -> None:
     dx = -(max(v.x for v in bb) + min(v.x for v in bb)) * 0.5
     dy = -(max(v.y for v in bb) + min(v.y for v in bb)) * 0.5
     dz = -min(v.z for v in bb)
-    obj.location = (dx, dy, dz)
+    # El desplazamiento se aplica a los VERTICES, no al objeto. Mover el objeto
+    # dejaba la malla desfasada 0,95 m respecto al esqueleto y al meterle el
+    # rig el bind se hacia en el sitio equivocado: la cabeza se hundia, los
+    # brazos se estiraban y las piernas se salian del encuadre.
+    obj.data.transform(mathutils.Matrix.Translation((dx, dy, dz)))
+    obj.location = (0.0, 0.0, 0.0)
+    obj.data.update()
     bpy.context.view_layer.update()
-    print("[PREP] posado en el suelo (x%.2f y%.2f z%.2f)" % (dx, dy, dz))
+    print("[PREP] posado en el suelo (x%.2f y%.2f z%.2f), en los vertices" % (dx, dy, dz))
 
 
 def info(obj: object) -> str:
@@ -117,6 +123,10 @@ def main() -> int:
     entrada, salida = a[0], a[1]
     objetivo = int(a[2]) if len(a) > 2 else 20000
     hacer_rig = (len(a) > 3 and a[3] == "1")
+    # Angulo del brazo desde la vertical, en GRADOS. El pack de Meshy viene en
+    # A (~40) y el bandido traia los brazos mas bajos (~30). No se deduce de la
+    # malla: con faldones y capas la silueta no lo distingue (ver tools/rig.py).
+    ang_brazo = float(a[4]) if len(a) > 4 else 40.0
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=entrada)
@@ -135,7 +145,9 @@ def main() -> int:
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         import rig  # type: ignore  (módulo hermano, opcional)
 
-        rig.enrutar(cuerpo)
+        import math as _math
+
+        rig.enrutar(cuerpo, _math.radians(ang_brazo))
         print("[PREP] esqueleto y clips generados")
 
     bpy.ops.export_scene.gltf(

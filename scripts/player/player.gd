@@ -118,6 +118,22 @@ var _rig: CameraRig = null
 var _tiene_destino: bool = false
 var _destino: Vector3 = Vector3.ZERO
 var _cd_ataque: float = 0.0
+## Fase 50: modelo 3D de la clase y estado de animación. El reproductor solo
+## existe si el `.glb` viene riggeado; con un modelo estático se dibuja igual
+## pero quieto.
+var _modelo: Node3D = null
+var _anim: AnimationPlayer = null
+var _clip_actual: String = ""
+## Segundos que queda de "tajo" tras pegar. Es lo que mantiene el clip `attack`
+## el tiempo justo y no solo el frame en que se golpea.
+var _t_swing: float = 0.0
+
+const CLIP_CAMINAR: StringName = &"walk"
+const CLIP_ATAQUE: StringName = &"attack"
+const CLIP_MUERTE: StringName = &"die"
+## Por debajo de esta velocidad horizontal el jugador se considera quieto: con
+## el umbral en 0 el idle y el walk parpadean al soltar el WASD.
+const UMBRAL_CAMINAR: float = 0.45
 ## Fase 5.1 — lanzamiento pendiente: skill dañina cuyo objetivo estaba fuera
 ## de rango. El jugador se acerca y la lanza al llegar; se cancela si el
 ## objetivo muere o deja de ser el foco (muerte/deselección/WASD).
@@ -584,6 +600,7 @@ func _physics_process(delta: float) -> void:
 	_actualizar_minado_pendiente()
 	_consumir_intent(delta)
 	_actualizar_ataque(delta)
+	_actualizar_animacion(delta)
 	# Fase 12: el héroe camina pegado al terreno del mundo abierto.
 	_pegar_al_terreno()
 
@@ -812,6 +829,8 @@ func ejecutar_ataque() -> void:
 		randf(), randf_range(-1.0, 1.0))
 	objetivo_ataque.take_damage(float(res["final"]), self, bool(res["crit"]))
 	_cd_ataque = 1.0 / maxf(stats.vel_ataque, 0.1)
+	# Fase 50: el tajo del jugador dura lo que el clip, no lo que el cooldown.
+	_t_swing = 0.32
 
 
 ## Suma oro (lo emite para el HUD). Nunca deja el oro bajo 0.
@@ -890,6 +909,108 @@ func aplicar_clase(id: String) -> void:
 	# primer golpe.
 	vida_cambiada.emit(vida_actual, stats.vida_max)
 	mana_cambiado.emit(mana_actual, stats.mana_max)
+	# Fase 50: el cuerpo cambia con la clase (datos, no código).
+	aplicar_modelo(id)
+
+
+## Fase 50 — cuelga el modelo 3D de la clase y deja sonando su clip.
+##
+## Se instancia el `.glb` entero como `Modelo` en vez de cambiar la malla de
+## `Cuerpo`: una malla con piel en un `MeshInstance3D` suelto no se deforma,
+## necesita el `Skeleton3D` en la misma rama. Misma regla que el enemigo
+## (fase 49.1). La cápsula `Cuerpo` se apaga mientras hay modelo (si no, tapa
+## al personaje por delante: la de la foto salía un tubo amarillo encima), pero
+## NO es la que colisiona: la colisión es el nodo `Colision`, que no se toca. Y
+## si el modelo falta, la cápsula vuelve a verse.
+func aplicar_modelo(clase_id: String) -> void:
+	if _modelo != null and is_instance_valid(_modelo):
+		remove_child(_modelo)
+		_modelo.queue_free()
+	_modelo = null
+	_anim = null
+	_clip_actual = ""
+	var capsula: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
+	if capsula != null:
+		capsula.visible = true
+	var datos: Dictionary = ClaseDB.obtener(clase_id)
+	var ruta: String = str(datos.get("modelo", ""))
+	if ruta == "" or not ResourceLoader.exists(ruta):
+		if ruta != "":
+			push_warning("[Player] el modelo de la clase no existe: %s" % ruta)
+		return
+	var ps: PackedScene = load(ruta) as PackedScene
+	if ps == null:
+		push_warning("[Player] el modelo no es importable: %s" % ruta)
+		return
+	var inst: Node3D = ps.instantiate() as Node3D
+	if inst == null:
+		push_warning("[Player] el modelo no instancia a un Node3D: %s" % ruta)
+		return
+	inst.name = "Modelo"
+	add_child(inst)
+	_modelo = inst
+	var esc: float = float(datos.get("modelo_escala", 1.0))
+	if esc > 0.0 and not is_equal_approx(esc, 1.0):
+		_modelo.scale = Vector3(esc, esc, esc)
+	_anim = _buscar_anim(inst)
+	_preparar_clips()
+	_poner_clip("idle")
+	if capsula != null:
+		capsula.visible = false
+
+
+func _buscar_anim(n: Node) -> AnimationPlayer:
+	if n is AnimationPlayer:
+		return n as AnimationPlayer
+	for c in n.get_children():
+		var hallada: AnimationPlayer = _buscar_anim(c)
+		if hallada != null:
+			return hallada
+	return null
+
+
+## `idle`, `walk` y `attack` ciclan; `die` no. Marcado una vez por modelo: el
+## recurso Animation es compartido.
+func _preparar_clips() -> void:
+	if _anim == null:
+		return
+	for nombre in ["idle", "walk", "attack"]:
+		if _anim.has_animation(nombre):
+			_anim.get_animation(nombre).loop_mode = Animation.LOOP_LINEAR
+	if _anim.has_animation("die"):
+		_anim.get_animation("die").loop_mode = Animation.LOOP_NONE
+
+
+## Pone un clip solo si cambia: llamar a `play` cada frame reinicia la
+## animación y el jugador daría tirones.
+func _poner_clip(nombre: String) -> void:
+	if _anim == null or not is_instance_valid(_anim):
+		return
+	if _clip_actual == nombre:
+		return
+	if not _anim.has_animation(nombre):
+		return
+	_clip_actual = nombre
+	_anim.play(nombre)
+
+
+## Decide el clip con los mismos hechos que usa el movimiento, sin estado
+## propio: quieto, caminando, tajo o muerto.
+func _actualizar_animacion(delta: float) -> void:
+	_t_swing = maxf(_t_swing - delta, 0.0)
+	if not esta_vivo():
+		_poner_clip(str(CLIP_MUERTE))
+		return
+	if _t_swing > 0.0:
+		_poner_clip(str(CLIP_ATAQUE))
+		return
+	var plano: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
+	if plano.length() > UMBRAL_CAMINAR:
+		_poner_clip("walk")
+	else:
+		_poner_clip("idle")
+
+
 
 
 ## Descuenta oro (lo usa la tienda, fase 7). Retorna false SIN TOCAR NADA

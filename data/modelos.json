@@ -18,11 +18,12 @@
   "modelos": [
     {
       "archivo": "bandido_rig.glb",
-      "nombre": "Bandido (piloto de la fase 49, riggeado)",
+      "nombre": "bandido (goblin)",
       "categoria": "criatura",
       "licencia": "CC-BY",
       "autor": "Juan Diego (generado con Meshy)",
       "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-creep-v1.zip, archivo creep-bandido-1.glb",
+      "pose_brazos": 30,
       "anclajes": [
         "arquetipo:goblin"
       ],
@@ -53,7 +54,207 @@
         "attack",
         "die"
       ],
-      "notas": "PILOTO. Retopologizado de 1.704.220 a 20.000 triangulos y riggeado con tools/preparar_modelo.py + tools/rig.py (Blender headless): 19 huesos, pesos por envolvente y los 4 clips de la FSM. Los 7 anclajes de data/anclajes.json (Chest, Neck, Head, Hand.L/R, Foot.L/R) estan en el esqueleto, asi que el paper-doll funciona con este modelo. El nombre del pack es del legacy y NO coincide con los 19 arquetipos del remake: el mapeo a 'goblin' es provisional por rol y se cambia en data/enemies.json, no en codigo. Godot extrae 3 texturas a models/bandido_rig_Image_*.jpg en Lossless."
+      "notas": "PILOTO de la fase 49 (goblin). Retopologizado de 1.704.220 a 30.000 triangulos y riggeado. Los brazos del pack vienen a ~30 grados de la vertical. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+    },
+    {
+      "archivo": "clase_arquero.glb",
+      "nombre": "clase arquero",
+      "categoria": "clase",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-clase-v1.zip, archivo clase-arquero.glb",
+      "pose_brazos": 40,
+      "anclajes": [
+        "jugador:clase"
+      ],
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "Cuerpo del arquero. Del pack 'clase', que viene en A (brazos a ~40 grados). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+    },
+    {
+      "archivo": "clase_daguero.glb",
+      "nombre": "clase daguero",
+      "categoria": "clase",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-clase-v1.zip, archivo clase-dagero.glb",
+      "pose_brazos": 40,
+      "anclajes": [
+        "jugador:clase"
+      ],
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "Cuerpo del daguero. El pack lo llama 'dagero' (sin u): mismo arquetipo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+    },
+    {
+      "archivo": "clase_mago.glb",
+      "nombre": "clase mago",
+      "categoria": "clase",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-clase-v1.zip, archivo clase-mago.glb",
+      "pose_brazos": 40,
+      "anclajes": [
+        "jugador:clase"
+      ],
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "Cuerpo del mago. De los cinco, es el de mas geometria en tunica y capa. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+    },
+    {
+      "archivo": "clase_clerigo.glb",
+      "nombre": "clase clerigo",
+      "categoria": "clase",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-clase-v1.zip, archivo clase-paladin.glb",
+      "pose_brazos": 40,
+      "anclajes": [
+        "jugador:clase"
+      ],
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "Cuerpo del clerigo. El pack no tiene 'clerigo': el paladin es el equivalente (el pack tiene tambien job-paladin-guerrero-j3, que es del arbol de guerreros). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+    },
+    {
+      "archivo": "clase_guerrero.glb",
+      "nombre": "clase guerrero",
+      "categoria": "clase",
+      "licencia": "CC-BY",
+      "autor": "Juan Diego (generado con Meshy)",
+      "fuente": "release modelos-3d-v1 del repo, zip golden-gods-modelos-3d-job-v1.zip, archivo job-luchador-guerrero-j1.glb",
+      "pose_brazos": 40,
+      "anclajes": [
+        "jugador:clase"
+      ],
+      "huesos": [
+        "Hips",
+        "Spine",
+        "Chest",
+        "Neck",
+        "Head",
+        "Shoulder.L",
+        "UpperArm.L",
+        "LowerArm.L",
+        "Hand.L",
+        "Shoulder.R",
+        "UpperArm.R",
+        "LowerArm.R",
+        "Hand.R",
+        "Thigh.L",
+        "Shin.L",
+        "Foot.L",
+        "Thigh.R",
+        "Shin.R",
+        "Foot.R"
+      ],
+      "clips": [
+        "idle",
+        "walk",
+        "attack",
+        "die"
+      ],
+      "notas": "Cuerpo del guerrero. El pack NO trae clase-guerrero: se eligio job-luchador-guerrero-j1 (tier 1 del arbol de guerreros) de los cinco candidatos, por ser el que mas se lee como clase base sin parecerse al paladin del clerigo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
     }
   ]
 }

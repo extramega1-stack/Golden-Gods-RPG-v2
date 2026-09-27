@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 49.1 terminada.
+Lo que no está en el spec no existe. Estado: Fase 50 terminada.
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -105,20 +105,34 @@ portable (sin root, `~/Tools/blender/blender`, 4.5 LTS):
 ~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
   entrada.glb models/salida.glb 20000 0
 #                                            ^objetivo  ^rig (1 = esqueleto + clips)
+~/Tools/blender/blender --background --python tools/preparar_modelo.py -- \
+  entrada.glb models/salida.glb 30000 1 40
+#                                                   ^tris  ^rig  ^grados del brazo
 ```
 
-Tres trampas de Blender que ya están pagadas:
+Seis trampas de Blender/rig que ya están pagadas (medidas, no deducidas):
 
-- **Los pesos van por envolvente, no por "bone heat"** (`tools/rig.py`). El
-  solucionador de heat falla en headless y deja la malla con **0 vértices con
-  peso**: el `.glb` sale sin skin y el modelo no se deforma, aunque lleve 19
-  huesos y 4 clips. El script avisa si se queda fuera más del 5%.
+- **Los pesos se calculan a mano** (`rig.pesos_proprios`). Ni el "bone heat"
+  (falla en headless: `failed to find solution`, deja la malla con 0 vértices
+  con peso y el `.glb` sin skin) ni las envolventes de Blender sirven: con
+  pecho y cadera grandes el brazo salía con Chest 34% / Hips 33% / Thigh 31% y
+  se movía 2° cuando se le pedían 23.
+- **La longitud de un hueso es positiva**: hombro − codo, no codo − hombro. Con
+  el signo al revés la cadena del brazo acaba en la cabeza y el casco se
+  retuerce al animar.
 - **En espacio de hueso, el eje vertical es la Y** (la Y local es el largo del
   hueso). Bajar la cadera con `location.z` la mueve **horizontalmente** y el
   cadáver se queda flotando con las rodillas dobladas.
 - **`AnimationPlayer.play(nombre, blend, velocidad)`**: el 3er argumento es la
   velocidad, no el bucle. Con `-1.0` reproduce del revés. El bucle va en el
   recurso (`loop_mode`).
+- **La pose del brazo es un dato por asset** (`pose_brazos` en
+  `data/modelos.json`, 5º argumento del script), no se deduce de la silueta: con
+  faldones y capas el ancho相对 no distingue una T de un brazo colgando (el
+  luchador en T daba 1,02, o sea "colgado").
+- **Al terminar de rigear, la pose se queda en reposo**: sin acción, los
+  huesos conservan los valores del último clip escrito (el `die`), y cualquier
+  render o preview sale con el cadáver.
 
 Después: registrar en `data/modelos.json` (con licencia y procedencia), y en el
 `data/*.json` del consumidor poner `"modelo": "res://models/salida.glb"` +
@@ -137,6 +151,8 @@ Dos trampas ya pagadas, no repetirlas:
   malla skinned en un `MeshInstance3D` suelto no se deforma: necesita el
   `Skeleton3D` en la misma rama. Por eso va como nodo `Modelo` y la malla que
   se tiñe se resuelve con `Cuerpo.malla(entidad)` (`scripts/core/cuerpo.gd`).
+  Al colgarlo hay que **apagar la cápsula `Cuerpo`** (la visual): la colisión
+  es el nodo `Colision`, que no se toca.
 - **La zona segura es un radio de 40 m desde el ORIGEN**, no desde la plaza.
   Los tests `test_fase12_spawns` y `test_fase14_terreno` la comprueban, y el
   jugador está a 45 m: por eso el goblin con modelo quedó a 74 m y no se puede

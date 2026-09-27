@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.49 — Fase 49.1 (2026-09-26)
+**Versión del documento:** 3.50 — Fase 50 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 49.1 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 50 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1473,6 +1473,69 @@ conecta la animación al estado del enemigo.
 - Suite 100% verde (75 suites + 4 smokes).
 
 *Fin del documento maestro v3.49 — Fase 49.1 (esqueleto y clips de la FSM).*
+
+## Fase 50 — El jugador con modelo de clase (2026-09-26)
+
+El jugador era una cápsula y es lo único que se mira el 100% del tiempo. El pack
+trae 4 modelos `clase-*` que encajan con 4 de las 5 clases, y para `guerrero`
+(no hay `clase-guerrero`) se eligió `job-luchador-guerrero-j1` de los cinco
+candidatos del árbol de guerreros: es el tier 1, el que más se lee como clase
+base sin parecerse al paladín del clérigo.
+
+| Clase | Modelo del pack | Altura en el juego |
+|---|---|---|
+| arquero | `clase-arquero.glb` | 1,71 m |
+| daguero | `clase-dagero.glb` (el pack lo llama "dagero") | 1,71 m |
+| mago | `clase-mago.glb` | 1,71 m |
+| clerigo | `clase-paladin.glb` (el pack no tiene clérigo) | 1,71 m |
+| guerrero | `job-luchador-guerrero-j1.glb` | 1,71 m |
+
+- **`data/clases.json`**: cada clase declara `modelo` + `modelo_escala` (0,90:
+  la malla mide 1,90 m y la cápsula del jugador 1,7, así el paper-doll y la
+  tabla de anclajes se quedan donde estaban). Datos, no código.
+- **`scripts/player/player.gd`**: `aplicar_clase()` cuelga el `.glb` entero
+  como `Modelo` (una malla con piel en un `MeshInstance3D` suelto no se deforma)
+  y apaga la cápsula `Cuerpo` —que NO es la que colisiona: la colisión es el
+  nodo `Colision`— para que no salga un tubo amarillo encima. Los clips los
+  manda `_actualizar_animacion()` con los mismos hechos que el movimiento:
+  quieto, caminando, tajo (0,32 s tras golpear, no el frame del golpe) y
+  muerto. `idle`/`walk`/`attack` ciclan, `die` no.
+- **El equipo no se movió de sitio**: `PaperDoll` cuelga del jugador, no del
+  cuerpo, y sus offsets son absolutos en metros (casco a 1,58; mano a 1,15). Con
+  el modelo a 1,71 m siguen cayendo donde tocaba, y el test lo comprueba. Lo
+  que NO hay todavía es que el equipo siga a la animación (huesos): eso es la
+  50.1.
+- **El rig tuvo que arreglar tres cosas** para conThese models (y de paso al
+  bandido), todas medidas y documentadas en `AGENTS.md`:
+  1. Los huesos del brazo se construían con la longitud **con signo cambiado**
+     (codo − hombro = −0,33), así que la cadena acababa **en la cabeza**: los
+     pesos se los comía el muslo, al girar el brazo no se movía nada y al
+     animar se retorcía el casco.
+  2. Ni el "bone heat" (falla en headless y deja la malla sin peso) ni las
+     envolventes de Blender servían: con el pecho y la cadera grandes, el
+     brazo salía con Chest 34% / Hips 33% / Thigh 31% y se movía 2° cuando se
+     le pedían 23. Ahora **los pesos se calculan a mano** (distancia a cada
+     hueso, caída cuadrada, los 4 más cercanos, normalizados).
+  3. La pose del brazo es un **dato por asset** (`pose_brazos` en
+     `data/modelos.json`, quinto argumento del script), no se deduce de la
+     silueta: con faldones y capas la relación ancho-pecho/ancho-cintura no
+     distingue una T de un brazo colgando (el luchador en T daba 1,02).
+- **`test_fase50_clases_modelos.gd` (88/88)**: las 5 clases con modelo
+  declarado y en el manifiesto, esqueleto + skin + los 4 clips, el clip
+  correcto por estado, que no se reinicie al repetir estado, que el clip
+  **avance** de verdad (con frames reales, no solo la llamada), que cambiar de
+  clase dos veces deje un solo `Modelo`, que el modelo mida lo que la cápsula y
+  que los anclajes del equipo caigan dentro, y que una clase sin modelo no
+  deje cuerpo colgando.
+- **Presupuesto de GPU con el jugador con modelo** (3 pasadas limpias,
+  veredicto OK): **p50 4,17–4,55 ms · p95 4,55–4,76 ms · 439 draw calls ·
+  410.770 primitivas · 335 MB**. Sigue dentro de 1.200 / 900k / 1 GB.
+- `models/` pesa **104 MB** con los 6 modelos (los 3 `.jpg` que Godot extrae de
+  cada `.glb` son la mitad). El release sigue siendo la distribución del pack;
+  el repo solo lleva lo que el juego usa de verdad.
+- Suite 100% verde (76 suites + 4 smokes).
+
+*Fin del documento maestro v3.50 — Fase 50 (el jugador con modelo de clase).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)
