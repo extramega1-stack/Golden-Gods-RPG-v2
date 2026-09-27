@@ -54,7 +54,7 @@
         "attack",
         "die"
       ],
-      "notas": "PILOTO de la fase 49 (goblin). Retopologizado de 1.704.220 a 30.000 triangulos y riggeado. Los brazos del pack vienen a ~30 grados de la vertical. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "PILOTO de la fase 49 (goblin). Retopologizado de 1.704.220 a 30.000 triangulos y riggeado. Los brazos del pack vienen a ~30 grados de la vertical. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     },
     {
       "archivo": "clase_arquero.glb",
@@ -94,7 +94,7 @@
         "attack",
         "die"
       ],
-      "notas": "Cuerpo del arquero. Del pack 'clase', que viene en A (brazos a ~40 grados). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "Cuerpo del arquero. Del pack 'clase', que viene en A (brazos a ~40 grados). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     },
     {
       "archivo": "clase_daguero.glb",
@@ -134,7 +134,7 @@
         "attack",
         "die"
       ],
-      "notas": "Cuerpo del daguero. El pack lo llama 'dagero' (sin u): mismo arquetipo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "Cuerpo del daguero. El pack lo llama 'dagero' (sin u): mismo arquetipo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     },
     {
       "archivo": "clase_mago.glb",
@@ -174,7 +174,7 @@
         "attack",
         "die"
       ],
-      "notas": "Cuerpo del mago. De los cinco, es el de mas geometria en tunica y capa. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "Cuerpo del mago. De los cinco, es el de mas geometria en tunica y capa. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     },
     {
       "archivo": "clase_clerigo.glb",
@@ -214,7 +214,7 @@
         "attack",
         "die"
       ],
-      "notas": "Cuerpo del clerigo. El pack no tiene 'clerigo': el paladin es el equivalente (el pack tiene tambien job-paladin-guerrero-j3, que es del arbol de guerreros). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "Cuerpo del clerigo. El pack no tiene 'clerigo': el paladin es el equivalente (el pack tiene tambien job-paladin-guerrero-j3, que es del arbol de guerreros). Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     },
     {
       "archivo": "clase_guerrero.glb",
@@ -254,7 +254,7 @@
         "attack",
         "die"
       ],
-      "notas": "Cuerpo del guerrero. El pack NO trae clase-guerrero: se eligio job-luchador-guerrero-j1 (tier 1 del arbol de guerreros) de los cinco candidatos, por ser el que mas se lee como clase base sin parecerse al paladin del clerigo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless."
+      "notas": "Cuerpo del guerrero. El pack NO trae clase-guerrero: se eligio job-luchador-guerrero-j1 (tier 1 del arbol de guerreros) de los cinco candidatos, por ser el que mas se lee como clase base sin parecerse al paladin del clerigo. Retopologizado a 30.000 triangulos y riggeado con tools/preparar_modelo.py (5to argumento = grados del brazo). Los 7 anclajes de data/anclajes.json estan en el esqueleto. Godot extrae las texturas a models/<archivo>_Image_*.jpg en Lossless. Las dos manos se colapsan a puño y la muñeca gira 0,95 rad para que la palma mire al muslo (cerrar_manos + TWIST_MANOS en tools/rig.py)."
     }
   ]
 }

@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.51 — Fase 50.1 (2026-09-26)
+**Versión del documento:** 3.52 — Fase 50.2 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 50.1 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 50.2 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1575,6 +1575,40 @@ al fixes de la fase 50.
 - Suite 100% verde (76 suites + 4 smokes).
 
 *Fin del documento maestro v3.51 — Fase 50.1 (el frente del modelo y los brazos).*
+
+## Fase 50.2 — Las manos dejan de estar abiertas (2026-09-26)
+
+Tercer aviso del playtest sobre los modelos: *"sigue con las palmas abiertas
+hacia abajo"*. Es lo único que quedaba de la pose.
+
+- **El problema es geometría, no pose.** Los `.glb` del pack traen la palma
+  abierta y los dedos separados, y los dedos del Meshy **son malla, no
+  huesos**: ningún giro de muñeca puede cerrarlos. Con una pose sola no había
+  manera, y el giro de muñeca solo (0,75 rad) los dejaba igual.
+- **Dos cosas juntas** en `tools/rig.py`:
+  1. `cerrar_manos()`: colapsa los vértices de la mano hacia un punto de puño,
+     con más fuerza en la punta que en la muñeca (que se queda donde está,
+     donde hace falta el anticuerpo). Se hace **antes** de calcular los pesos,
+     para que la forma cerrada forme parte de la deformación. Con los 6 modelos
+     del repo coge entre 431 y 1.594 vértices (de 26k-29k), y avisa si se
+     quedan por debajo de 120: eso significaría que la selección no ha
+     encontrado la mano en ese modelo.
+  2. `TWIST_MANOS = 0.95` rad: la muñeca gira sobre su propio eje y la palma
+     mira al muslo en vez de al suelo.
+- **El primer intento de colapso se comió medio personaje** (4.931 vértices,
+  incluido el otro brazo y la pierna, y salió un artefacto negro). Lo que lo
+  arregla no es el algoritmo sino el filtro: solo vértices a menos de
+  `RADIO_MANO` (19 cm) de la muñeca, por delante de ella y por debajo del
+  pecho. Está escrito en el docstring para que no se repita.
+- **El límite honesto**: esto no es un puño real, es una mano cerrada de
+ Cg粗. Para un puño de verdad hay que riggear los dedos (5 huesos por mano, 10
+  más de esqueleto) y en vez de colapsar vértices, doblarlos: es un trabajo
+  grande y queda para cuando el resto del arte esté cerrado.
+- Los 6 modelos re-riggean con esto. Sin coste de rendimiento (mover vértices no
+  cambia triángulos): 439 draw calls, ~410k primitivas, 339 MB.
+- Suite 100% verde (76 suites + 4 smokes).
+
+*Fin del documento maestro v3.52 — Fase 50.2 (las manos cerradas).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)
