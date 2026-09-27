@@ -57,7 +57,10 @@ no compensa.
 
 1. **Retopologízalo y copia el `.glb` aquí.** Ejemplo: `models/heroe.glb`.
 2. **Regístralo en `data/modelos.json`** (licencia, autor, fuente).
-3. **Pon su ruta donde lo consuma un `data/*.json`**:
+3. **Pon su ruta donde lo consuma un `data/*.json`**. Al colgarlo, el modelo
+   se gira con `Cuerpo.GIRO_MODELO` (180°): el pack viene mirando al +Z de
+   Godot y el juego anda hacia el -Z. Está hecho en `player.gd` y `enemy.gd`, no
+   hay que hacerlo a mano.
    - cuerpo del jugador → `data/clases.json`, en la clase:
      ```json
      "modelo": "res://models/clase_guerrero.glb",

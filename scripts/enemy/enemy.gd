@@ -148,7 +148,10 @@ func _aplicar_modelo(arquetipo: Dictionary) -> bool:
 		return false
 	inst.name = "Modelo"
 	add_child(inst)
+	# El pack viene mirando al +Z y el juego anda hacia el -Z: sin esta vuelta
+	# los enemigos corren hacia el jugador dando la espalda (Cuerpo.GIRO_MODELO).
 	_modelo = inst
+	_modelo.rotation.y = Cuerpo.GIRO_MODELO
 	var esc: float = float(arquetipo.get("modelo_escala", 1.0))
 	if esc > 0.0 and not is_equal_approx(esc, 1.0):
 		_modelo.scale = Vector3(esc, esc, esc)

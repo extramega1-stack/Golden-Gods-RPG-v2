@@ -22,9 +22,14 @@ import math
 import bpy
 from mathutils import Vector
 
-# Proporciones en metros sobre un humano de 1,90 m (Z arriba, el suelo en 0,
-# mirando a -Y que es "adelante" en Blender). Se ajustan a la altura real del
-# modelo con `escalar()`.
+# Proporciones en metros sobre un humano de 1,90 m (Z arriba, el suelo en 0).
+#
+# El esqueleto mira al -Y de Blender, que es hacia donde mira la MALLA del pack
+# (en las hojas de contactos, la camara colocada a -Y ve las caras). El exportador
+# mapea blender (X, Y, Z) -> gltf (X, Z, -Y), asi que el modelo sale mirando al
+# +Z de Godot, y el forward del juego es -Z: por eso al colgarlo se le da una
+# vuelta de 180 grados (Cuerpo.GIRO_MODELO). Girar el esqueleto en vez de eso
+# haria que la marcha fuera al reves contra la malla.
 PROP = {
     "pie_z": 0.04, "toe_y": -0.26, "toe_z": 0.03,
     "ankle_z": 0.10, "knee_z": 0.53, "hip_z": 0.95, "hip_x": 0.10,
@@ -168,13 +173,12 @@ def _clave(arm: object, hueso: str, frame: int, rot=(0.0, 0.0, 0.0), loc=None) -
 # natural (colgado, ~0.20 rad). Llena `enrutar()`; lo consume `_clave_lista`.
 BASE_BRAZO: dict = {"L": 0.0, "R": 0.0}
 
-# En espacio de hueso, rotar en Z baja el brazo en el plano frontal. El signo
-# se midio mirando el render, no deducido: al reves el luchador se quedaba con
-# el brazo izquierdo arriba (un "stop") y el derecho colgando, en vez de los dos
-# colgando. Con este signo, la izquierda suma y la derecha resta.
+# En espacio de hueso, rotar en Z baja el brazo en el plano frontal. Con -Z los
+# dos brazos bajan a la vez: se midio en el render, porque el signo deducido de
+# la matematica salia al reves.
 HUESOS_DE_BRAZO: tuple = ("UpperArm", "LowerArm", "Hand")
 
-REPOSO_NATURAL: float = 0.20
+REPOSO_NATURAL: float = 0.12
 
 ## Angulo por defecto del brazo desde la vertical, en radianes. Corresponde a la
 ## A en la que viene el pack de Meshy; se sobreescribe por asset.
@@ -421,7 +425,11 @@ def enrutar(malla: object, ang_brazo: float = None) -> object:
     ang: float = float(p_ang_brazo)
     prop["ang_brazo"] = ang
     global BASE_BRAZO
-    BASE_BRAZO = {"L": (ang - REPOSO_NATURAL), "R": -(ang - REPOSO_NATURAL)}
+    # La misma magnitud para los dos lados: el espejo lo hace `sg` en
+    # `_clave_lista`. Poner signos opuestos aqui (que era lo que hacia) deja un
+    # brazo arriba y el otro abajo: son gps simetricos yLs que se quedan
+    # asimetricos con la misma rotacion numerica.
+    BASE_BRAZO = {"L": -(ang - REPOSO_NATURAL), "R": -(ang - REPOSO_NATURAL)}
     print("[RIG] pose de brazos declarada: %.0f grados (%.2f rad) | alto %.2f m"
           % (math.degrees(ang), ang, alto_de(malla)))
     rig = _crear_esqueleto("Rig", prop)

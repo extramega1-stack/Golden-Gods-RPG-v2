@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 50 terminada.
+Lo que no está en el spec no existe. Estado: Fase 50.1 terminada.
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -110,7 +110,14 @@ portable (sin root, `~/Tools/blender/blender`, 4.5 LTS):
 #                                                   ^tris  ^rig  ^grados del brazo
 ```
 
-Seis trampas de Blender/rig que ya están pagadas (medidas, no deducidas):
+Siete trampas de Blender/rig/modelos que ya están pagadas (medidas, no deducidas):
+
+- **Los `.glb` del pack miran al +Z de Godot y el juego anda hacia el -Z.** El
+  exportador mapea blender (X, Y, Z) -> gltf (X, Z, -Y) y la malla de Meshy
+  mira al -Y de Blender. Al colgar el modelo hay que darle la vuelta
+  (`Cuerpo.GIRO_MODELO = PI`); si no, **el jugador y los enemigos caminan de
+  espaldas**. Y **no se arregla girando el esqueleto**: el esqueleto tiene que
+  mirar igual que la malla, o la marcha se mueve al revés contra el personaje.
 
 - **Los pesos se calculan a mano** (`rig.pesos_proprios`). Ni el "bone heat"
   (falla en headless: `failed to find solution`, deja la malla con 0 vértices

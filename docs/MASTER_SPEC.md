@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.50 — Fase 50 (2026-09-26)
+**Versión del documento:** 3.51 — Fase 50.1 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 50 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 50.1 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1536,6 +1536,45 @@ base sin parecerse al paladín del clérigo.
 - Suite 100% verde (76 suites + 4 smokes).
 
 *Fin del documento maestro v3.50 — Fase 50 (el jugador con modelo de clase).*
+
+## Fase 50.1 — Los modelos andaban de espaldas y con un brazo arriba (2026-09-26)
+
+Playtest de Juan Diego sobre la fase 50: *"cuando camina, camina de espaldas, y
+lo mismo pasa con los demás modelos"* y *"los brazos extendidos, tiene uno
+levantado y otro más abajo"*. Los dos son de la misma zona y los dos-salieron
+al fixes de la fase 50.
+
+- **Andaba de espaldas (jugador y enemigos).** Los `.glb` del pack miran al
+  **+Z** de Godot, porque el exportador mapea blender (X, Y, Z) -> gltf
+  (X, Z, -Y) y la malla de Meshy mira al -Y de Blender. El forward del juego es
+  **-Z**, así que el modelo entero iba al revés: la cara, la marcha y la
+  persecución, en el mismo sentido equivocado.
+  - El arreglo **no es girar el esqueleto**. El esqueleto tiene que mirar
+    igual que la malla (por eso `tools/rig.py` sigue en -Y): si se gira, el
+    ciclo de marcha se mueve al revés *respecto al personaje* y sale un
+    moonwalk igual de feo. Se gira **al colgarlo**, con una constante
+    compartida: `Cuerpo.GIRO_MODELO = PI`, en `scripts/core/cuerpo.gd`, que
+    usan tanto `player.gd` como `enemy.gd`. Es una constante y no un dato por
+    asset porque los 85 modelos salen de la misma cadena de exportación.
+  - **Tests**: `test_fase49` (138) y `test_fase50` (90) comprueban que el
+    modelo se cuelga con esa vuelta y que su **+Z local** (la cara) queda
+    apuntando al frente de la entidad. La comparación es horizontal a
+    propósito: el jugador y los enemigos se inclinan para pegarse al terreno y
+    ese declive no dice nada sobre hacia dónde andan.
+- **Un brazo arriba y otro abajo.** La base que baja los brazos de la pose en A
+  a una natural ponía **signos opuestos por lado** en dos sitios a la vez
+  (la constante y el factor de espejo), que se cancelaban: los dos lados
+  acababan con la **misma** rotación numérica, y en huesos espejados eso deja un
+  brazo arriba y el otro abajo. Ahora la magnitud es la misma para los dos y
+  el espejo lo hace un único factor. Verificado en render: los dos brazos
+  colgando, y el reposo natural más cerrado (0,12 rad).
+- Los 6 modelos del repo se re-riggean con el esqueleto en su sitio (el -Y de
+  la malla) y la pose de brazos corregida.
+- Sin cambios de rendimiento (es una rotación y un ajuste de pose): 439 draw
+  calls, 410.770 primitivas, 339 MB, igual que en la fase 50.
+- Suite 100% verde (76 suites + 4 smokes).
+
+*Fin del documento maestro v3.51 — Fase 50.1 (el frente del modelo y los brazos).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)

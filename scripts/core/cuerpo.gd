@@ -24,6 +24,19 @@ extends RefCounted
 const NOMBRE_CUERPO: NodePath = ^"Cuerpo"
 const NOMBRE_MODELO: NodePath = ^"Modelo"
 
+## Vuelta que hay que darle al modelo al colgarlo, en radianes.
+##
+## Los `.glb` del pack (los 85 de Meshy) miran al **+Z** de Godot, porque el
+## exportador mapea blender (X, Y, Z) -> gltf (X, Z, -Y) y la malla mira al -Y de
+## Blender. El forward del juego es **-Z**, asi que sin esta vuelta el jugador
+## camina de espaldas y los enemigos corren hacia el jugador dando la espalda.
+##
+## Es una constante y no un dato por asset porque los 85 modelos salen de la
+## misma cadena de exportacion. Y NO se arregla girando el esqueleto en Blender:
+## el esqueleto tiene que mirar igual que la malla (tools/rig.py) o el ciclo de
+## marcha se mueve al reves respecto al personaje.
+const GIRO_MODELO: float = PI
+
 
 ## Malla visual de `entidad`, o `null` si no tiene.
 static func malla(entidad: Node) -> MeshInstance3D:

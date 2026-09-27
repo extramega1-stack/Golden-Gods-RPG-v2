@@ -15,7 +15,37 @@ extends SceneTree
 ##     `data/anclajes.json` (casco a 1,58 m, mano a 1,15 m) están medidos
 ##     sobre un cuerpo de 1,7 m, y el modelo tiene que estar a esa altura o el
 ##     casco vuela por encima de la cabeza.
-## (f) Modelo ausente: el jugador se queda con la cápsula y avisa.
+## (f) El modelo se cuelga mirando al -Z, que es hacia donde anda el jugador.
+##     Sin esta vuelta el personaje camina de espaldas: el pack viene mirando
+##     al +Z (el exportador mapea el -Y de Blender al +Z) y el forward del
+##     juego es -Z.
+func _test_frente() -> void:
+	var cid: String = _una_clase_con_modelo()
+	if cid == "":
+		return
+	var p: Player = _jugador(cid)
+	var modelo: Node3D = p.get_node_or_null("Modelo") as Node3D
+	_chk(modelo != null, "f: hay modelo")
+	if modelo == null:
+		return
+	_chk(is_equal_approx(modelo.rotation.y, Cuerpo.GIRO_MODELO),
+		"f: el modelo se gira para mirar al frente del juego",
+		"rotation.y=%.2f esperado=%.2f" % [modelo.rotation.y, Cuerpo.GIRO_MODELO])
+	# La CARA del modelo es su +Z local (convencion del pack, ver
+	# Cuerpo.GIRO_MODELO). El forward del jugador es su -Z. Con la vuelta
+	# aplicada, la cara del modelo tiene que apuntar donde el jugador anda.
+	#
+	# La comparacion es HORIZONTAL a proposito: el jugador se inclina para
+	# pegarse al terreno, y ese declive no dice nada sobre hacia donde anda.
+	var cara: Vector3 = modelo.global_transform.basis.z
+	var anda: Vector3 = -p.global_transform.basis.z
+	cara = Vector3(cara.x, 0.0, cara.z).normalized()
+	anda = Vector3(anda.x, 0.0, anda.z).normalized()
+	_chk(cara.dot(anda) > 0.99, "f: el modelo mira donde mira el jugador",
+		"dot=%.3f (cara=%s anda=%s)" % [cara.dot(anda), str(cara.round()), str(anda.round())])
+
+
+## (g) Modelo ausente: el jugador se queda con la cápsula y avisa.
 ##
 ## Cómo correrlo:
 ##   godot --headless --path <proyecto> --script res://tests/test_fase50_clases_modelos.gd
@@ -57,6 +87,7 @@ func _process(delta: float) -> bool:
 	if _fase_espera == 0:
 		_test_cambio()
 		_test_equipo_en_su_sitio()
+		_test_frente()
 		_test_ausente()
 		_finalizar()
 	return false
@@ -317,6 +348,7 @@ func _esperar_frames(_delta: float) -> void:
 			_fase_espera = 0
 			_test_cambio()
 			_test_equipo_en_su_sitio()
+			_test_frente()
 			_test_ausente()
 			_finalizar()
 

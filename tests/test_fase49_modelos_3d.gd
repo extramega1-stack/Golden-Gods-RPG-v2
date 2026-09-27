@@ -54,6 +54,7 @@ func _process(_d: float) -> bool:
 	_test_estatico()
 	_test_pool()
 	_test_ausente()
+	_test_frente()
 	_test_presupuesto()
 	_test_piso()
 	print("[TEST] fase49_modelos_3d: %d ok, %d fallos" % [_ok, _fallos])
@@ -308,6 +309,32 @@ func _test_ausente() -> void:
 	_chk(e.get_node_or_null("Modelo") == null, "h: no cuelga nada")
 	_chk(cuerpo != null and cuerpo.mesh is CapsuleMesh, "h: cae a la cápsula si falta el modelo")
 	_chk(cuerpo != null and cuerpo.material_override != null, "h: y se tiñe igual que antes")
+
+
+## (h2) El enemigo tambien mira al frente al que persigue: el pack viene en +Z
+##      y el juegoPersigue hacia el -Z.
+func _test_frente() -> void:
+	var arqs: Dictionary = _json(RUTA_ENEMIGOS).get("arquetipos", {})
+	var clave: String = _primer_con_modelo(arqs)
+	if clave == "":
+		return
+	var e: Node3D = _enemigo()
+	e.call("configurar", arqs[clave])
+	var modelo: Node3D = e.get_node_or_null("Modelo") as Node3D
+	_chk(modelo != null, "h2: hay modelo")
+	if modelo == null:
+		return
+	_chk(is_equal_approx(modelo.rotation.y, Cuerpo.GIRO_MODELO),
+		"h2: el enemigo se gira para mirar al frente",
+		"rotation.y=%.2f" % modelo.rotation.y)
+	# Horizontal a proposito: el enemigo se pega al terreno y ese declive no
+	# dice nada sobre hacia donde persigue.
+	var cara: Vector3 = modelo.global_transform.basis.z
+	var persigue: Vector3 = -e.global_transform.basis.z
+	cara = Vector3(cara.x, 0.0, cara.z).normalized()
+	persigue = Vector3(persigue.x, 0.0, persigue.z).normalized()
+	_chk(cara.dot(persigue) > 0.99, "h2: el enemigo mira a donde persigue",
+		"dot=%.3f" % cara.dot(persigue))
 
 
 ## (i) El presupuesto por entidad.
