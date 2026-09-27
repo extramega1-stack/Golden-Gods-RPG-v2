@@ -195,9 +195,19 @@ MAX_HUESOS: int = 4
 ## frente como una mano cerrada.
 TWIST_MANOS: float = 0.95
 
-## Radio de la mano alrededor de la muñeca, en metros: lo unico que se colapsa
-## para cerrar los dedos. Ni un milimetro mas, que se cuela el antebrazo.
-RADIO_MANO: float = 0.19
+## Cuanto se encoge la mano al cerrarla: 1.0 seria dejarla como esta, y a
+## ~0.45 los dedos quedan juntos y la palma se lee cerrada desde fuera.
+CIERRE_MANOS: float = 0.45
+
+## Fraccion de la anchura total a partir de la cual se considera "la mano".
+## Medido en los 6 modelos del repo: a 0,60 se cuela el antebrazo (radio de la
+## nube 0,27 m), a 0,85 la nube es una mano (0,09-0,17 m).
+UMBRAL_MANO: float = 0.85
+
+## Si la nube es mas ancha que esto (en fraction de la altura del modelo), no es
+## una mano sino ropa: el mago tiene la tunica abierta y su nube mide 0,15 H. En
+## ese caso se avisa y se deja la mano como esta, antes que aplastar la tunica.
+RADIO_MAX_MANO: float = 0.12
 
 ## Por debajo de esto la seleccion no ha encontrado la mano (avisa, no falla).
 MIN_VERTICOS_MANO: int = 120
@@ -217,7 +227,10 @@ def _clave_lista(arm: object, huesos: dict, frame: int) -> None:
         partes = nombre.split(".")
         if partes[0] in HUESOS_DE_BRAZO and len(partes) > 1:
             sg: float = 1.0 if partes[1] == "L" else -1.0
-            twist: float = sg * TWIST_MANOS if partes[0] == "Hand" else 0.0
+            # El signo va al reves de lo que parece: con + el antebrazo
+            # termina con los dedos abiertos hacia AFUERA, y el personaje
+            # parece que lleva aletas. Mirado en el render, no deducido.
+            twist: float = -sg * TWIST_MANOS if partes[0] == "Hand" else 0.0
             rot = (rot[0], rot[1] + twist, rot[2] + sg * BASE_BRAZO[partes[1]])
         _clave(arm, nombre, frame, rot)
 
@@ -359,48 +372,77 @@ def _poner_en_reposo(arm: object) -> None:
         pb.scale = (1.0, 1.0, 1.0)
 
 
-def cerrar_manos(malla: object, p: dict) -> int:
-    """Cierra las manos: dedos juntos y palma mirando al muslo.
+def detectar_manos(malla: object) -> dict:
+    """Encuentra las dos manos EN LA MALLA y devuelve su centro y su radio.
 
-    Los `.glb` del pack vienen con la palma ABIERTA y los dedos separados, y
-    eso no lo arregla ninguna pose: los dedos del Meshy son geometria de la
-    malla, no huesos. Aqui se colapsan los vertices de la mano hacia un punto
-    de puno. Se hace ANTES de calcular los pesos, para que la forma ya cerrada
-    forme parte de la deformacion.
+    No se calculan con las proporciones del esqueleto, y esa fue la trampa: el
+    pack varia mucho (brazos a 30 o a 40 grados, manos mas o menos adelantadas)
+    y las proporciones del rig no los calcan. Con la muneca mal calculada:
 
-    La seleccion tiene que ser MUY estrita (el primer intento sin filtro se
-    comio medio personaje: 4.931 vertices, incluido el otro brazo y la pierna,
-    y salio un artefacto negro). Se cogen solo los vertices que estan mas alla
-    de la muneca, a menos de `RADIO_MANO` de ella, y por debajo de la altura
-    del pecho. Con eso toca unos pocos cientos y solo la mano.
+    - la mano derecha se cerraba en el sitio equivocado (x = -0,17 en vez de
+      -0,51), y lo que apretaba era la falda y el cinturon;
+    - la izquierda se quedaba con los dedos fuera del radio, porque estan a
+      21 cm de la muneca estimada y el radio eran 19.
+
+    Las manos se localizan por su forma: los dedos son lo mas alejado en X del
+    cuerpo, y por debajo de los hombros. Ni el packs ni el rig tienen que saber
+    nada de proporciones.
     """
-    import math as _m
-    a: float = float(p.get("ang_brazo", POSE_POR_DEFECTO))
-    dz: float = -_m.cos(a)
-    dx: float = _m.sin(a)
-    hombro: Vector = Vector((p["shoulder_x"], 0.0, p["shoulder_z"]))
-    largo1: float = p["shoulder_z"] - p["elbow_z"]
-    largo2: float = p["elbow_z"] - p["wrist_z"]
-    alcance: float = largo1 + largo2
-    tocados: int = 0
+    alto: float = alto_de(malla)
+    if alto <= 0.001:
+        return {}
+    x_max: float = max(abs(v.co.x) for v in malla.data.vertices)
+    if x_max <= 0.01:
+        return {}
+    manos: dict = {}
     for lado, sg in (("L", 1.0), ("R", -1.0)):
-        muneca: Vector = hombro + Vector((dx * alcance * sg, 0.0, dz * alcance))
-        direccion: Vector = Vector((dx * sg, 0.0, dz)).normalized()
-        centro: Vector = muneca + direccion * (RADIO_MANO * 0.45)
+        sel: list = [v.co for v in malla.data.vertices
+                     if v.co.x * sg > UMBRAL_MANO * x_max
+                     and 0.35 * alto < v.co.z < 0.80 * alto]
+        if len(sel) < 20:
+            continue
+        n: float = float(len(sel))
+        centro: Vector = Vector((sum(p.x for p in sel) / n,
+                                sum(p.y for p in sel) / n,
+                                sum(p.z for p in sel) / n))
+        radio: float = max((p - centro).length for p in sel)
+        manos[lado] = {"centro": centro, "radio": radio, "n": n}
+    return manos
+
+
+def cerrar_manos(malla: object) -> int:
+    """Cierra las manos: dedos juntos, palma mirando al cuerpo.
+
+    Los `.glb` del pack traen la palma ABIERTA y los dedos separados, y eso no
+    lo arregla ninguna pose: los dedos del Meshy son geometria, no huesos. Se
+    colapsa hacia el centro de cada mano (ver `detectar_manos`) con un factor
+    uniforme, que es justo "juntar los dedos".
+
+    Va ANTES de calcular los pesos, para que la forma cerrada forme parte de la
+    deformacion. Devuelve cuantos vertices ha tocado.
+    """
+    manos: dict = detectar_manos(malla)
+    if not manos:
+        return 0
+    x_max: float = max(abs(v.co.x) for v in malla.data.vertices)
+    tocados: int = 0
+    alto: float = alto_de(malla)
+    for lado, sg in (("L", 1.0), ("R", -1.0)):
+        if lado not in manos:
+            continue
+        if float(manos[lado]["radio"]) > RADIO_MAX_MANO * alto:
+            # No es una mano: es ropa (una tunica abierta, una capa). Apretarla
+            # dejaria al personaje con la tunica hecha un ovillo.
+            print("[RIG] la nube de '%s' mide %.2f H: parece ropa, no mano;"
+                  " se deja como esta" % (lado, float(manos[lado]["radio"]) / alto))
+            continue
+        centro: Vector = manos[lado]["centro"]
         for v in malla.data.vertices:
-            pv: Vector = v.co
-            delta: Vector = pv - muneca
-            largo: float = delta.length
-            if largo > RADIO_MANO or largo < 1e-4:
+            if v.co.x * sg <= UMBRAL_MANO * x_max:
                 continue
-            if delta.dot(direccion) <= 0.02:
+            if not (0.35 * alto < v.co.z < 0.80 * alto):
                 continue
-            if pv.z > p["shoulder_z"]:
-                continue
-            t: float = min(max(delta.dot(direccion) / RADIO_MANO, 0.0), 1.0)
-            # Intacto en la muñeca, bien cerrado en la punta.
-            factor: float = 1.0 - 0.78 * (t ** 1.3)
-            v.co = centro + (pv - centro) * factor
+            v.co = centro + (v.co - centro) * CIERRE_MANOS
             tocados += 1
     return tocados
 
@@ -495,13 +537,20 @@ def enrutar(malla: object, ang_brazo: float = None) -> object:
     BASE_BRAZO = {"L": -(ang - REPOSO_NATURAL), "R": -(ang - REPOSO_NATURAL)}
     print("[RIG] pose de brazos declarada: %.0f grados (%.2f rad) | alto %.2f m"
           % (math.degrees(ang), ang, alto_de(malla)))
-    tocados: int = cerrar_manos(malla, prop)
+    tocados: int = cerrar_manos(malla)
+    detected: dict = detectar_manos(malla)
+    for lado in detected:
+        c: Vector = detected[lado]["centro"]
+        print("[RIG] mano %s: centro (%.2f, %.2f, %.2f) radio %.2f (%d vertices)"
+              % (lado, c.x, c.y, c.z, float(detected[lado]["radio"]), int(detected[lado]["n"])))
     print("[RIG] manos cerradas: %d vertices de %d" % (tocados, len(malla.data.vertices)))
-    if tocados < MIN_VERTICOS_MANO:
-        # Con los 6 modelos del repo cae entre 431 y 1.594. Muy por debajo
-        # significa que la seleccion no ha encontrado la mano (modelo con las
-        # manos pegadas al cuerpo, o muy distinta) y las palmas se quedan
-        # abiertas sin avisar.
+    if tocados == 0 and len(detected) > 0:
+        print("[RIG] AVISO: se han detectado las manos pero ninguna se ha"
+              " cerrado; revisa UMBRAL_MANO / CIERRE_MANOS para este modelo")
+    if tocados < MIN_VERTICOS_MANO and tocados > 0:
+        # Con los 6 modelos del repo cae entre 200 y 450. Muy por debajo
+        # significa que la seleccion casi no ha encontrado la mano y las
+        # palmas se quedan medio abiertas.
         print("[RIG] AVISO: la mano casi no se ha tocado (%d vertices); revisa"
               " RADIO_MANO para este modelo" % tocados)
     rig = _crear_esqueleto("Rig", prop)

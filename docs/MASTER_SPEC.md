@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.52 — Fase 50.2 (2026-09-26)
+**Versión del documento:** 3.53 — Fase 50.3 (2026-09-26)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -15,7 +15,7 @@ nuevo: el proyecto anterior acumuló 26 versiones de parches (v10.1 → v10.26.0
 lore y controles— ya está claro y vive en este documento. El código viejo es
 desechable; el diseño no.
 
-**Estado:** Fase 50.2 terminada (la de abajo es la última; el detalle de cada
+**Estado:** Fase 50.3 terminada (la de abajo es la última; el detalle de cada
 fase vive en su sección, desde "Fase 0" hasta el final del documento) —
 Fase 9: Detalle de misión + respawn de mobs:
 - **Detalle de misión:** campo `lore` (string, 1–3 líneas, coherente con el
@@ -1609,6 +1609,38 @@ hacia abajo"*. Es lo único que quedaba de la pose.
 - Suite 100% verde (76 suites + 4 smokes).
 
 *Fin del documento maestro v3.52 — Fase 50.2 (las manos cerradas).*
+
+## Fase 50.3 — Las manos, esta vez sí (2026-09-26)
+
+Segunda vuelta del playtest: *"las manos siguen extendidas"*. La fase 50.2 no
+había arreglado nada: **el colapso iba a la ropa**.
+
+- **El bug, en dos partes.** `cerrar_manos()` calculaba la muñeca con las
+  proporciones del esqueleto, y en el lado derecho **no reflejaba el hombro**:
+  la muñeca salía en x = −0,17 en vez de −0,51. Con ese error el colapso apretaba la **falda y el cinturón** (faldas se deforman),
+  no la mano. Y con eso, la izquierda tampoco se cerraba bien: los dedos están
+  a 21 cm de la muñeca estimada y el radio del selector eran 19 cm, así que la
+  punta de los dedos quedaba fuera.
+- **La solución es no calcular la mano: detectarla.** `detectar_manos()` la
+  localiza **por la forma de la malla** — los dedos son lo más alejado en X del
+  cuerpo, por debajo de los hombros — y devuelve su centro y su radio. Medido
+  en los 6 modelos del repo: a `|x| > 0,85 · x_max` la nube mide 0,09–0,17 m,
+  que es una mano; a `0,60` mide 0,27 m, que es el antebrazo.
+- **Guarda de ropa**: si la nube es más ancha de 0,12 H, no es una mano sino una
+  túnica o una capa. El **mago** cae en ese caso (su túnica abierta da 0,15 H):
+  el script lo avisa y **le deja las manos como están**, porque apretar la túnica
+  lo dejaría con el vestido hecho un ovillo. Los otros cinco sí cierran.
+- Verificado pintando en rojo lo que el selector considera mano: ahora el rojo
+  cae exactamente sobre las manos, no sobre la ropa (con el selector anterior el
+  rojo salía en las mangas y en la falda, y era la pista de que íbamos
+  equivocados).
+- `TWIST_MANOS` se queda en 0,95 rad. Antes, con el signo del revés, las manos
+  parecían aletas abiertas hacia fuera; ahora la palma mira al muslo.
+- Los 6 modelos re-riggean. Sin coste de rendimiento: 439 draw calls, ~410k
+  primitivas, 339 MB.
+- Suite 100% verde (76 suites + 4 smokes).
+
+*Fin del documento maestro v3.53 — Fase 50.3 (las manos cerradas de verdad).*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)
