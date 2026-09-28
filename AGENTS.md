@@ -135,7 +135,7 @@ Siete trampas de Blender/rig/modelos que ya están pagadas (medidas, no deducida
   recurso (`loop_mode`).
 - **La pose del brazo es un dato por asset** (`pose_brazos` en
   `data/modelos.json`, 5º argumento del script), no se deduce de la silueta: con
-  faldones y capas el ancho相对 no distingue una T de un brazo colgando (el
+  faldones y capas el ancho relativo no distingue una T de un brazo colgando (el
   luchador en T daba 1,02, o sea "colgado").
 - **Al terminar de rigear, la pose se queda en reposo**: sin acción, los
   huesos conservan los valores del último clip escrito (el `die`), y cualquier
@@ -164,3 +164,17 @@ Dos trampas ya pagadas, no repetirlas:
   Los tests `test_fase12_spawns` y `test_fase14_terreno` la comprueban, y el
   jugador está a 45 m: por eso el goblin con modelo quedó a 74 m y no se puede
   closer sin tocar esas reglas.
+
+## Traspaso a otra máquina
+
+`handover/` lleva el contexto completo, **incluida la conversación con OpenCode**
+(1.308 mensajes, 0,8 MB). Para retomarlo en otra PC:
+
+```sh
+cd handover && gunzip sesion-ggv2-2026-09-28.json.gz
+opencode import sesion-ggv2-2026-09-28.json
+opencode -s ses_f2c05d0b4ffeYR21N5g3XQZjzx
+```
+
+Lo que vive **fuera** del repo (Godot 4.7.2, el Blender portable de `~/Tools`, los
+2,6 GB de packs y el `opencode-relay`) está en `handover/ENTORNO.md`.

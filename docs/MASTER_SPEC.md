@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.53 — Fase 50.3 (2026-09-26)
+**Versión del documento:** 3.54 — Traspaso a otra PC (2026-09-28)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -1641,6 +1641,26 @@ había arreglado nada: **el colapso iba a la ropa**.
 - Suite 100% verde (76 suites + 4 smokes).
 
 *Fin del documento maestro v3.53 — Fase 50.3 (las manos cerradas de verdad).*
+
+## Traspaso a otra PC (2026-09-28)
+
+El contexto de este proyecto cabe en git, **incluida la conversación con
+OpenCode**: `handover/` lleva el historial exportado (0,8 MB) y los dos manuales
+para montarlo todo en otra máquina.
+
+- `handover/README.md` — cómo clonar, **cómo abrir la conversación**
+  (`opencode import` + `opencode -s <sessionID>`) y dónde se quedó el proyecto.
+- `handover/ENTORNO.md` — lo que NO está en el repo: Godot 4.7.2, el Blender
+  portable de `~/Tools`, los 2,6 GB de packs y el servicio `opencode-relay`.
+- `handover/sesion-ggv2-2026-09-28.json.gz` — 1.308 mensajes.
+
+Al exportar la sesión aparecieron credenciales reales en salidas de herramientas
+antiguas (un token `ghr_` de GitHub y dos claves `sk-`): van **redactadas** en la
+copia del repo, verificado con un barrido de patrones. La versión completa son
+55 MB y **no entra en git**; para recuperarla, `opencode export` en la máquina
+original.
+
+*Fin del documento maestro v3.54 — Traspaso a otra PC.*
 
 
 ## Fase 45 — Minería: vetas por bioma (2026-09-24)
