@@ -48,13 +48,35 @@ var _progreso: Dictionary = {}
 
 
 ## Estado actual de una misión. Misiones desconocidas → "desconocida".
-## Sin registrar: "disponible", salvo `requiere` pendiente → "bloqueada".
+## Sin registrar: "disponible", salvo que el DATO la bloquee.
+##
+## Hay DOS motivos de bloqueo derivados, y los dos se deciden en el dato:
+##  1. `requiere` (fase 22): el prerrequisito no está entregado → "bloqueada".
+##  2. NG+ (esta fase): `ngplus_ciclo` dice que la misión es de una vuelta
+##     posterior a la que se está jugando → "bloqueada" también.
+##
+## El segundo es un dato más de la regla, no una regla nueva: por eso las 41
+## misiones del juego base, que no declaran `ngplus_ciclo`, se comportan
+## EXACTAMENTE igual que antes (mismo estado, mismos caminos, mismas UI). El
+## "¿está disponible?" es la única pregunta nueva, y la contesta
+## `QuestDB.disponible_en_ciclo` mirando dos números del JSON.
 func estado(quest_id: String) -> String:
 	if not QuestDB.existe(quest_id):
 		return "desconocida"
 	var reg: String = str(_estados.get(quest_id, ""))
 	if reg != "":
 		return reg
+	# Ya aceptada: se sigue viendo, juegue o no el NG+. El jugador la empezó
+	# y no se le quita de encima a mitad de camino.
+	if not QuestDB.disponible_en_ciclo(quest_id, EstadoNgPlus.ciclo_en_juego()):
+		return "bloqueada"
+	# Una diaria/semanal VENCIDA tampoco está disponible: mañana ya no se
+	# ofrece, aunque su id siga en el catálogo. Es la diferencia entre "no la
+	# conozco" (estado "desconocida") y "la conozco pero se acabó" — y hace
+	# falta que sean cosas distintas para que `oferta_para_npc` la salte sin
+	# avisar y para que la carga de una partida vieja no llore.
+	if not QuestDB.vigente(quest_id):
+		return "vencida"
 	var req: String = QuestDB.requiere(quest_id)
 	if req != "" and str(_estados.get(req, "")) != "entregada":
 		return "bloqueada"
@@ -63,10 +85,21 @@ func estado(quest_id: String) -> String:
 
 ## Acepta una misión disponible. Retorna "ok" / "desconocida" /
 ## "no_disponible" (ya aceptada, lista o entregada).
+##
+## "vencida" es un retorno PROPIO y no un "no_disponible": son cosas
+## distintas. "no_disponible" significa que ya la tenés o que algo de la
+## cadena te falta, y el jugador puede actuar. "vencida" significa que este
+## encargo era de ayer y no se puede volver a tomar, y el jugador no puede
+## hacer nada al respecto. Confundirlas haría que un NPC dijera "no disponible"
+## por una diaria que simplemente ya pasó, y el jugador pensaría que algo
+## falló.
 func aceptar(quest_id: String) -> String:
 	if not QuestDB.existe(quest_id):
 		return "desconocida"
-	if estado(quest_id) != "disponible":
+	var est: String = estado(quest_id)
+	if est == "vencida":
+		return "vencida"
+	if est != "disponible":
 		return "no_disponible"
 	_estados[quest_id] = "activa"
 	_progreso[quest_id] = _ceros_para(quest_id)
@@ -181,6 +214,12 @@ func progreso_texto(quest_id: String) -> String:
 ## Oferta de misión para un NPC: la primera "disponible" cuyo npc_origen
 ## sea él, o la primera "lista" para entregar cuyo npc_origen sea él.
 ## {} si no hay nada que ofrecer.
+##
+## Las VENCIDAS se saltan en silencio y sin considerarlas "disponible": un
+## NPC no puede ofrecer el encargo de ayer, y no es un problema que haya que
+## avisar. `estado()` ya devuelve "vencida" para ellas; el filtro lo deja
+## explícito porque `oferta_para_npc` es la función que el juego llama cuando
+## el jugador habla con alguien, y ahí importa que no salga una oferta muerta.
 func oferta_para_npc(npc_id: String) -> Dictionary:
 	if npc_id == "":
 		return {}
@@ -207,6 +246,18 @@ func oferta_para_npc(npc_id: String) -> Dictionary:
 				"descripcion": str(datos.get("descripcion", "")),
 			}
 	return {}
+
+
+## Los ids de las misiones YA ENTREGADAS, en el orden del catálogo. Los
+## necesita `Trofeos` para saber qué actos de NG+ están completos, y está
+## aquí (y no en `Trofeos`) porque el estado de las misiones vive en esta
+## clase: una sola fuente de verdad.
+func entregadas() -> Array[String]:
+	var salida: Array[String] = []
+	for qid in QuestDB.ids():
+		if str(_estados.get(qid, "")) == "entregada":
+			salida.append(qid)
+	return salida
 
 
 ## Entrega una misión "lista": consume los items recolectados
@@ -289,8 +340,16 @@ func cargar_estado(d: Dictionary) -> void:
 	var bloque: Dictionary = d.get("misiones", {})
 	for qid in bloque:
 		var quest_id: String = str(qid)
+		# UNA DIARIA DE AYER NO ROMPE LA CARGA. Este es el caso que pedía
+		# revisar: el bloque "misiones" de una partida de ayer tiene ids
+		# `dia_d000738_...` que hoy no están en el catálogo, porque la rotación
+		# de hoy se registra al arrancar. Perderla es lo correcto (venció), así
+		# que se ignora en silencio. Una misión normal desconocida, en cambio,
+		# SÍ es un problema (un id mal escrito, o un catálogo que se quedó
+		# corto) y por eso avisa como siempre.
 		if not QuestDB.existe(quest_id):
-			push_warning("[QuestLog] ignora misión desconocida en guardado: %s" % quest_id)
+			if not QuestDB.es_id_de_rotacion(quest_id):
+				push_warning("[QuestLog] ignora misión desconocida en guardado: %s" % quest_id)
 			continue
 		var entrada: Variant = bloque.get(qid, {})
 		if not (entrada is Dictionary):
