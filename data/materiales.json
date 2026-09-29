@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "nota": "Fase 69 — materiales PROCEDURALES por tipo de superficie. Este archivo es la UNICA fuente de color y de patron del mundo: el codigo no lleva ni un hex. Al arrancar se hornea una vez un set PBR (albedo con grano + normal map derivado + ORM) por superficie y por variante, se cachea, y todas las mallas del juego comparten esas texturas. Los colores van como hex de 8 bits plano, igual que `Color.html` los leia antes en `_paleta` (mismo valor que el float que se usaba, sin conversion de espacio de color).",
+
+  "_comentarios": {
+    "px": "Lado del tile en px. 128 = 64 KB por textura, 3 mapas x 8 superficies x 4 variantes = 96 texturas = ~6 MB con mipmaps. Es VRAM (§9.5), no se sube por gusto.",
+    "variantes": "Cuantas variantes hornea por superficie. Solo la usan los roles con `\"variar\": true` (muros y techos): el indice sale de la posicion del edificio, no de un contador, para que un save reconstruya el mundo igual.",
+    "albedo_ganancia": "Compensa que el mapa de albedo promedia ~0.94 y multiplica (ALBEDO = albedo_color * albedo_tex). 1.06 deja el brillo neto donde estaba con el color plano.",
+    "escala_uv": "METROS por repeticion. Entra como 1.0/escala_uv en uv1_scale, y el triplanar de Godot lo proyecta en espacio de mundo: por eso una caja de 24 m no sale estirada.",
+    "patron.tipo": "ninguno | sillares | filas | vetas | tejido | canto | fibras. La forma caracteristica de la superficie (cantera, teja, veta de madera, urdimbre...).",
+    "moteado": "Manchas de color (multiplicador) para ensuciar: musgo en la piedra, hollín en el metal. Suben la rugosidad donde caen.",
+    "roles": "Nombre de material que el mundo pide -> superficie + tinte. Si `_mat(\"X\")` aparece en el codigo y X no esta aca, el test `test_render_materiales` falla: es la regla de datos primero, vigilada."
+  },
+
+  "textura": {
+    "px": 128,
+    "semilla": 20260929,
+    "variantes": 4,
+    "albedo_ganancia": 1.06,
+    "albedo_base": 0.94,
+    "normal_fuerza_global": 1.0
+  },
+
+  "variacion": {
+    "tono": 0.11,
+    "saturacion": 0.10,
+    "uv_offset": 0.43,
+    "uv_escala": 0.14
+  },
+
+  "superficies": {
+    "piedra": {
+      "escala_uv": 3.0,
+      "frecuencia": 0.045,
+      "octavas": 5,
+      "ganancia": 0.5,
+      "granulometria": 0.55,
+      "patron": {"tipo": "sillares", "frecuencia": 4.0, "amplitud": 0.42, "junta": 0.13},
+      "normal_fuerza": 0.9,
+      "rugosidad": 0.94,
+      "rugosidad_var": 0.10,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#9aa07a", "umbral": 0.70, "suavizado": 0.14, "frecuencia": 0.50},
+                 {"color": "#7a6a5a", "umbral": 0.76, "suavizado": 0.10, "frecuencia": 0.80}]
+    },
+    "madera": {
+      "escala_uv": 2.0,
+      "frecuencia": 0.080,
+      "octavas": 4,
+      "ganancia": 0.45,
+      "granulometria": 0.40,
+      "patron": {"tipo": "vetas", "frecuencia": 3.0, "amplitud": 0.50, "junta": 0.0},
+      "normal_fuerza": 0.7,
+      "rugosidad": 0.86,
+      "rugosidad_var": 0.12,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#6b5540", "umbral": 0.72, "suavizado": 0.16, "frecuencia": 0.40}]
+    },
+    "yeso": {
+      "escala_uv": 3.6,
+      "frecuencia": 0.090,
+      "octavas": 4,
+      "ganancia": 0.35,
+      "granulometria": 0.30,
+      "patron": {"tipo": "ninguno", "frecuencia": 0.0, "amplitud": 0.0, "junta": 0.0},
+      "normal_fuerza": 0.5,
+      "rugosidad": 0.93,
+      "rugosidad_var": 0.07,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#a89c8c", "umbral": 0.66, "suavizado": 0.20, "frecuencia": 0.35}]
+    },
+    "teja": {
+      "escala_uv": 2.4,
+      "frecuencia": 0.100,
+      "octavas": 4,
+      "ganancia": 0.35,
+      "granulometria": 0.30,
+      "patron": {"tipo": "filas", "frecuencia": 7.0, "amplitud": 0.55, "junta": 0.18},
+      "normal_fuerza": 1.0,
+      "rugosidad": 0.90,
+      "rugosidad_var": 0.09,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#8a7a68", "umbral": 0.70, "suavizado": 0.18, "frecuencia": 0.45}]
+    },
+    "tierra": {
+      "escala_uv": 3.4,
+      "frecuencia": 0.055,
+      "octavas": 5,
+      "ganancia": 0.65,
+      "granulometria": 0.70,
+      "patron": {"tipo": "canto", "frecuencia": 6.0, "amplitud": 0.45, "junta": 0.0},
+      "normal_fuerza": 0.85,
+      "rugosidad": 0.97,
+      "rugosidad_var": 0.06,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#8a7c62", "umbral": 0.62, "suavizado": 0.22, "frecuencia": 0.50}]
+    },
+    "pasto": {
+      "escala_uv": 1.6,
+      "frecuencia": 0.160,
+      "octavas": 3,
+      "ganancia": 0.80,
+      "granulometria": 0.90,
+      "patron": {"tipo": "fibras", "frecuencia": 14.0, "amplitud": 0.35, "junta": 0.0},
+      "normal_fuerza": 0.8,
+      "rugosidad": 0.96,
+      "rugosidad_var": 0.05,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#8f9a5e", "umbral": 0.66, "suavizado": 0.20, "frecuencia": 0.60}]
+    },
+    "metal": {
+      "escala_uv": 1.8,
+      "frecuencia": 0.100,
+      "octavas": 4,
+      "ganancia": 0.25,
+      "granulometria": 0.25,
+      "patron": {"tipo": "vetas", "frecuencia": 22.0, "amplitud": 0.28, "junta": 0.0},
+      "normal_fuerza": 0.45,
+      "rugosidad": 0.38,
+      "rugosidad_var": 0.16,
+      "metalicidad": 1.0,
+      "moteado": [{"color": "#8a8a8a", "umbral": 0.72, "suavizado": 0.20, "frecuencia": 0.35}]
+    },
+    "tela": {
+      "escala_uv": 1.4,
+      "frecuencia": 0.120,
+      "octavas": 3,
+      "ganancia": 0.30,
+      "granulometria": 0.30,
+      "patron": {"tipo": "tejido", "frecuencia": 16.0, "amplitud": 0.40, "junta": 0.0},
+      "normal_fuerza": 0.6,
+      "rugosidad": 0.90,
+      "rugosidad_var": 0.06,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#a89890", "umbral": 0.70, "suavizado": 0.22, "frecuencia": 0.40}]
+    }
+  },
+
+  "paleta_roles": {
+    "muros":   {"material": "pal_muro",   "superficie": "piedra", "variar": true,  "rugosidad_rel": 1.00, "metalicidad_rel": 0.0},
+    "techos":  {"material": "pal_techo",  "superficie": "teja",   "variar": true,  "rugosidad_rel": 1.00, "metalicidad_rel": 0.0},
+    "acentos": {"material": "pal_acento", "superficie": "piedra", "variar": false, "rugosidad_rel": 0.80, "metalicidad_rel": 0.0},
+    "detalle": {"material": "pal_detalle","superficie": "yeso",   "variar": false, "rugosidad_rel": 1.00, "metalicidad_rel": 0.0},
+    "extra":   {"material": "pal_extra",  "superficie": "piedra", "variar": false, "rugosidad_rel": 0.95, "metalicidad_rel": 0.0}
+  },
+
+  "paleta_extra": {
+    "toldos":      {"material": "pal_extra", "superficie": "tela",   "metalicidad_rel": 0.0, "rugosidad_rel": 1.00},
+    "braseros":    {"material": "pal_extra", "superficie": "metal",  "metalicidad_rel": 0.9, "rugosidad_rel": 0.90},
+    "cristales":   {"material": "pal_extra", "superficie": "piedra", "metalicidad_rel": 0.4, "rugosidad_rel": 0.40},
+    "estandartes": {"material": "pal_extra", "superficie": "tela",   "metalicidad_rel": 0.0, "rugosidad_rel": 1.00},
+    "empalizadas": {"material": "pal_extra", "superficie": "madera", "metalicidad_rel": 0.0, "rugosidad_rel": 1.00},
+    "velas":       {"material": "pal_extra", "superficie": "yeso",   "metalicidad_rel": 0.0, "rugosidad_rel": 0.70},
+    "dorado":      {"material": "pal_extra", "superficie": "metal",  "metalicidad_rel": 1.0, "rugosidad_rel": 0.70}
+  },
+
+  "roles": {
+    "piedra":            {"superficie": "piedra", "tinte": "#4e505a"},
+    "piedra_clara":      {"superficie": "piedra", "tinte": "#8d877f"},
+    "piedra_volcanica":  {"superficie": "piedra", "tinte": "#292426"},
+    "carbon":            {"superficie": "piedra", "tinte": "#141415"},
+    "plaza":             {"superficie": "piedra", "tinte": "#6b6661"},
+    "calle":             {"superficie": "tierra", "tinte": "#3d3d45"},
+    "hoja":              {"superficie": "pasto",  "tinte": "#2e6b2e"},
+
+    "muro_a":            {"superficie": "yeso",   "tinte": "#b89e80", "variar": true},
+    "muro_b":            {"superficie": "yeso",   "tinte": "#804733", "variar": true},
+    "muro_c":            {"superficie": "madera", "tinte": "#6b4d2e", "variar": true},
+    "nieve":             {"superficie": "yeso",   "tinte": "#ebf0fa"},
+    "hueso":             {"superficie": "yeso",   "tinte": "#e0d6b8"},
+
+    "madera":            {"superficie": "madera", "tinte": "#613d24"},
+    "madera_oscura":     {"superficie": "madera", "tinte": "#38240f"},
+    "puerta_madera":     {"superficie": "madera", "tinte": "#291a0f"},
+
+    "tejado_pizarra":    {"superficie": "teja",   "tinte": "#404759", "variar": true},
+    "tejado_rojo":       {"superficie": "teja",   "tinte": "#6b1f1a", "variar": true},
+    "tejado_madera":     {"superficie": "teja",   "tinte": "#4d331f", "variar": true},
+
+    "tela_roja":         {"superficie": "tela",   "tinte": "#7a0f17"},
+    "tela_oro":          {"superficie": "tela",   "tinte": "#c79438"},
+    "tela_sombra":       {"superficie": "tela",   "tinte": "#291422"},
+
+    "oro":               {"superficie": "metal",  "tinte": "#d99e38", "metalicidad_rel": 1.0, "rugosidad_rel": 1.0},
+    "acero":             {"superficie": "metal",  "tinte": "#595e6b", "metalicidad_rel": 0.8, "rugosidad_rel": 1.4},
+    "bronce":            {"superficie": "metal",  "tinte": "#8c612e", "metalicidad_rel": 1.0, "rugosidad_rel": 1.2},
+
+    "ventana":           {"plano": true, "tinte": "#ffc266", "rugosidad_rel": 0.45,
+                          "emision": "#ff9e40", "emision_energia": 1.5},
+    "agua":              {"plano": true, "tinte": "#2673a6", "rugosidad_rel": 0.25,
+                          "emision": "#1a598c", "emision_energia": 0.7},
+    "lava":              {"plano": true, "tinte": "#ff590d", "rugosidad_rel": 0.60,
+                          "emision": "#ff4d0d", "emision_energia": 2.5},
+    "cristal_arcano":    {"plano": true, "tinte": "#73d9ff", "rugosidad_rel": 0.20,
+                          "emision": "#59bfff", "emision_energia": 1.8},
+    "tormenta":          {"plano": true, "tinte": "#99ccff", "rugosidad_rel": 0.20,
+                          "emision": "#80bfff", "emision_energia": 1.6}
+  },
+
+  "piezas": {
+    "fogata":   {"superficie": "piedra", "tinte": "#734d38"},
+    "yunque":   {"superficie": "metal",  "tinte": "#474d57", "metalicidad_rel": 0.9, "rugosidad_rel": 1.4},
+    "mesa":     {"superficie": "madera", "tinte": "#85613e"},
+    "cofre":    {"superficie": "madera", "tinte": "#664d33"},
+    "saco":     {"superficie": "tela",   "tinte": "#8c8066"},
+    "estante":  {"superficie": "madera", "tinte": "#735538"},
+    "columna":  {"superficie": "yeso",   "tinte": "#9e9990"},
+    "antorcha": {"superficie": "madera", "tinte": "#59422b"}
+  }
+}

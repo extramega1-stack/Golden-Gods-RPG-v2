@@ -81,7 +81,15 @@ var alturas: Dictionary = {}
 
 var _datos: Dictionary = {}
 var _construida: bool = false
-var _mats: Dictionary = {}
+## Fase 69: la paleta de la ciudad ya NO es un `StandardMaterial3D` por rol
+## sino la CRUD (superficie + tinte + multiplicadores) que resuelve
+## `BibliotecaMateriales`. Vacía en Moon Town, que no trae `_paleta`.
+var _pal: Dictionary = {}
+## Fase 69: semilla de VARIACION del edificio que se esta construyendo. La
+## pone `_colocar_edificio` con la posicion y la borra al terminar, asi solo
+## los edificios varian: la muralla, la plaza y las antorchas van siempre en
+## variante 0.
+var _semilla: int = 0
 var _caja_mesh: BoxMesh = null
 ## Fase 15: antorchas reales (Antorcha) o falsas (FalsaAntorcha).
 var _luces: Array[Node3D] = []
@@ -103,7 +111,20 @@ var _pasos_hechos: int = 0
 var _pasos_total: int = 0
 
 
+## Fase 69: ya se horneó el set de texturas del mundo. Es idempotente y lo
+## paga UNA vez por proceso, en la carga, no en el primer edificio (que en
+## modo progresivo cae dentro de un `_process` y sería un tiron de frame).
+static var _materiales_hornearon: bool = false
+
+static func _hornear_materials() -> void:
+	if _materiales_hornearon:
+		return
+	_materiales_hornearon = true
+	BibliotecaMateriales.precalentar()
+
+
 func _ready() -> void:
+	_hornear_materials()
 	if _datos.is_empty():
 		if not cargar_datos(RUTA_DATOS):
 			push_warning("[CiudadLuna] no se pudo cargar %s" % RUTA_DATOS)
@@ -174,13 +195,18 @@ func _colocar_edificio(d: Dictionary, idx: int) -> int:
 	var rot: float = float(d.get("rot", 0.0))
 	var escala: float = float(d.get("escala", 1.0))
 	var variante: String = str(d.get("variante", ""))
-	var raiz: Node3D = _construir_edificio(tipo, variante)
-	if raiz == null:
-		push_warning("[CiudadLuna] tipo desconocido: %s" % tipo)
-		return idx
 	# Fase 15: las x/z del JSON son relativas a `centro`.
 	var wx: float = x + centro.x
 	var wz: float = z + centro.y
+	# Fase 69: la semilla de VARIACION sale de la POSICION, no de un
+	# contador. Es lo que garantiza que un barrio de 20 casas no sea 20 copias
+	# y que un save reconstruya el mundo con el mismo grano.
+	_semilla = BibliotecaMateriales.semilla_de(wx, wz)
+	var raiz: Node3D = _construir_edificio(tipo, variante)
+	_semilla = 0
+	if raiz == null:
+		push_warning("[CiudadLuna] tipo desconocido: %s" % tipo)
+		return idx
 	raiz.position = Vector3(wx, _altura(wx, wz), wz)
 	raiz.rotation.y = rot
 	raiz.scale = Vector3.ONE * escala
@@ -385,32 +411,44 @@ func _tiene_paleta() -> bool:
 	return pal is Dictionary and not (pal as Dictionary).is_empty()
 
 
-## Crea los materiales pal_muro/pal_techo/pal_acento/pal_detalle/pal_extra
-## desde los hex del JSON. Sin `_paleta` no hace nada (Moon Town intacta).
 func _aplicar_paleta() -> void:
+	_pal.clear()
 	var pal: Dictionary = _datos.get("_paleta", {})
 	if pal.is_empty():
 		return
-	_crear_pal("pal_muro", str(pal.get("muros", "#808080")), 0.95, 0.0)
-	_crear_pal("pal_techo", str(pal.get("techos", "#404040")), 0.9, 0.0)
-	_crear_pal("pal_acento", str(pal.get("acentos", "#a08040")), 0.75, 0.0)
-	_crear_pal("pal_detalle", str(pal.get("detalle", "#c0c0c0")), 0.9, 0.0)
-	# El 5o color varia por ciudad: toldos/braseros/cristales/estandartes/...
-	var extra: String = "#ffffff"
-	for k in ["toldos", "braseros", "cristales", "estandartes", "empalizadas",
-			"velas", "dorado"]:
-		if pal.has(k):
-			extra = str(pal[k])
+	# `_pal` mapea "pal_muro" -> {superficie, tinte, rel...}. Ya NO es un
+	# StandardMaterial3D: es la CRUD de la Biblioteca, que es donde viven las
+	# texturas. El nombre sigue siendo "pal_muro" para que los 147 `_mat(...)`
+	# del archivo no cambien y `_mx()` siga siendo un alias.
+	for clave in MaterialesDB.paleta_claves():
+		if not pal.has(clave):
+			continue
+		var base: Dictionary = MaterialesDB.paleta_rol(clave)
+		_pal[str(base.get("material", "pal_" + clave))] = {
+			"superficie": str(base.get("superficie", "piedra")),
+			"tinte": str(pal[clave]),
+			"variar": bool(base.get("variar", false)),
+			"rugosidad_rel": float(base.get("rugosidad_rel", 1.0)),
+			"metalicidad_rel": float(base.get("metalicidad_rel", 0.0)),
+		}
+	# El 5o color varia por ciudad: toldos/braseros/cristales/estandartes/
+	# empalizadas/velas/dorado. Cada uno es una superficie DISTINTA (el dorado
+	# de Golden Tower es metal y su brasero tambien; un toldo es tela), asi
+	# que se resuelve por la clave que la ciudad uso. Sin ninguna de esas
+	# claves, `pal_extra` se queda con el rol generico y blanco.
+	var clave_extra: String = ""
+	for cand in MaterialesDB.CANDIDATOS_EXTRA:
+		if pal.has(cand):
+			clave_extra = cand
 			break
-	_crear_pal("pal_extra", extra, 0.85, 0.6 if extra == str(pal.get("dorado", "")) else 0.0)
-
-
-func _crear_pal(nombre: String, hex: String, rugosidad: float, metalico: float) -> void:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color.html(hex)
-	m.roughness = rugosidad
-	m.metallic = metalico
-	_mats[nombre] = m
+	var ex: Dictionary = MaterialesDB.paleta_extra(clave_extra)
+	_pal[str(ex.get("material", "pal_extra"))] = {
+		"superficie": str(ex.get("superficie", "piedra")),
+		"tinte": str(pal.get(clave_extra, "#ffffff")),
+		"variar": false,
+		"rugosidad_rel": float(ex.get("rugosidad_rel", 0.95)),
+		"metalicidad_rel": float(ex.get("metalicidad_rel", 0.0)),
+	}
 
 
 ## Nombre de material para un rol: paleta de la ciudad si existe,
@@ -432,115 +470,27 @@ func _mx(rol: String, defecto: String) -> String:
 	return defecto
 
 
-## Material cacheado por nombre (direccion L2/MU: acero oscuro + oro + rojo).
+## El material de un ROL. NO lleva ningun color: el rol se busca en
+## `data/materiales.json`, y de ahi sale la superficie (y con ella las
+## texturas PBR), el tinte y la rugosidad. Moon Town no trae `_paleta`, asi
+## que sus muros son los roles `muro_a`/`muro_b`/`muro_c` del catalogo, igual
+## que antes: lo unico que cambio es de donde salen los numeros.
+##
+## La VARIACION sale de `_semilla`, que `_colocar_edificio` fija con la
+## posicion del edificio. Fuera de un edificio (plaza, calles, muralla,
+## antorchas) `_semilla` es 0 y todo va en variante 0: una muralla que
+## cambiara de tono cada 6 m seria peor que una muralla lisa.
 func _mat(nombre: String) -> StandardMaterial3D:
-	if _mats.has(nombre):
-		return _mats[nombre] as StandardMaterial3D
-	var m := StandardMaterial3D.new()
-	match nombre:
-		"piedra":
-			m.albedo_color = Color(0.30, 0.31, 0.35)
-			m.roughness = 0.95
-		"piedra_clara":
-			m.albedo_color = Color(0.55, 0.53, 0.50)
-			m.roughness = 0.9
-		"plaza":
-			m.albedo_color = Color(0.42, 0.40, 0.38)
-			m.roughness = 0.95
-		"calle":
-			m.albedo_color = Color(0.24, 0.24, 0.27)
-			m.roughness = 0.95
-		"madera":
-			m.albedo_color = Color(0.38, 0.24, 0.14)
-			m.roughness = 0.85
-		"madera_oscura":
-			m.albedo_color = Color(0.22, 0.14, 0.09)
-			m.roughness = 0.9
-		"puerta_madera":
-			m.albedo_color = Color(0.16, 0.10, 0.06)
-			m.roughness = 0.9
-		"oro":
-			m.albedo_color = Color(0.85, 0.62, 0.22)
-			m.metallic = 0.85
-			m.roughness = 0.35
-		"acero":
-			m.albedo_color = Color(0.35, 0.37, 0.42)
-			m.metallic = 0.7
-			m.roughness = 0.5
-		"bronce":
-			m.albedo_color = Color(0.55, 0.38, 0.18)
-			m.metallic = 0.8
-			m.roughness = 0.45
-		"tejado_pizarra":
-			m.albedo_color = Color(0.25, 0.28, 0.35)
-			m.roughness = 0.9
-		"tejado_rojo":
-			m.albedo_color = Color(0.42, 0.12, 0.10)
-			m.roughness = 0.9
-		"tejado_madera":
-			m.albedo_color = Color(0.30, 0.20, 0.12)
-			m.roughness = 0.9
-		"muro_a":
-			m.albedo_color = Color(0.72, 0.62, 0.50)
-			m.roughness = 0.95
-		"muro_b":
-			m.albedo_color = Color(0.50, 0.28, 0.20)
-			m.roughness = 0.95
-		"muro_c":
-			m.albedo_color = Color(0.42, 0.30, 0.18)
-			m.roughness = 0.9
-		"ventana":
-			m.albedo_color = Color(1.0, 0.75, 0.40)
-			m.emission_enabled = true
-			m.emission = Color(1.0, 0.62, 0.25)
-			m.emission_energy_multiplier = 1.5
-		"tela_roja":
-			m.albedo_color = Color(0.48, 0.06, 0.09)
-			m.roughness = 0.85
-		"tela_oro":
-			m.albedo_color = Color(0.78, 0.58, 0.22)
-			m.roughness = 0.8
-		# Fase 15: materiales para las variantes de las 8 ciudades.
-		"agua":
-			m.albedo_color = Color(0.15, 0.45, 0.65)
-			m.emission_enabled = true
-			m.emission = Color(0.1, 0.35, 0.55)
-			m.emission_energy_multiplier = 0.7
-			m.roughness = 0.25
-		"lava":
-			m.albedo_color = Color(1.0, 0.35, 0.05)
-			m.emission_enabled = true
-			m.emission = Color(1.0, 0.3, 0.05)
-			m.emission_energy_multiplier = 2.5
-		"cristal_arcano":
-			m.albedo_color = Color(0.45, 0.85, 1.0)
-			m.emission_enabled = true
-			m.emission = Color(0.35, 0.75, 1.0)
-			m.emission_energy_multiplier = 1.8
-			m.roughness = 0.2
-		"nieve":
-			m.albedo_color = Color(0.92, 0.94, 0.98)
-			m.roughness = 0.7
-		"hueso":
-			m.albedo_color = Color(0.88, 0.84, 0.72)
-			m.roughness = 0.8
-		"hoja":
-			m.albedo_color = Color(0.18, 0.42, 0.18)
-			m.roughness = 0.9
-		"tela_sombra":
-			m.albedo_color = Color(0.16, 0.08, 0.14)
-			m.roughness = 0.9
-		"carbon":
-			m.albedo_color = Color(0.08, 0.08, 0.09)
-			m.roughness = 0.95
-		"piedra_volcanica":
-			m.albedo_color = Color(0.16, 0.14, 0.15)
-			m.roughness = 0.95
-		_:
-			m.albedo_color = Color(0.5, 0.5, 0.5)
-			m.roughness = 0.9
-	_mats[nombre] = m
-	return m
+	if _pal.has(nombre):
+		var p: Dictionary = _pal[nombre]
+		return BibliotecaMateriales.material(str(p.get("superficie", "piedra")),
+			str(p.get("tinte", "#808080")), _semilla, bool(p.get("variar", false)),
+			float(p.get("rugosidad_rel", 1.0)),
+			float(p.get("metalicidad_rel", 0.0)))
+	if not MaterialesDB.rol_existe(nombre):
+		push_warning("[CiudadLuna] rol sin declarar en materiales.json: " + nombre)
+		return BibliotecaMateriales.material("piedra", "#808080", 0, false)
+	return BibliotecaMateriales.de_rol(MaterialesDB.rol(nombre), _semilla)
 
 
 ## Caja mesh compartida (unidad) escalada por nodo: menos recursos.
@@ -1636,14 +1586,9 @@ func _monumento_tormenta() -> Node3D:
 	esfera.height = 6.0
 	esfera.radial_segments = 20
 	esfera.rings = 12
-	var emi := MeshInstance3D.new()
+	var 	emi := MeshInstance3D.new()
 	emi.mesh = esfera
-	var mat_t := StandardMaterial3D.new()
-	mat_t.albedo_color = Color(0.6, 0.8, 1.0)
-	mat_t.emission_enabled = true
-	mat_t.emission = Color(0.5, 0.75, 1.0)
-	mat_t.emission_energy_multiplier = 1.6
-	emi.material_override = mat_t
+	emi.material_override = _mat("tormenta")
 	emi.position = Vector3(0, 23.5, 0)
 	raiz.add_child(emi)
 	_rotadores.append(emi)
