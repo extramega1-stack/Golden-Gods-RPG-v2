@@ -289,10 +289,19 @@ func _t_ui_solo_lee() -> void:
 	var entrada: Dictionary = inv.listar()[0]
 	var lineas: Array = DetalleItem.lineas_afijos(entrada)
 	_chk(lineas.size() == 2, "DetalleItem lee los afijos", str(lineas))
-	_chk(str(lineas[0]) == "Fuerza +3.5 (Poco común)", "línea 1 formateada",
-		str(lineas[0]))
-	_chk(str(lineas[1]) == "Destreza +2.1 (Rara)", "línea 2 formateada",
-		str(lineas[1]))
+	# El nombre del afijo va PRIMERO cuando existe: "Feroz - Fuerza +3.5 (Poco
+	# comun)". El efecto dice cuanto sube el stat, pero el nombre es lo que hace
+	# que el jugador reconozca el item de un vistazo.
+	_chk(str(lineas[0]) == "Feroz \u2014 Fuerza +3.5 (Poco común)",
+		"línea 1 con el nombre del afijo delante", str(lineas[0]))
+	_chk(str(lineas[1]) == "Ágil \u2014 Destreza +2.1 (Rara)",
+		"línea 2 con el nombre del afijo delante", str(lineas[1]))
+	# Y sin nombre, el texto es EXACTAMENTE el de antes: es el camino de
+	# compatibilidad que evita que un afijo viejo o un dato sin nombre se vea raro.
+	var sin_nombre: String = Afijos.texto_de(
+		{"stat": "fuerza", "valor": 3.5, "rareza": 2})
+	_chk(sin_nombre == "Fuerza +3.5 (Poco común)",
+		"un afijo SIN nombre conserva el formato de siempre", sin_nombre)
 	var tt: String = DetalleItem.tooltip_de(entrada, item)
 	_chk(tt.contains("Espada") and tt.contains("Fuerza"),
 		"el tooltip lleva nombre + afijos", tt)
