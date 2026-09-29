@@ -25,21 +25,13 @@ extends Node3D
 ## §9.1
 var system_id: StringName = &"pieza_visual"
 
-## Materiales compartidos por tipo: 8 en todo el juego, uno por pieza
-## colocada. `_cache_materiales` los construye una vez.
-static var _materiales: Dictionary = {}
-## El color por tipo, derivado del id para que dos piezas parezcan distintas
-## sin necesidad de un dato de arte.
-const COLORES: Dictionary = {
-	"fogata": Color(0.45, 0.30, 0.22),
-	"yunque": Color(0.28, 0.30, 0.34),
-	"mesa": Color(0.52, 0.38, 0.24),
-	"cofre": Color(0.40, 0.30, 0.20),
-	"saco": Color(0.55, 0.50, 0.40),
-	"estante": Color(0.45, 0.33, 0.22),
-	"columna": Color(0.62, 0.60, 0.55),
-	"antorcha": Color(0.35, 0.26, 0.18),
-}
+## Materiales compartidos: los de las piezas salen de
+## `data/materiales.json` (roll `piezas`) por `BibliotecaMateriales`, así que
+## las ocho piezas de todo el juego comparten las texturas horneadas del
+## mundo. Acá solo viven los del FANTASMA, que son un `StandardMaterial3D`
+## translúcido por tipo y por eso no pueden salir de la biblioteca: el preview
+## tiene que dejar ver el suelo por donde vas a construir.
+static var _fantasmas: Dictionary = {}
 
 var tipo: String = ""
 var fantasma: bool = false
@@ -73,19 +65,26 @@ func _mesh_de(tipo: String) -> BoxMesh:
 
 
 func _material(tipo: String, fantasma: bool) -> Material:
-	var clave: String = tipo + ("_fant" if fantasma else "")
-	if _materiales.has(clave):
-		return _materiales[clave]
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = COLORES.get(tipo, Color(0.5, 0.5, 0.5))
-	mat.roughness = 0.9
 	if fantasma:
-		# Translúcido y sin sombras: el preview tiene que dejar ver el suelo.
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.albedo_color.a = 0.45
-		mat.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_materiales[clave] = mat
-	return mat
+		return _fantasma_de(tipo)
+	return BibliotecaMateriales.de_rol(MaterialesDB.pieza(tipo), 0)
+
+
+## El preview: translúcido y sin sombras, que es lo que permite ver el suelo
+## a través de donde vas a construir. Ocho materiales en todo el juego.
+func _fantasma_de(tipo: String) -> StandardMaterial3D:
+	if _fantasmas.has(tipo):
+		return _fantasmas[tipo] as StandardMaterial3D
+	var rol: Dictionary = MaterialesDB.pieza(tipo)
+	var real: StandardMaterial3D = BibliotecaMateriales.de_rol(rol, 0)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = real.albedo_color
+	m.roughness = real.roughness
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color.a = 0.45
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_fantasmas[tipo] = m
+	return m
 
 
 ## La fogata es la única pieza con algo encendido encima: sin esto, una
@@ -101,7 +100,8 @@ func _añadir_llama() -> void:
 	add_child(luz)
 
 
-## Limpia la caché de materiales. Los tests la vacían entre casos; el juego
-## no hace falta llamarlo nunca (los 8 materiales son 8, no 216).
+## Limpia las cachés de materiales. Los tests las vacían entre casos; el
+## juego no hace falta llamarlo nunca (son 8 piezas, no 216).
 static func limpiar_cache() -> void:
-	_materiales.clear()
+	_fantasmas.clear()
+	BibliotecaMateriales.limpiar()
