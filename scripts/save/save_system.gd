@@ -60,6 +60,13 @@ var arena: Arena = null
 ## respawn). Sin asignar, el bloque "mineria" se guarda vacío y la carga
 ## avisa sin reventar.
 var mineria: GestorVetas = null
+## Bloque 68: el estado del NG+ (ciclo + prestigio). NO es opcional ni lo
+## asigna nadie desde fuera: se inicializa aquí, con valor cero, porque es la
+## única pieza que tiene que SOBREVIVIR a un reinicio de personaje. Si fuera
+## `null` (como `arboles` o `tienda`) y nadie lo asignara, el primer guardado
+## escribiría un bloque vacío y el NG+ perdería el prestigio — el bug más
+## probable y más caro de esta fase, por eso NO sigue el patrón de las demás.
+var ngplus: EstadoNgPlus = EstadoNgPlus.new()
 
 
 func hay_partida() -> bool:
@@ -105,6 +112,10 @@ func guardar() -> bool:
 		# pierden al cargar.
 		"arboles": _arboles_para_guardar(),
 		"refugios": _refugios_para_guardar(),
+		# Bloque 68: el NG+. Viaja con la partida porque el prestigio es la
+		# ÚNICA progresión que sobrevive a un reinicio de personaje, y si solo
+		# viviera en memoria se perdería en el F10 de después de prestigiar.
+		"ngplus": ngplus.to_dict(),
 	}
 	# Bloque 65: escritura ATÓMICA. Antes se escribía directamente sobre
 	# `partida.json`: un corte de luz (o un crash, o cerrar la laptop) a mitad
@@ -115,6 +126,22 @@ func guardar() -> bool:
 	# El patrón es escribir a un temporal, cerrarlo, y RENOMBRAR encima, que en
 	# el mismo sistema de archivos es atómico. Si el temporal se quedó a medias,
 	# el `partida.json` viejo sigue intacto.
+	if not _escribir_atomico(datos):
+		return false
+	_dirty = false
+	return true
+
+
+## El patrón atómico del bloque 65, EXTRAÍDO a una función para que el reset
+## del NG+ (`reiniciar_para_ngplus`) escriba por EXACTAMENTE el mismo camino
+## que un guardado normal.
+##
+## Lo que NO se puede hacer para el NG+ es borrar `partida.json` y escribirlo
+## de nuevo: si el corte de luz cae en medio, el jugador pierde la partida
+## buena Y el prestigio, que es justo lo que el NG+ promete no perder. Con
+## temporal + backup + rename, el peor caso es que la vuelta no empiece y el
+## jugador siga en la anterior, con su prestigio intacto.
+static func _escribir_atomico(datos: Dictionary) -> bool:
 	var temporal: String = RUTA + ".tmp"
 	var f: FileAccess = FileAccess.open(temporal, FileAccess.WRITE)
 	if f == null:
@@ -137,14 +164,17 @@ func guardar() -> bool:
 	if err != OK:
 		push_warning("[SaveSystem] no se pudo renombrar el temporal (err %d)" % err)
 		return false
-	_dirty = false
 	return true
 
 
 ## Bloque 65: si el `partida.json` está corrupto (o no existe), se intenta el
 ## `.bak`, que es el estado bueno anterior. Perder la última partida por un
 ## guardado a medias es la peor forma de perderla.
-func _leer_con_respaldo() -> String:
+##
+## ESTÁTICA a propósito (y no un detalle de estilo): la lee la pantalla de
+## título, que NO tiene instancia de `SaveSystem` —la crea la escena de juego—
+## y necesita poder preguntar por el NG+ guardado antes de que exista el mundo.
+static func _leer_con_respaldo() -> String:
 	if FileAccess.file_exists(RUTA):
 		var t: String = FileAccess.get_file_as_string(RUTA)
 		if _json_valido(t):
@@ -260,8 +290,23 @@ func cargar() -> bool:
 	_cargar_mineria(datos.get("mineria", {}))
 	_cargar_arboles(datos.get("arboles", {}))
 	_cargar_refugios(datos.get("refugios", {}))
+	# Bloque 68: el NG+ va AL FINAL, y no por desorden. `restaurar()` de la
+	# entidad reemplaza `jugador.stats` por un StatBlock NUEVO, y equipo y
+	# talentos añaden sus mods después: si el NG+ se aplicara antes, el stat
+	# que se bonifica sería el que se iba a tirar. Aplicándolo al final, el
+	# bono es la última palabra sobre el bloque de stats del jugador.
+	_cargar_ngplus(datos.get("ngplus", {}))
 	_autosave_activo = true
 	return true
+
+
+## Bloque 68: lee el NG+ del save y APLICA su bonificación al `StatBlock` del
+## jugador. Un save viejo (sin el bloque) = prestigio 0 = sin mods, que es el
+## juego normal: cargar una partida de antes del NG+ no puede cambiarle los
+## stats al jugador.
+func _cargar_ngplus(bloque: Dictionary) -> void:
+	ngplus = EstadoNgPlus.desde_dict(bloque)
+	ngplus.aplicar_a(jugador.stats)
 
 
 func _enemigos_a_datos() -> Array:
@@ -598,3 +643,162 @@ func _cargar_refugios(bloque: Dictionary) -> void:
 			continue
 		if r.has_method("cargar_estado"):
 			r.call("cargar_estado", bloque[rid])
+
+
+# --- bloque 68: el NG+ (prestigio) conectado de verdad --------------------
+
+## El estado del NG+ tal y como está EN DISCO, no en memoria. Estático y
+## tolerante: lo lee la pantalla de título, que no tiene instancia de
+## `SaveSystem`. Sin partida, o con una corrupta, devuelve el estado cero
+## (0 prestige, 0 ciclo) en vez de fallar: el título tiene que poder
+## dibujarse siempre.
+static func estado_ngplus() -> EstadoNgPlus:
+	return EstadoNgPlus.desde_dict(_dicto(_leer_datos().get("ngplus", {})))
+
+
+## El nivel del personaje guardado, o 0 si no hay partida. 0 (y no 1) para que
+## "no hay partida" no parezca "un héroe recién creado": el título usa esto
+## para decidir si el botón de NG+ tiene sentido.
+static func nivel_guardado() -> int:
+	var dj: Dictionary = _dicto(_leer_datos().get("jugador", {}))
+	var ent: Dictionary = _dicto(dj.get("entidad", {}))
+	return maxi(0, int(ent.get("nivel", 0)))
+
+
+## ¿Se puede empezar un NG+ ahora? Hace falta una partida Y que el personaje
+## esté en el tope del mundo. Las dos cosas: sin partida no hay nada que
+## prestigiar, y prestigiar por debajo del tope es reiniciar la partida sin
+## ganar nada, que es la forma más rápida de hacer que un jugador borre su
+## progreso por accidente.
+static func puede_nuevo_game_plus() -> bool:
+	if not FileAccess.file_exists(RUTA):
+		return false
+	return nivel_guardado() >= NuevoJuegoPlus.tope_nivel()
+
+
+## El REINICIO del NG+: cierra el ciclo (sube `ciclo`, suma `prestigio`) y
+## deja en disco una partida de personaje nuevo conservando el prestigio.
+##
+## POR QUÉ PASA POR AQUÍ Y NO BORRANDO EL ARCHIVO: es la única puerta al
+## `partida.json`. Borrarlo a pelo desde la pantalla de título sacaría la
+## escritura del sistema de guardado — sin temporal, sin backup, sin
+## tolerancia a un JSON a medias— y el prestige se iría con él. Esta función
+## escribe por el MISMO camino atómico que `guardar()`.
+##
+## Devuelve false (y no toca nada) si no hay partida, si está corrupta, o si
+## el personaje no llegó al tope. Es una operación que se pide con un botón,
+## así que ser conservadora no molesta: el botón ya sale deshabilitado.
+static func reiniciar_para_ngplus() -> bool:
+	var datos: Dictionary = _leer_datos()
+	if datos.is_empty():
+		push_warning("[SaveSystem] no hay partida que reiniciar; el NG+ no empieza")
+		return false
+	var dj: Dictionary = _dicto(datos.get("jugador", {}))
+	var nivel: int = int(_dicto(dj.get("entidad", {})).get("nivel", 0))
+	var estado: EstadoNgPlus = EstadoNgPlus.desde_dict(_dicto(datos.get("ngplus", {})))
+	if not estado.puede_prestigiar(nivel):
+		push_warning("[SaveSystem] nivel %d < tope %d: no se puede prestigiar"
+			% [nivel, NuevoJuegoPlus.tope_nivel()])
+		return false
+	var ganado: int = estado.prestigiar(nivel)
+	if ganado < 0:
+		return false
+	if not _escribir_atomico(_partida_para_ngplus(datos, estado)):
+		return false
+	print("[NG+] ciclo %d cerrado: +%d de prestigio (total %d)"
+		% [estado.ciclo, ganado, estado.prestigio])
+	return true
+
+
+## Qué se CONSERVA al prestigiar y qué se reinicia, en un solo lugar.
+##
+## SE CONSERVA (el NG+ no borra el mundo, ni la supervivencia):
+## - la identidad del héroe (nombre y clase): prestigiar no es empezar otro
+##   juego, es la MISMA persona con la memoria de lo que hizo,
+## - `habilidades` (el bloque 53–62: recolección, pesca, minería…), que es lo
+##   que el propio `NuevoJuegoPlus` promete no borrar,
+## - `arboles` y `refugios`: los árboles talados y los refugios con sus piezas.
+##
+## SE REINICIA (lo del personaje, que es lo que el NG+ cambia):
+## - `entidad` → nivel 1, atributos base de la clase, vida y maná llenos. Se
+##   reconstruye desde `ClaseDB` (datos), no desde el `Player` de la escena:
+##   esta función es estática y no tiene, ni debe tener, una entidad delante.
+## - `oro`, `inventario`, `equipo`, `talentos`, `skills`, `puntos_atributo`.
+##
+## Y lo que NO se escribe, a propósito: `misiones` (los Hechos se recalculan
+## de `habilidades`), `mineria` y `tiendas` (sus cargadores ya devuelven
+## stock y usos completos cuando el bloque falta — el mismo criterio que
+## "trofeos frescos" en la arena), `arena`, `barra_acciones` (layout por
+## defecto) y `enemigos` (reaparecen en el stream). Omitir el bloque es la
+## vía que el propio save ya usa para "estado inicial", y evita que un bloque
+## a medias deje media vuelta. La ÚNICA diferencia visible de esto es un
+## `push_warning` de `_cargar_enemigos` (0 guardados vs N en escena): el stream
+## los repone entero, y el aviso sale una vez al arrancar la vuelta.
+static func _partida_para_ngplus(viejo: Dictionary, estado: EstadoNgPlus) -> Dictionary:
+	var dj: Dictionary = _dicto(viejo.get("jugador", {}))
+	var entidad: Dictionary = _dicto(dj.get("entidad", {}))
+	var cid: String = str(dj.get("clase_id", "guerrero"))
+	if not ClaseDB.existe(cid):
+		cid = "guerrero"
+	return {
+		"version": SAVE_VERSION,
+		"jugador": {
+			"entidad": _entidad_de_turno(cid, _dicto(entidad.get("vitals", {}))),
+			"oro": 0,
+			"nombre": str(dj.get("nombre", "Héroe")),
+			"clase_id": cid,
+			"habilidades": _dicto(dj.get("habilidades", {})),
+		},
+		"ngplus": estado.to_dict(),
+		"arboles": _dicto(viejo.get("arboles", {})),
+		"refugios": _dicto(viejo.get("refugios", {})),
+		# Veterano: el tutorial ya se hizo y no se repite en la vuelta nueva.
+		"tutorial": {
+			"version": Tutorial.SAVE_VERSION_TUTORIAL,
+			"hecho": true,
+			"paso": 0,
+		},
+	}
+
+
+## La entidad de un héroe recién creado, en el formato que `Entity.restaurar`
+## espera. Se arma con un `StatBlock` limpio de los DATOS de la clase: sin
+## mods (ni del NG+, ni de equipo, ni de talentos) y con los cuatro atributos
+## base de `data/clases.json`.
+static func _entidad_de_turno(clase_id: String, vitales: Dictionary) -> Dictionary:
+	var base: Dictionary = ClaseDB.stats_base(clase_id)
+	var sb: StatBlock = StatBlock.new(
+		float(base.get("fuerza", 0.0)),
+		float(base.get("aguante", 0.0)),
+		float(base.get("destreza", 0.0)),
+		float(base.get("inteligencia", 0.0)))
+	sb.set_stat_daño(ClaseDB.stat_daño(clase_id))
+	return {
+		"version": Entity.SAVE_VERSION,
+		"nivel": 1,
+		"xp_actual": 0,
+		"vida_actual": sb.vida_max,
+		"mana_actual": sb.mana_max,
+		"stats": sb.to_dict(),
+		"vitals": vitales,
+	}
+
+
+## El save completo del disco, o `{}` si no hay, está corrupto, o tiene otra
+## forma que no sea un diccionario. Es la lectura tolerante que comparten
+## `cargar()`, el reset del NG+ y las preguntas del título.
+static func _leer_datos() -> Dictionary:
+	var texto: String = _leer_con_respaldo()
+	if texto == "":
+		return {}
+	return _dicto(JSON.parse_string(texto))
+
+
+## `Variant` → `Dictionary`, o el valor por defecto si no es un diccionario.
+## El save viene de `JSON.parse_string`, que devuelve `Variant`: castear a
+## ciegas (`x as Dictionary`) no revienta pero deja un `null` que truena una
+## línea después, en el `.get`. Esto no truena nunca.
+static func _dicto(v: Variant) -> Dictionary:
+	if v is Dictionary:
+		return v
+	return {}

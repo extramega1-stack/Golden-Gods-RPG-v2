@@ -52,6 +52,11 @@ const CINEMATICA: int = 99
 const PANEL_CONSTRUCCION: int = 33
 ## Fase 64: recetas de la fogata. Mismo rango de panel de sistema.
 const PANEL_COCINA: int = 34
+## Bloque 68: el panel del NG+/prestigio (ciclo, prestigio, multiplicadores y
+## el botón de reiniciar la vuelta). Rango 20–69 de panel de sistema, junto al
+## resto de fichas; el rótulo persistente del NG+ en el HUD, si algún día lo
+## hay, es el que vive en 10–19.
+const PANEL_NGPLUS: int = 36
 ## Fase 53: barra de jefe, arriba-centro (rango 10–19 = HUD persistente).
 ## UI pura, a diferencia de `BarraVidaMob` que es 3D sobre el mob.
 const BARRA_JEFE: int = 13

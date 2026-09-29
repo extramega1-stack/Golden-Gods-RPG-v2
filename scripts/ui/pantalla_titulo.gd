@@ -10,14 +10,24 @@ extends Node3D
 ##
 ## UI (CanvasLayer, capa UiLayers.TITULO): título dorado "GOLDEN GODS",
 ## subtítulo "RPG — La Última Guerra" y botones Nueva partida / Continuar /
-## Salir, centrados, con hover visible. Continuar va deshabilitado si no
-## hay partida guardada. ESC (ui_cancel) = salir.
+## Nuevo Game+ / Salir, centrados, con hover visible. Continuar va
+## deshabilitado si no hay partida guardada. ESC (ui_cancel) = salir.
+##
+## BLOQUE 68 (NG+): el botón "Nuevo Game+" cierra el ciclo — reinicia el
+## personaje conservando el prestigio — y el rótulo de estado de abajo enseña
+## en qué ciclo se está y qué dan los multiplicadores. Sin esas dos cosas el
+## NG+ no es una mecánica: es una fórmula en un archivo.
 
 ## Las rutas de escena viven en Escenas (fuente única): la escena de juego
 ## es siempre la más actualizada sin que cada pantalla la repita.
 const RADIO_ORBITA: float = 15.0
 const ALTURA_ORBITA: float = 6.5
 const VEL_ORBITA: float = 0.10
+## Texto del botón de NG+ en sus dos estados. Son DOS pulsaciones, no una: el
+## reset borra el nivel, el oro y el equipo del personaje, y un botón de un
+## solo clic al lado de "Nueva partida" es un accidente esperando a pasar.
+const TEXTO_NGPLUS: String = "Nuevo Game+"
+const TEXTO_NGPLUS_CONFIRMAR: String = "¿Seguro? Reiniciar el personaje"
 
 var _camara: Camera3D = null
 var _angulo: float = 0.6
@@ -25,6 +35,11 @@ var _boton_continuar: Button = null
 ## Fase 46: el manual de ayuda (controles y mecánicas), se abre con ? o aquí.
 var _ayuda: PanelAyuda = null
 const ESCENA_AYUDA: PackedScene = preload("res://scenes/ui/panel_ayuda.tscn")
+## Bloque 68: el botón de NG+ y el rótulo de estado, que se releen al volver a
+## la pantalla (vuelve del mundo y el save ya cambió).
+var _boton_ngplus: Button = null
+var _estado_ngplus: Label = null
+var _ngplus_confirmando: bool = false
 
 
 ## ¿Hay partida guardada para continuar? Ruta inyectable para tests (por
@@ -184,6 +199,24 @@ func _construir_ui() -> void:
 	_boton_continuar.pressed.connect(_al_continuar)
 	caja.add_child(_boton_continuar)
 
+	# Bloque 68: el NG+. Nace deshabilitado si no hay partida o si el personaje
+	# no llegó al tope del mundo (lo decide el guardado, no la UI: `puede_ngplus`
+	# lee el save, y el save es la única fuente de verdad).
+	_boton_ngplus = _nuevo_boton(TEXTO_NGPLUS)
+	_boton_ngplus.pressed.connect(_al_nuevo_game_plus)
+	caja.add_child(_boton_ngplus)
+
+	# Bloque 68: el estado del NG+, SIEMPRE visible. Con prestigio 0 dice que
+	# no hay NG+: es la línea que le dice al jugador que existe algo detrás
+	# del nivel 70, y sin ella el NG+ es invisible hasta que ocurre.
+	_estado_ngplus = Label.new()
+	_estado_ngplus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_estado_ngplus.add_theme_font_size_override("font_size", 15)
+	_estado_ngplus.add_theme_color_override("font_color", Color(0.72, 0.62, 0.40))
+	_estado_ngplus.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caja.add_child(_estado_ngplus)
+	refrescar_ngplus()
+
 	# Fase 46: el manual de controles y mecánicas, también desde el título.
 	var b_ayuda: Button = _nuevo_boton("Ayuda (?)")
 	b_ayuda.pressed.connect(_al_ayuda)
@@ -238,6 +271,85 @@ func _al_nueva_partida() -> void:
 func _al_continuar() -> void:
 	DatosSesion.pedir_continuar()
 	Transicion.ir_a(Escenas.JUEGO)
+
+
+# --- bloque 68: el NG+ desde el título ---------------------------------
+
+## Primera pulsación: pide confirmación. Segunda: reinicia. Cualquier otra
+## pulsación (o el ESC) cancela y devuelve el botón a su texto, para que no
+## quede armado esperando una confirmación que ya no se quiere.
+func _al_nuevo_game_plus() -> void:
+	if not _ngplus_confirmando:
+		_ngplus_confirmando = true
+		_boton_ngplus.text = TEXTO_NGPLUS_CONFIRMAR
+		return
+	_ngplus_confirmando = false
+	_boton_ngplus.text = TEXTO_NGPLUS
+	if not empezar_nuevo_game_plus():
+		return
+	Transicion.ir_a(Escenas.JUEGO)
+
+
+## El NG+ de verdad, sin la navegación: cierra el ciclo por el sistema de
+## guardado y deja la sesión en modo "continuar" para que el mundo arranque
+## desde la vuelta nueva. Separado del botón a propósito, para que el test
+## pueda ejercitar el reset SIN cambiar de escena (cambiar de escena en un
+## `SceneTree` de test se come el test).
+##
+## Devuelve false si no se pudo (no había partida, estaba corrupta, o el
+## personaje no llegó al tope): en ese caso la partida queda como estaba,
+## porque el reset atómico no borra nada hasta que la vuelta nueva está
+## escrita.
+func empezar_nuevo_game_plus() -> bool:
+	if not SaveSystem.reiniciar_para_ngplus():
+		return false
+	DatosSesion.pedir_continuar()
+	_ngplus_confirmando = false
+	if _boton_ngplus != null and is_instance_valid(_boton_ngplus):
+		_boton_ngplus.text = TEXTO_NGPLUS
+	refrescar_ngplus()
+	return true
+
+
+## Relee el estado del NG+ del disco y repinta botón y rótulo. Se llama al
+## construir la pantalla y después de un reset; no hay bucle que la llame,
+## porque el save solo cambia cuando alguien escribe.
+func refrescar_ngplus() -> void:
+	if _boton_ngplus == null or not is_instance_valid(_boton_ngplus):
+		return
+	var disponible: bool = SaveSystem.puede_nuevo_game_plus()
+	_boton_ngplus.disabled = not disponible
+	_ngplus_confirmando = false
+	_boton_ngplus.text = TEXTO_NGPLUS
+	if _estado_ngplus == null or not is_instance_valid(_estado_ngplus):
+		return
+	_estado_ngplus.text = _texto_estado(SaveSystem.estado_ngplus(), disponible)
+
+
+## La línea de estado. Con prestigio 0 no dice "Ciclo 0 · XP x1.00", que es
+## ruido: dice que la espiral existe y cuál es la puerta de entrada.
+static func _texto_estado(e: EstadoNgPlus, disponible: bool) -> String:
+	if e == null or e.prestigio <= 0:
+		return "Primera vuelta · el NG+ se abre en el nivel %d" % NuevoJuegoPlus.tope_nivel()
+	var linea: String = "NG+ · Ciclo %d · %d de prestigio · XP x%.2f · Enemigos x%.2f" % [
+		e.ciclo, e.prestigio, e.multiplicador_xp(), e.multiplicador_enemigo()]
+	if not disponible:
+		linea += " · vuelve al nivel %d para cerrar otro ciclo" % NuevoJuegoPlus.tope_nivel()
+	return linea
+
+
+## El texto del rótulo de estado, tal como está en pantalla. El test lo lee
+## por aquí en vez de buscar el Label en el árbol: una pantalla con 6 labels no
+## es algo que un test deba conocer por dentro.
+func texto_estado() -> String:
+	if _estado_ngplus == null or not is_instance_valid(_estado_ngplus):
+		return ""
+	return _estado_ngplus.text
+
+
+## El botón de NG+ del título (null si la pantalla aún no construyó su UI).
+func boton_ngplus() -> Button:
+	return _boton_ngplus
 
 
 func _al_salir() -> void:
