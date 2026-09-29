@@ -2315,213 +2315,38 @@ sin registrarlo en la pila.
 
 ## Lo que sigue abierta
 
-Lo que queda, en el orden en que más pesa. Nada de esto es un bug: es
-contenido y pulido que no cabía en un bloque.
+Lo que queda, en el orden en que más pesa. Actualizado después de las tres olas
+de orquestación (afijos, códice, NG+, paper-doll, materiales, contenido,
+tutorial, decoración, playtest).
 
-1. **Falta el art del mundo.** `models/` tiene 6 GLB (el jugador de las 5
-   clases y el bandido). El resto del mundo —las 9 ciudades, los 146
-   edificios, los muros, los props— son primitivas: cajas, esferas, cilindros
-   con `albedo_color` plano. Es un trabajo de arte, no de código, y es lo que
-   más separa esto de un AAA. El pipeline (`tools/preparar_modelo.py` +
-   `rig.py`) ya funciona con los 6: el que falta es el pack, que no está en
-   esta máquina.
-2. **Faltan texturas PBR.** Cero normal maps, cero ORM, cero atlas: 18 texturas
-   (el albedo de los 6 GLB) y nada más. Con el post-proceso del 67 el mundo
-   mejoró mucho sin esto, pero el techo de calidad visual sigue aquí.
-3. **El contenido se acaba en el nivel 70.** El NG+ del 68 abre la espiral, pero
-   no hay misiones de NG+, ni daily, ni trofeos, ni un segundo acto de
-   contenido. El asesino del tiempo largo es la falta de cosas nuevas que
-   descubrir, no la falta de poder.
-4. **Falta conectar afijos a los items que caen.** El generador los produce y
-   el panel los sabe comparar, pero el loot que suelta un mob todavía no lleva
-   afijos: es el paso corto que falta entre el 68 y una build de verdad.
-5. **Faltan los menús de código y NG+ en pantalla.** `CodiceDB` y
-   `NuevoJuegoPlus` son lógica pura y testeada; los paneles que las muestran no
-   existen todavía.
-6. **El equipo no sigue a los modelos de enemigo.** Solo el jugador tiene rig;
-   los mobs con modelo (el bandido) no tienen paper-doll, así que no pueden
-   llevar arma.
-7. **Los flags `TEMPORAL` del viaje rápido** siguen activos: es una decisión de
-   Juan Diego, no una corrección.
+1. **El p95 de frame time.** p50 = 0,69 ms sobre 16,7 de presupuesto: el juego
+   está parado el 96% del tiempo y va a tirones, no lento. p95 = 34,74 ms,
+   p99 = 42,48, max = 115,65 sobre 397 s de partida real. Es la brecha número
+   uno para "jugable" y la única que depende de una máquina, no de código.
+2. **La forma del mundo.** Después de que la ola 2 le pusiera PBR, y la ola 3
+   le pusiera vegetación y props, el mundo dejó de ser cajas. Pero siguen siendo
+   primitivas: no hay un solo edificio modelado. El pack externo de arte sigue
+   sin estar en la máquina y `models/` tiene 6 GLB.
+3. **Las texturas PBR son procedurales, no pintadas.** 20 juegos horneados al
+   arrancar andan bien y cuestan 5,3 MB, pero son ruido. El salto de calidad de
+   verdad son texturas hechas por alguien, y eso es trabajo de arte.
+4. **Faltan misiones deActs VI al NG+ largo.** La ola 2 metió 15 misiones de NG+
+   (una cadena de 3 por acto) y 13 plantillas de diarias. Es contenido para un
+   ciclo, no para un periplo.
+5. **El audio nunca se oyó.** Está implementado (síntesis 16-bit, 37 sonidos con
+   variación, música por capas, director con histéresis) y verificado por test,
+   pero nadie lo escuchó nunca. La música procedural es lo más probable que
+   falle y lo más barato de cambiar.
+6. **Omitido por el playtest:** el ataque con clic de ratón y el afijo en el
+   item dropeado quedaron sin verificar, y el prestigio de NG+ necesita nivel 70
+   que el playtest no alcanza en su tiempo. No están rotos: no están probados.
 
----
+### Lo que se cerró y conviene no repetir
 
-# Fase 70 — La FORMA del mundo (2026-09-29)
-
-La fase 69 (que no tiene sección propia todavía, el texto sigue diciendo "faltan
-texturas PBR" al final de este documento y hay que corregirlo) le puso **color**
-al mundo: 126 materiales, PBR procedural horneado, triplanar en espacio de mundo
-y variación por posición. Lo que NO cambió fue la **forma**. El resultado era un
-mundo con textura buena y forma primitiva: nueve ciudades de cajas, 146
-edificicios de cajas, ni una mata de pasto. **Un mundo con textura buena y forma
-de caja se ve como un juego de cajas con textura buena.** Esta fase es el
-techo que faltaba.
-
-Cada punto empieza por el número, no por la idea: qué cuesta, qué NO entra en
-el presupuesto de 1 GB de VRAM sobre la GTX 1660 del usuario, y qué se dejó
-fuera a propósito.
-
-## 1. Vegetación: un anillo, no un bosque
-
-Siete especies (hierba, flor, arbusto, árbol chico, junco, roca, tronco muerto)
-hechas de las primitivas de Godot, sembradas en un **anillo que sigue al
-jugador**. Tres decisiones que hacen que esto quepa:
-
-- **Un slot por celda de una grilla, no una nube de puntos.** El slot de una
-  celda es su índice en el anillo; el anillo es un disco; el disco tiene la
-  MISMA cantidad de celdas este donde esté el jugador. La capacidad es una
-  **constante** que se reserva una vez al arrancar (`RejillaDecoracion`).
-  No hay diccionarios "celda → slot", ni búsqueda libre, ni lista que mantener.
-  Vaciar una celda es escribir un transform **degenerado** (base de escala 0),
-  no borrar un nodo.
-- **Capa por (especie, parte), con `MultiMesh`.** 7 especies × 2-3 piezas = 16
-  `MultiMeshInstance3D` y 5 primitivas compartidas para el mundo entero. Un
-  `MeshInstance3D` por matita serían 20.000 nodos y 20.000 draw calls.
-- **LOD por distancia, en el dato.** `radio_cerca` (52 u) para lo pequeño
-  (hierba, flores, juncos) y `radio_lejos` (140 u) para el anillo entero. A
-  140 m un plantón de medio metro son dos píxeles: se ve como ruido y ocupa los
-  mismos slots que un árbol que sí se lee.
-
-**Números medidos** (con `data/decoracion.json` como está): 317 celdas, **342
-piezas puestas**, 16 capas, 183.860 triángulos en el PEOR caso (con las 317
-celdas sembradas, que la densidad del dato nunca alcanza) y ~50.000 con la
-densidad real. La reescritura del anillo va a **44 celdas por frame**: son 8
-frames con la pantalla en negro de decoración, no un tiron de 1.000 escrituras
-de buffer de golpe.
-
-**La zona segura de 40 m**: dentro del radio que ya vigilan `test_fase12_spawns`
-y `test_fase14_terreno` no se siembra nada **alto** (árbol, arbusto, roca,
-tronco). La hierba y las flores sí, que tapan la mirada y no el paso. Tapar la
-plaza de aparición con un árbol es un bug de diseño, no de rendimiento.
-
-**El tinte es POR ZONA**, no por especie: el mismo arbusto es verde en el Bosque
-Hondo (`hondo`, `#173719`) y gris en la Ceniza y Forja (`ceniza`, `#4d4d4a`). La
-zona sale de `data/regiones.json` (que ya existía) y no de un mapa escrito a
-mano: `DecoracionDB.zona_por_id` cae en `default` para lo que no encuentre, así
-que agregar una región al mundo no rompe la vegetación. Los 11 bloques de zona
-(10 regiones + `default`) tienen **6 tintes de follaje distintos** y el bosque
-pones árboles en el 100% de las celdas posibles contra el 8% de la ceniza.
-
-**Las primitivas son 5 para todo el mundo**: caja, cilindro, cono, esfera y
-prisma, todas de 1×1×1 y escalada por el transform del `MultiMesh`. La
-vegetación usa 3 de las 5. El LOD no está en código: `alcance` ("cerca" / "lejos")
-está en el JSON, y el código solo pregunta.
-
-## 2. Props de calle: siete tipos sobre las cuatro calles radiales
-
-Farolas, bancos, barriles, cajas, postes, toldos y carritos. Misma técnica
-(`MultiMesh` por prop y por pieza: 23 capas, capacidad = las celdas de vereda
-exactas, ni una más). Un `MeshInstance3D` por prop serían 160 nodos y 160 draw
-calls por ciudad, y el mundo tiene nueve ciudades en el mismo árbol de escena:
-1.440 nodos para poner un banco.
-
-- **Una celda lleva UN SOLO prop.** El primero de la lista que pasa su dado, y
-  el orden de la lista ES la jerarquía. Una vereda con un farola, un banco y
-  tres cajas en el mismo metro no es una vereda.
-- **Medida**: 160-188 props por ciudad sobre ~360 celdas de vereda candidatas.
-  Ni el 100% (que es un amontonamiento) ni el 10% (que no se ve).
-- **No hay colisión.** Un banco que frena al jugador empuja la pelea contra la
-  pared sin que se pueda esquivar, y agrega 160 `StaticBody3D` por ciudad
-  (que además `test_fase15_ciudades` exige que tengan `BoxShape3D` en capa 1).
-- **El material `pal_*` es la paleta de la CIUDAD**: un farol de Golden Town sale
-  dorado y uno de Fury Town de acero, sin un hex en el código. Los slots fijos
-  (`madera`, `acero`, `farol`) están en `data/decoracion.json` y reusan tintes
-  que el catálogo ya horneaba.
-- **El alcance por distancia es obligatorio**: las nueve ciudades viven en el
-  mismo árbol, y sin `visibility_range` el motor dibujaría los props de Shadow
-  Town desde el otro extremo del mundo.
-- **Ninguna vereda a través de un edificio**: se descartan las celdas cuya caja cae
-  dentro de alguna AABB de colisión, indexadas en buckets de 20 m. Sin el
-  índice serían 200 cajas × 360 celdas = 72.000 pruebas por ciudad.
-
-## 3. Siluetas: dos o tres formas por tipo de edificio
-
-`_silueta()` en `ciudad_luna.gd`: tres formas por tipo (del dato) más un jitter
-de ancho/largo/alto, y las dos cosas salen de la MISMA semilla que da el grano
-del muro (`BibliotecaMateriales.semilla_de` de la posición). Un barrio de 20
-casas no es 20 copias, y un save reconstruye el barrio igual. La tercera
-silueta de casa, salón, tienda y templo trae un **segundo volumen** (torre con
-su remate): es lo que hace que dos edificios del mismo tipo con la misma altura
-de muro no se parezcan. Sin modelado: es una caja más.
-
-**El orden del descuento del alto es lo importante, y se pagó a golpes.** El
-tope de 28 u se descuenta primero por la `reserva` del tipo (lo que come el
-remate: tejado, cornisa, variante regional) y después por el jitter de la
-silueta. Al revés, el muro crece, el remate sube con él, y el edificio pasa los
-28 u reales. Pasó con el salón del Umbral de Ladon (33 u) y con seis ciudades
-más: lo cazó `test_fase15_ciudades`.
-
-## 4. El borde: que nada termine en un plano contra el suelo
-
-`_zocalo()`: dos escalones de piedra que se achican, con la hilada inferior
-medio metro enterrada. El de abajo es el más ancho y sobresale del muro, y es
-el que aporta la sombra de contacto — sin `Decal`, sin textura, sin nodo. El
-margen va en METROS y no en fracción, para que un zócalo de 1.2 m se lea igual
-en una casa de 20 m y en un salón de 84 m. 13 zócalos en Moon Town, 11 en cada
-ciudad secundaria (de 16 edificios; el resto es el monumento y las 4 puertas,
-que traen su propio pedestal).
-
-**Antes solo las casas tenían una base** —una caja de 1.2 u— y el salón, la
-forja, la tienda y el cuartel entraban en el terreno en un plano. Contra una
-superficie curva, eso se ve como un recorte pegado, y es el defecto de forma
-más visible del mundo y el más barato de arreglar.
-
-## Determinismo (el test del encargo)
-
-Todo lo que se siembra o se coloca se decide con
-`DecoracionDB.dado(semilla, indice)`: una **función pura** sobre (semilla,
-índice), sin `rand`, sin contador, sin reloj y sin depender del orden de
-iteración de un `Dictionary`. La semilla sale de la POSICIÓN por el FNV-1a que
-ya usaba el material de los edificios (la misma función, para que un prop y la
-pared que tiene al lado salgan de la misma familia de números).
-
-`test_decoracion_mundo` lo prueba por partida doble: la misma celda da la misma
-especie al revés, desde otra instancia, y con el buffer de materiales y texturas
-borrado (que es literalmente lo que pasa al cargar un save). Y dos ciudades del
-mismo tipo dan la misma calle prop a prop, mientras que dos ciudades en sitios
-distintos dan calles distintas.
-
-**Una trampa que costó un test verde falso**: la huella de los props NO se puede
-leer de `MultiMesh.get_instance_transform`, porque el búfer vive en el
-RenderingServer y en headless (rasterizador dummy) devuelve identidad para todo.
-Un test que leyera el búfer daba verde con la calle vacía. `PropsCiudad` lleva
-su propio `plano()` (~150 `Transform3D` por ciudad) y es ahí donde se compara.
-
-## Archivos
-
-| Archivo | Qué es |
-|---|---|
-| `data/decoracion.json` | Todo el dato: grilla, especies, formas, tintes por zona, props de calle, zócalo, siluetas. Un color o una densidad escrita en el `.gd` es un valor que nadie puede cambiar sin recompilar. |
-| `data/materiales.json` | +1 superficie (`hoja`, fibra, `escala_uv` 0.55). Sin texturas nuevas: reusa `pasto`, `madera`, `piedra`, `yeso` y `metal`. |
-| `scripts/mundo/decoracion_db.gd` | El catálogo y el hash. |
-| `scripts/mundo/rejilla_decoracion.gd` | La cuenta del disco, sin estado. |
-| `scripts/mundo/mallas_decoracion.gd` | Las 5 primitivas y los materiales, cacheados. |
-| `scripts/mundo/piso_decoracion.gd` | Una capa = un `MultiMesh` con un slot por celda. |
-| `scripts/mundo/vegetacion.gd` | El anillo que sigue al jugador. |
-| `scripts/mundo/props_ciudad.gd` | La calle de una ciudad. |
-| `scripts/mundo/ciudad_luna.gd` | +`_silueta`, `_torre`, `_zocalo`, `_construir_props`, y `zocalos`/`torres` para el test. |
-| `tests/test_decoracion_mundo.gd` | 985 checks. |
-
-## Verificación
-
-**112/112 en verde** (107 tests + 5 smokes), `check-only` sin errores en los
-ocho `.gd` tocados, `--import` corrido (hay cinco `class_name` nuevos).
-
-## Lo que NO entró, y por qué
-
-- **Un bosque de verdad.** 20.000 árboles estáticos son 20.000 × ~200 tri = 4M
-  triángulos en el mejor caso, y 20.000 `MultiMesh` de 4 piezas. No entra en
-  1 GB con la GTX 1660. Lo que hay es **variedad sobre 7 especies y 11 zonas**,
-  que es lo que se veía, y el resto se decide con el peso de la zona.
-- **Hierba con billboard/impostor.** Es lo que de verdad da pasto creíble, y
-  necesita un shader propio con un atlas. Se puede hacer (el `godot-shaders`
-  está disponible) pero es otra fase: acá la hierba es geometría y son 342
-  piezas, no 20.000.
-- **Colisión en los props.** Decidido en contra y por las razones de arriba.
-- **Variación de forma en las murallas, la plaza y las calles.** Solo en los
-  edificios y en los props de calle. La muralla son 200 tramos iguales y la plaza
-  un disco: son las dos superficies más planas que quedan y las dos que menos se
-  miran.
-- **Colisión de la vegetación.** Las matas son atravesables. Un `StaticBody3D`
-  por arbusto serían 300 más; y un jugador que no pueda pasar entre dos matas
-  juega peor.
+Cuatro veces en una sesión apareció el MISMO bug: un sistema escrito, con sus
+tests en verde, y no conectado a la partida. Pasó con siete sistemas de una vez
+(`_instalar_fase63_64_ui()` que nadie llamaba), con el panel del tutorial, con los
+afijos y con la vegetación. La causa de fondo es la misma: **un test por sistema
+no dice nada sobre si el sistema está conectado a nada**. Por eso ahora existe
+`tests/smoke_fase_escena_completa.gd`, que carga la partida real y mira qué hay
+dentro, y ata cada acción `abrir_*` del Input Map con el panel que la atiende.

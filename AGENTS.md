@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Bloques 65–68 terminados (spec actualizado).
+Lo que no está en el spec no existe. Estado: tres olas de orquestación integradas (spec al día).
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
