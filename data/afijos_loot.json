@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "nota": "Politica de afijos en el LOOT (que item cae afijado, con que probabilidad y cuantos). Los afijos en si (stat, base, nombre) viven en afijos.json; aqui solo se decide CUANDO un drop los lleva. La rareza de un afijo nunca puede ser mejor que la del item base: `rarezas_item` convierte el texto de items.json a la escala 1..5 de Afijos.RAREZAS y ese numero es el TECHO. Ojo con items.json: usa 'raro' (5 items) y 'rara' (23) para lo mismo, y 'magico' para el escalon intermedio; los tres estan mapeados.",
+  "tipos_con_afijos": [
+    "arma",
+    "armadura",
+    "accesorio"
+  ],
+  "rarezas_item": {
+    "comun": 1,
+    "raro": 2,
+    "rara": 2,
+    "magico": 3,
+    "epico": 4,
+    "legendario": 5
+  },
+  "rareza_por_defecto": 1,
+  "prob_por_rareza": {
+    "1": 0.35,
+    "2": 0.5,
+    "3": 0.7,
+    "4": 0.9,
+    "5": 1.0
+  },
+  "prob_por_defecto": 0.25,
+  "tope_por_rareza": {
+    "1": 1,
+    "2": 1,
+    "3": 2,
+    "4": 3,
+    "5": 4
+  },
+  "tope_por_defecto": 1,
+  "tope_maximo": 4
+}
