@@ -55,6 +55,11 @@ const PANEL_COCINA: int = 34
 ## Bloque 68: el CÓDICE / bestiario. Panel de sistema, así que rango 20–69,
 ## justo detrás de PANEL_COCINA (34).
 const PANEL_CODICE: int = 35
+## Bloque 68: el panel del NG+/prestigio (ciclo, prestigio, multiplicadores y
+## el botón de reiniciar la vuelta). Rango 20–69 de panel de sistema, junto al
+## resto de fichas; el rótulo persistente del NG+ en el HUD, si algún día lo
+## hay, es el que vive en 10–19.
+const PANEL_NGPLUS: int = 36
 ## Fase 53: barra de jefe, arriba-centro (rango 10–19 = HUD persistente).
 ## UI pura, a diferencia de `BarraVidaMob` que es 3D sobre el mob.
 const BARRA_JEFE: int = 13
