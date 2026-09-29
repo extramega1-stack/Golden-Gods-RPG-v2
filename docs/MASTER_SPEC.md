@@ -2149,16 +2149,197 @@ Test: 70 checks.
 
 ---
 
+# Bloques 65 a 68 — del prototipo al juego (2026-09-29)
+
+Los bloques 53–64 cerraron con 96/96 en verde. Estos cuatro no añadieron
+contenido: **quitaron las razones por las que el juego no se podía jugar ni
+mirar ni oír**. Cada uno empieza por un diagnóstico, no por una idea.
+
+---
+
+## Bloque 65 — Que el juego sea un juego
+
+Cuatro cosas que hacen que un juego se sienta terminado, y que faltaban
+TODAS. Tres no son features: son que el flujo exista.
+
+**El juego arrancaba por el mundo, no por el título.** `main_scene` era
+`fase14_demo`. El título y la creación de personaje estaban terminados (fases
+11) y **nunca se usaban**: no se elegía clase ni nombre, y el nombre del héroe
+salía vacío en el HUD. Ahora: título → crear personaje → mundo, con fundido.
+
+**Trece scripts de UI se apropiaban del ESC**, cada uno en su `_input`. Con un
+panel abierto funcionaba; con dos (inventario + equipo es fácil) cerraba los
+dos a la vez o ninguno, según el orden del árbol. Ahora hay una **pila**
+(`PilaUI`): el ESC cierra solo el de la cima. Los 13 migraron, y el panel que
+se abre por proximidad entra y sale de la pila con su panel.
+
+**No había menú de pausa.** Cero usos de `get_tree().paused` en todo el repo.
+Reanudar / Opciones / Guardar / Volver al título / Salir, guardando antes de
+salir o volver (sin preguntar: preguntar es una decisión del jugador y un
+modal que puede dejar la partida sin guardar).
+
+**No había opciones.** Sensibilidad, distancia de cámara, FOV e invertir-Y
+eran `const` compilados. Ahora viven en **datos** (`Opciones.catalogo`) y la UI
+se construye recorriendo el catálogo: añadir un ajuste es una línea, no un
+widget a mano. Se aplican al instante (mueves el volumen y se oye) y
+persisten en `user://opciones.json`, que **no** es el save (la resolución no
+viaja con la partida).
+
+**El guardado no era a prueba de corte de luz.** Se escribía directo sobre
+`partida.json`: un corte a mitad de escritura dejaba un JSON truncado y, sin
+backup, se perdía la partida. Ahora: `.tmp`, `flush`, backup del anterior,
+rename atómico, y si el principal sale corrupto al cargar cae al `.bak`.
+Autosave cada 5 min (el reloj se pone a cero al reanudar), sucio **por señales**
+(no por diff de un diccionario cada frame). Y el **estado del mundo**: los
+árboles talados y los refugios con sus piezas, que antes se guardaban a medias
+—las vetas sí, los refugios no—, que es peor que no guardarlo.
+
+**El panel de construcción mentía:** su ayuda decía "R rota · clic coloca ·
+Supr quita" y no tenía ni un `_input`. Las tres teclas ahora hacen algo, y
+`rotar_pieza` (R) está en el Input Map.
+
+---
+
+## Bloque 66 — Que el juego suene
+
+La auditoría: **4 call sites de audio en todo el repo**, 13 sonidos a 8 bits /
+22050 Hz, cero música (el bus existía y nunca se le asignaba nada), **cero
+`AudioStreamPlayer3D`** (un goblin a 200 m sonaba igual que uno encima), cero
+pisadas, y 3 sonidos declarados que nunca se llamaban. Todo pasaba los tests:
+comprobaban que el sintetizador devolviera un WAV, no que el juego lo oyera.
+
+- **16 bits, 44100 Hz, estéreo.** No es estética: 22050 tiene el techo en
+  11 kHz (se perdía todo lo que pasara de ahí) y mono centrado se lee como un
+  pitido. ADSR con release, y pasabajos en el ruido.
+- **Variación**: 2–4 variantes por sonido, elegidas al azar. Es lo que separa
+  un impacto de un pitido; con una sola el oído aprende la forma y la ignora.
+  36 sonidos (antes 13).
+- **Posicional**: pool de 16 `AudioStreamPlayer3D` además del 2D. El impacto y
+  la muerte de un mob van al 3D; lo del jugador (comer, pisadas) sigue 2D.
+- **Pisadas por distancia recorrida**, no por reloj: correr suena a más pasos
+  que caminar. El material sale de la región.
+- **Música por capas** (base siempre, exploración, combate, jefe), generada
+  sin assets, con **ducking** (al entrar en combate la base baja) y un
+  **director** que decide la escena por el estado real con histéresis de 2 s.
+- `SonidoUI`: el punto único de los sonidos de interfaz.
+
+**Tres bugs reales que encontró el test del bloque:**
+
+1. El buffer del sintetizador se dimensionaba a `n*2` (mono) pero se escribía
+   4 bytes por muestra (estéreo): la mitad de las muestras. El audio nunca
+   había sonado bien.
+2. **El release de la ADSR era código muerto**: comparaba segundos contra un
+   `t` normalizado, así que nunca se alcanzaba y todo sonido se cortaba en
+   sustain —el "clic" que la fase 21 decía evitar. Diez fases con un bug del
+   que el spec afirmaba que estaba resuelto.
+3. `PoolImpacto` se buscaba por **nombre de nodo**: renombrarlo rompía el
+   efecto en silencio. Ahora usa el grupo (§9.1).
+
+---
+
+## Bloque 67 — Que se vea y no dé jumps
+
+**El post-proceso empieza por un bug de imagen, no por una feature.** El
+`Environment` de la fase 12 no tenía ni un campo de post-proceso, y de esos el
+tonemapping no es una ausencia: Godot 4 usa LINEAR por defecto, así que con el
+sol a 1.25 al mediodía **cualquier superficie iluminada clipaba a blanco puro**.
+Se activa tonemap filmic + glow (solo emisivos) + SSAO + ajustes + niebla por
+profundidad, y se afina el sol (dos splits con PCF, no 4 muestras
+escalonadas). **Límite honesto**: la web usa `gl_compatibility`, que no tiene
+glow ni SSAO; en web degrada a tonemap + ajustes en vez de configurar campos
+que el backend va a ignorar.
+
+**El equipo sigue a los huesos.** `data/anclajes.json` tenía el nombre del
+hueso (`Hand.R`, `Head`) desde la fase 43 y los 6 GLB tienen sus 19 huesos, y
+el código **nunca lo leía**: usaba offsets absolutos, así que el casco flotaba
+a 1,58 m mientras el personaje se agachaba o moría. Ahora cada pieza se cuelga
+de un `BoneAttachment3D`, con fallback al offset si no hay esqueleto. Para los
+slots espejados la X del offset se invierte, porque el rig ya refleja el hueso.
+
+**AnimationTree.** El `_actualizar_animacion` cortaba entre idle y walk con
+`play()`. En un juego donde el personaje gira 180° constantemente, cada salto
+era un pop. Ahora un `AnimationNodeBlend2` mezcla por velocidad normalizada, y
+el cross-fade sale solo. Compartido con los enemigos, que tenían el mismo
+problema (su IA piensa cada 0,25–6 s).
+
+**UI responsive.** El juego corría a 1280×720 fijo, sin `window/stretch`, y 17
+paneles usaban píxeles duros. Ahora `canvas_items` + `expand` y `AjustaUI`:
+proporción acotada (con mínimo y máximo) + anclaje al borde.
+
+**El test de la 36 —"el equipo no se movió de sitio"— celebraba el bug**: los
+offsets fijos *son* "no moverse de sitio". Ese test estaba al revés.
+
+---
+
+## Bloque 68 — Que el golpe se sienta y haya a dónde ir
+
+El game feel de la 19 tenía la mitad de lo que hace que un golpe se sienta
+(números, hit-stop, shake) y le faltaba la otra: **el mundo no reaccionaba**.
+
+- **Knockback** en la dirección opuesta al golpe, con tope y decaimiento. Se
+  aplica **encima** de la IA: la IA del enemigo reescribe `velocity` cada frame
+  y lo borraría.
+- **Partículas de impacto** en pool, materiales compartidos, y el tipo lo
+  declara el arquetipo (`tipo_sangre`): un jefe escupe chispas.
+- **Proyectiles visibles.** Las skills siguen siendo hitscan (el daño no cambia)
+  pero se ve volar la flecha. Que lleve proyectil lo decide el **dato** (5 de
+  40), no un umbral en el código.
+- **Kick de cámara direccional** cuando el *jugador* recibe daño (no cuando
+  pega: el jugador no siente el peso de lo que el pega).
+- **Afijos de loot**: los 77 items eran todos fijos, que no es una build, es un
+  disfraz. Ahora stat + valor + rareza, deterministas por semilla, sin repetir
+  stat en el mismo item, y solo los 4 stats base (vida/maná se derivan).
+- **Códice/bestiario**: los 20 arquetipos con lore y drops **ya estaban** en el
+  JSON y no se mostraban nunca.
+- **NG+/prestigio**: al llegar al nivel 70 se reinicia personaje (no el mundo ni
+  las habilidades de recolección) y se gana prestigio, que da más XP, enemigos
+  más débiles con tope y afijos extra. Prestigio 0 = x1.0, así que un save
+  viejo carga normal.
+
+---
+
+## Verificación del bloque
+
+**99/99 en verde** (95 tests + 4 smokes), `check-only` sin errores, y
+`--smokes` en verde. Nuevos: `test_bloque66_audio` (71), `test_bloque67_visual`
+(53), `test_bloque68_impacto` (44).
+
+Tres tests viejos rotos al arrancar, y los tres **afirmaban lo viejo**, no eran
+bugs: `fase34` pedía que `main_scene` fuera el mundo, `fase47` prohibía que
+Escape estuviera en dos acciones (ahora tiene excepción declarada: la pausa y
+el cierre de panel comparten el ESC, y lo lleva la pila; cualquier otra tecla de
+juego sigue prohibida en dos acciones) y `test_detalle_mision` abría un panel
+sin registrarlo en la pila.
+
+---
+
 ## Lo que sigue abierta
 
-- **El equipo no sigue a la animación** (casco y armas anclados a offsets
-  fijos). Es la deuda #1 del traspaso y NO es de este bloque: es de la 50.
-- **79 modelos de los 85 packs por integrar**, y el mundo sigue siendo
-  placeholder. La 64 construyó las piezas del refugio a mano porque los GLB
-  de Meshy son estáticos y de 96,7M triángulos: meterlos para una antorcha
-  de 1,4 m habría sido absurdo.
-- **El mago conserva las manos abiertas** a propósito, con la guarda de ropa
-  de la 50.3 (§3 del traspaso).
-- **Los Hechos de Mina y de Recolección no los lee nadie todavía**: solo
-  Tala (vía `Talar`) y Vitals (vía `Player._tick_vitals`) los consumen. Los
-  de Cocina los consume el XP de la habilidad, no una bandera.
+Lo que queda, en el orden en que más pesa. Nada de esto es un bug: es
+contenido y pulido que no cabía en un bloque.
+
+1. **Falta el art del mundo.** `models/` tiene 6 GLB (el jugador de las 5
+   clases y el bandido). El resto del mundo —las 9 ciudades, los 146
+   edificios, los muros, los props— son primitivas: cajas, esferas, cilindros
+   con `albedo_color` plano. Es un trabajo de arte, no de código, y es lo que
+   más separa esto de un AAA. El pipeline (`tools/preparar_modelo.py` +
+   `rig.py`) ya funciona con los 6: el que falta es el pack, que no está en
+   esta máquina.
+2. **Faltan texturas PBR.** Cero normal maps, cero ORM, cero atlas: 18 texturas
+   (el albedo de los 6 GLB) y nada más. Con el post-proceso del 67 el mundo
+   mejoró mucho sin esto, pero el techo de calidad visual sigue aquí.
+3. **El contenido se acaba en el nivel 70.** El NG+ del 68 abre la espiral, pero
+   no hay misiones de NG+, ni daily, ni trofeos, ni un segundo acto de
+   contenido. El asesino del tiempo largo es la falta de cosas nuevas que
+   descubrir, no la falta de poder.
+4. **Falta conectar afijos a los items que caen.** El generador los produce y
+   el panel los sabe comparar, pero el loot que suelta un mob todavía no lleva
+   afijos: es el paso corto que falta entre el 68 y una build de verdad.
+5. **Faltan los menús de código y NG+ en pantalla.** `CodiceDB` y
+   `NuevoJuegoPlus` son lógica pura y testeada; los paneles que las muestran no
+   existen todavía.
+6. **El equipo no sigue a los modelos de enemigo.** Solo el jugador tiene rig;
+   los mobs con modelo (el bandido) no tienen paper-doll, así que no pueden
+   llevar arma.
+7. **Los flags `TEMPORAL` del viaje rápido** siguen activos: es una decisión de
+   Juan Diego, no una corrección.
