@@ -36,6 +36,10 @@ extends CanvasLayer
 ## estaba vacía.
 
 const CAPA: int = 19
+## §9.1: sin esto `Systems.registrar()` RECHAZA el sistema con un warning y no
+## lo registra, en silencio para quien mira. Pasó al cablearlo en la escena: el
+## panel se creaba y se agregaba, y no aparecía en el contenedor.
+var system_id: StringName = &"panel_tutorial"
 const MARGEN: float = 16.0
 ## Alto reservado para la barra de acciones (UiLayers.ZONA_INFERIOR_RESERVADA).
 const RESERVADO_INFERIOR: int = 100

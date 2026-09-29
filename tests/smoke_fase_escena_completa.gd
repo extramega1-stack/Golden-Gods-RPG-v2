@@ -75,6 +75,7 @@ func _revisar() -> void:
 		&"pool_impacto": "PoolImpacto (chispas al golpear, bloque 68)",
 		&"panel_codice": "PanelCodice (tecla L, ola 1)",
 		&"feed_avisos": "FeedAvisos (el log de avisos en pantalla)",
+		&"panel_tutorial": "PanelTutorial (el objetivo del tutorial, tecla T)",
 	}
 	for id in esperados.keys():
 		_chk(registrados.has(id),
@@ -96,6 +97,29 @@ func _revisar() -> void:
 		_chk(pool.is_inside_tree(), "el PoolImpacto cuelga del árbol", "")
 
 	print("[SMOKE] sistemas registrados en la partida: %d" % registrados.size())
+
+	# El tercer aviso de esta sesion fue un panel escrito, testeado y no
+	# cableado. Este chequeo ata la banda: si el Input Map declara una accion
+	# "abrir_*" y en la partida no hay ningun sistema con ese nombre, algo se
+	# escribio y no se conecto.
+	var cfg := ConfigFile.new()
+	var err := cfg.load("res://project.godot")
+	if err == OK:
+		for accion in cfg.get_section_keys("input"):
+			var nom := String(accion)
+			if not nom.begins_with("abrir_") and not nom.ends_with("_panel"):
+				continue
+			var base := nom.trim_prefix("abrir_")
+			# Se busca un NODO en la escena, no un registro en `Systems`: los 13
+			# paneles viejos funcionan sin registrarse en el contenedor, y
+			# preguntar por el contenedor daba falsos negativos en todos.
+			var hay: bool = false
+			for nd in _todos(_demo):
+				if String(nd.name).to_lower().find(base) >= 0:
+					hay = true
+					break
+			_chk(hay, "la accion '%s' tiene su panel en la partida" % nom,
+				"ningun sistema registrado contiene '%s'. Hay: %s" % [base, str(registrados.keys())])
 
 
 ## Los system_id registrados, usando la API pública de `Systems` (`ids()`).

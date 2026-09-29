@@ -49,6 +49,10 @@ var _pausa: MenuPausa = null
 ## Bloque 68: los efectos que hacen que un golpe se sienta.
 var _pool_impacto: PoolImpacto = null
 var _opciones: PanelOpciones = null
+## Ola 2: el panel de objetivo del tutorial. Es el TERCER caso de la misma cosa
+## (el panel existe, sus tests pasan, y no estaba en la partida), asi que va
+## conectado a mano y con una entrada en el smoke.
+var _tutorial_ui: PanelTutorial = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
 ## Fase 56: las fogatas de las ciudades (estación de cocina).
@@ -287,6 +291,16 @@ func _instalar_fase63_64_ui() -> void:
 	_construccion.name = "PanelConstruccion"
 	add_child(_construccion)
 	_sistemas_de().registrar(_construccion, &"panel_construccion")
+
+	# Ola 2: el objetivo del tutorial. Nace oculto: el `Tutorial` de la fase 39
+	# lo abre solo en partida nueva y se puede reabrir con T, y un jugador con 20
+	# niveles no tiene por qué ver un "camina 30 m" en la esquina.
+	_tutorial_ui = PanelTutorial.new()
+	_tutorial_ui.name = "PanelTutorial"
+	add_child(_tutorial_ui)
+	_sistemas_de().registrar(_tutorial_ui, &"panel_tutorial")
+	if _tutorial != null:
+		_tutorial_ui.conectar(_tutorial)
 
 
 func _al_desbloquear_hecho(hecho_id: String) -> void:
