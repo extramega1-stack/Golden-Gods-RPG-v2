@@ -232,11 +232,26 @@ func _cargar_skills(dj: Dictionary) -> void:
 
 ## Fase 57: restaura el XP por habilidad. Un save viejo (sin el bloque)
 ## deja las habilidades en 0, no en un estado raro.
+##
+## Hotfix 62.1: al final recalcula los Hechos. `Habilidades.cargar_estado`
+## escribe el XP en silencio y NO emite `tramo_ganado`, así que el
+## `Player._al_subir_tramo` que dispara `hechos.aplicar()` no corría y los mods
+## `hecho:*` se perdían en cada F10: se ganaba un Hecho, se guardaba, y al
+## recargar el juego se perdía el bonus.
+##
+## No hace falta guardar los Hechos: `Hechos.desbloqueado()` es exactamente
+## `habilidades.alcanza(habilidad, tramo)`, así que son datos DERIVADOS del
+## bloque que ya se guarda. Recalcularlos es la única forma de que no puedan
+## desincronizarse, y evita tocar el formato del save.
 func _cargar_habilidades(dj: Dictionary) -> void:
 	if jugador.habilidades == null:
 		jugador.habilidades = Habilidades.crear_desde_datos()
+	if jugador.hechos != null:
+		jugador.hechos.fijar_habilidades(jugador.habilidades)
 	if dj.has("habilidades"):
 		jugador.habilidades.cargar_estado(dj.get("habilidades", {}))
+	if jugador.hechos != null:
+		jugador.hechos.aplicar(jugador.stats)
 
 
 func _cargar_enemigos(lista: Array) -> void:

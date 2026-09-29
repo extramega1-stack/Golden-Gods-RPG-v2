@@ -1,7 +1,7 @@
 # AGENTS.md — Golden Gods RPG Remake (Godot 4.7.2)
 
 RPG local single-player, mundo abierto estilo L2/MU. Fuente de verdad: `docs/MASTER_SPEC.md`.
-Lo que no está en el spec no existe. Estado: Fase 50.3 terminada.
+Lo que no está en el spec no existe. Estado: Fase 64 terminada (bloque 53–64 cerrado).
 
 ## REGLA AUTOMÁTICA (no pedir skills al usuario)
 
@@ -71,6 +71,10 @@ cualquier skill de marketing/crypto/trading.
   nunca nombra un archivo (Fases 49 y 49.1).
 - Una fase a la vez + playtest Juan Diego antes de avanzar (§7.6).
 - UI solo lee `StatBlock`, nunca escribe. Sistemas por señales, API chica (§7.11, §9).
+- Toda UI nueva se SUSCRIBE a una señal con umbral; nunca lee por frame (§9.5).
+  Enseñado por la 63: `Vitals` emite `vital_cambiado` solo si un valor se movió
+  `TOQUE_MIN`. Un test que conecte una señal dentro del test NO prueba nada:
+  hay que mover el dato y ver que la UI se mueve.
 - Un script, un nodo, una responsabilidad. Registro en grupo `gg_system`, `system_id: StringName`. UI de cada sistema en su CanvasLayer propio (§9.1).
 - Capas UI por rango en `scripts/core/ui_layers.gd`: 10–19 HUD, 20–69 paneles, 70–79 progresión/mundo, 80–89 tienda/diálogo/cine, 90–99 modales (§9.2).
 - Todo atajo en Input Map `project.godot`, acciones en español. Prohibido `keycode ==` en sistemas (§9.3, §5.3).

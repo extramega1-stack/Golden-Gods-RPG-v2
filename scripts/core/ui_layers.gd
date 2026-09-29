@@ -23,6 +23,23 @@ const BRUJULA: int = 14
 ## Fase 8: feed global de avisos (rango 10–19 = HUD persistente). Lo crea
 ## `PanelMisiones` pero es del juego entero, no del panel (fase 45.2).
 const TOAST: int = 15
+## Hotfix 62.1: feed global de avisos de cualquier sistema (capa 16, libre
+## dentro del rango 10–19 de HUD). Es la 15 —el toast de misiones— en versión
+## propia: la 15 está entrelazada con el banner de "misión completada" de
+## `PanelMisiones`, y desarmar ese ovillo es un refactor aparte. Cuando se
+## unifique, esta pasa a la 15.
+const FEED_AVISOS: int = 16
+## Fase 63 (hotfix 62.1): los tres vitales —hambre, sed, energía— arriba a la
+## izquierda, al lado del retrato. Es HUD persistente, así que rango 10–19.
+const VITALES: int = 17
+## Fase 64: el prompt contextual ("E — Prender fogata"). Vive en la 18 para
+## que se dibuje por encima de los vitales y no se pise con ellos.
+const PROMPT: int = 18
+## Fase 64: catálogo de construcción del refugio. Panel de sistema, así que
+## rango 20–69, justo detrás de PANEL_AYUDA (32).
+const PANEL_CONSTRUCCION: int = 33
+## Fase 64: recetas de la fogata. Mismo rango de panel de sistema.
+const PANEL_COCINA: int = 34
 ## Fase 53: barra de jefe, arriba-centro (rango 10–19 = HUD persistente).
 ## UI pura, a diferencia de `BarraVidaMob` que es 3D sobre el mob.
 const BARRA_JEFE: int = 13

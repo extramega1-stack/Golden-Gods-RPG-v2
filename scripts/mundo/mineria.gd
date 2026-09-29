@@ -25,7 +25,17 @@ func puede_minar(veta: Veta, jugador: Player) -> String:
 		return "veta_nula"
 	if not veta.esta_minable():
 		return "agotada"
-	if jugador.nivel < veta.nivel_min:
+	# Hotfix 62.1: un árbol no obeyece la banda de nivel de la veta, la de
+	# `Talar`, que perdona 2 tramos con el Hecho "Leñador". Pregunta a quien
+	# corresponde según el tipo de nodo, en vez de asumir que es veta.
+	if veta is Arbol:
+		var motivo_tala: String = Talar.puede_talar(veta, jugador.nivel, jugador.hechos)
+		match motivo_tala:
+			Talar.MOTIVO_NIVEL:
+				return "nivel"
+			Talar.MOTIVO_EN_RESPAWN, Talar.MOTIVO_AGOTADO:
+				return "agotada"
+	elif jugador.nivel < veta.nivel_min:
 		return "nivel"
 	if _espacios_libres(jugador, veta.item_id) < UMBRAL_LLENO:
 		return "inventario_lleno"
@@ -42,16 +52,27 @@ func minar(veta: Veta, jugador: Player) -> String:
 	var item_id: String = veta.item_id
 	var cantidad: int = maxi(1, veta.cantidad)
 	var xp: int = maxi(0, veta.xp)
-	# La veta se gasta ANTES de entregar: si el item no existiera en el
-	# catálogo el golpe se pierde, pero el mundo nunca queda con usos gratis.
-	veta.consumir_uso()
+	# Hotfix 62.1: un árbol pasa por `Talar.talar`, que es quien sabe aplicar
+	# el Hecho "tala_area" (3 troncos por un solo uso). Sin este desvío el Hecho
+	# se calculaba y se guardaba, pero nunca se usaba jugando.
+	if veta is Arbol:
+		var t: Dictionary = Talar.talar(veta, jugador.hechos)
+		if not bool(t.get("ok", false)):
+			return "agotada"
+		cantidad = int(t.get("cantidad", cantidad))
+	else:
+		# La veta se gasta ANTES de entregar: si el item no existiera en el
+		# catálogo el golpe se pierde, pero el mundo nunca queda con usos gratis.
+		veta.consumir_uso()
 	jugador.inventario.agregar(item_id, cantidad)
 	if xp > 0:
 		jugador.gain_xp(xp)
-		# Fase 57: la minería da su propio XP de habilidad, aparte del de
+		# Fase 57: la recolección da su propio XP de habilidad, aparte del de
 		# personaje. Los dos suben: el de personaje manda en StatBlock.
+		# Hotfix 62.1: la habilidad la declara el nodo (`Veta.habilidad_id`),
+		# así que talar sube `tala` y minar sube `mineria`.
 		if jugador.habilidades != null:
-			jugador.habilidades.ganar("mineria", xp)
+			jugador.habilidades.ganar(veta.habilidad_id, xp)
 	veta.mostrar_aviso(texto_minado(item_id, cantidad, xp))
 	minado.emit(veta.veta_id, item_id, cantidad, xp)
 	return "ok"

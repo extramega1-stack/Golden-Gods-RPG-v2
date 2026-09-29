@@ -22,6 +22,11 @@ const INTERVALO_SEG: float = 0.5
 ## entrar aparezca en el estado en que estaba.
 const RESPUESTA_PERSISTIDA: bool = true
 
+## Hotfix 62.1: sin esta declaración `Systems.registrar` rechazaba el gestor
+## con un `push_warning` (solo 4 sistemas la declaraban: GestorVetas,
+## ViajeRapido, SaveSystem, Arena, RespawnHeros).
+var system_id: StringName = &"gestor_arboles"
+
 var radio_alta: float = RADIO_ALTA
 var radio_baja: float = FALLBACK_RADIA
 

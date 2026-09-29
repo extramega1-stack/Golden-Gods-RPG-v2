@@ -43,12 +43,36 @@ var radio_ancla: float = 120.0
 ## Las plazas candidatas, ya resueltas a Vector3 (con y real). Las mete
 ## `registrar_ciudad`.
 var _plazas: Array = []
+## Hotfix 62.1: los refugios RECLAMADOS. Un refugio ganado pisa a la plaza de
+## la ciudad si el jugador está dentro de su radio: es el punto seguro que el
+## jugador compró, así que tiene que valer más que la plaza pública. Los mete
+## `anclar_refugio`, que es a quien escucha `Refugio.reclamado`.
+var _refugios: Array = []
+## Hotfix 62.1: el ancla se reevalúa al caminar, que es lo que el docstring de
+## `actualizar_ancla` prometía desde la fase 51 y que nadie llamaba. Antes el
+## punto seguro solo se refrescaba al morir o al viajar rápido, así que si te
+## ibas caminando a otra ciudad y morías lejos, volvías a la anterior.
+const INTERVALO_ANCLA: float = 0.5
+var _ancla_timer: float = 0.0
 
 
 func _ready() -> void:
 	# El grupo es la puerta de la fase 51.1 (§9.1). `system_id` permite
 	# distinguirlo de cualquier otro sistema del grupo.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+
+
+## Hotfix 62.1: el ancla se refresca solo, sin esperar a morir o a viajar. Con
+## esto no hay allocs (solo compara floats) y el timer hace que no se llame en
+## cada frame.
+func _process(delta: float) -> void:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return
+	_ancla_timer -= delta
+	if _ancla_timer > 0.0:
+		return
+	_ancla_timer = INTERVALO_ANCLA
+	actualizar_ancla()
 
 
 ## ¿Está puesto a punto? Lo consulta `_al_morir`; lo pone la Arena.
@@ -120,13 +144,39 @@ func plaza_actual() -> String:
 func actualizar_ancla() -> void:
 	if _jugador == null or not is_instance_valid(_jugador):
 		return
+	var pos: Vector3 = _jugador.global_position
+	# Hotfix 62.1: primero los refugios. Un refugio reclamado del que estás
+	# parado es un punto seguro mejor que la plaza de la ciudad, y es lo que
+	# el jugador compró con la fase 60.
+	for r in _refugios:
+		var ref: Refugio = r as Refugio
+		if ref == null or not is_instance_valid(ref):
+			continue
+		# Solo un refugio RECLAMADO es punto seguro, y solo si estás dentro.
+		if not ref.esta_reclamado():
+			continue
+		if not ref.contiene(pos):
+			continue
+		_jugador.anclar_en_ciudad(pos, 0.0)
+		return
 	if _plazas.is_empty():
 		return
-	var pos: Vector3 = _jugador.global_position
 	for p in _plazas:
 		if pos.distance_to(p["pos"]) <= radio_ancla:
 			_jugador.anclar_en_ciudad(p["pos"], float(p["yaw"]))
 			return
+
+
+## Hotfix 62.1: registra un refugio como candidato a punto seguro. Lo llama la
+## UI al reclamarlo (fase 64), no el constructor: el refugio no se registra
+## solo para que uno sin reclamar no pueda ser ancla nunca.
+func anclar_refugio(ref: Refugio) -> void:
+	if ref == null or not is_instance_valid(ref):
+		return
+	for r in _refugios:
+		if r == ref:
+			return
+	_refugios.append(ref)
 
 
 func _al_morir(_fuente: Entity) -> void:

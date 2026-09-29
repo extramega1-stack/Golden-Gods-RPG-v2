@@ -31,6 +31,29 @@ var energia: float = MAXIMO
 var enfermedad: float = 0.0
 
 
+## se llama cada frame, así que sin un umbral la señal sería 60 veces por
+## segundo; el coste no es la señal, es el `queue_redraw` de cada barra detrás.
+##
+signal vital_cambiado(hambre: float, sed: float, energia: float, enfermedad: float)
+## Fase 63: la enfermedad aparece y desaparece. Es un dato BOOLEANO, no un
+## valor, así que va en su propia señal: la UI tiene que poder poner y quitar
+## un icono, no interpolar nada.
+signal enfermedad_cambiada(activa: bool)
+
+## Umbral de movimiento para que la UI se entere (Fase 63).
+const TOQUE_MIN: float = 0.5
+
+## Lo que se emitió la última vez. Si no, el primer `avanzar` dispararía la
+## señal de todas formas sin que nada haya cambiado de verdad.
+var _ultimo_hambre: float = MAXIMO
+var _ultimo_sed: float = MAXIMO
+var _ultimo_energia: float = MAXIMO
+var _ya_emitido: bool = false
+
+var mult_hambre: float = 1.0
+var mult_sed: float = 1.0
+
+
 func _init(p_hambre: float = MAXIMO, p_sed: float = MAXIMO,
 		p_energia: float = MAXIMO) -> void:
 	hambre = clampf(p_hambre, 0.0, MAXIMO)
@@ -45,9 +68,14 @@ func consumir(efecto: Dictionary) -> Dictionary:
 	hambre = clampf(hambre + float(efecto.get("hambre", 0.0)), 0.0, MAXIMO)
 	sed = clampf(sed + float(efecto.get("sed", 0.0)), 0.0, MAXIMO)
 	energia = clampf(energia + float(efecto.get("energia", 0.0)), 0.0, MAXIMO)
+	var antes_enfermedad: bool = enfermedad > 0.0
 	var riesgo: String = str(efecto.get("riesgo", ""))
 	if riesgo == "enfermedad":
 		enfermedad = maxf(enfermedad, 20.0)
+	# Fase 63: comer se refleja en las barras al instante, no en el siguiente
+	# `avanzar`. Y la enfermedad que causa la carne cruda enciende su propia
+	# señal, que es la que pone el icono.
+	_avisar_cambio(antes_enfermedad)
 	return antes
 
 
@@ -58,22 +86,49 @@ func consumir(efecto: Dictionary) -> Dictionary:
 ## como parámetros y NO como referencia a `Hechos`: `Vitals` es puro y no
 ## debe depender de un sistema de talentos para contar el tiempo. El Player
 ## se los pasa cada frame.
-var mult_hambre: float = 1.0
-var mult_sed: float = 1.0
 
 
+## Fase 58: el decaimiento por tiempo. `mult_actividad` sube el gasto (pegar,
+## correr, minar). Devuelve true si algún vital cruzó el umbral de vacío en
+## este tick, para que el Player avise una sola vez.
+## Fase 59: multiplicadores de decaimiento que escriben los Hechos. Vienen
+## como parámetros y NO como referencia a `Hechos`: `Vitals` es puro y no
+## debe depender de un sistema de talentos para contar el tiempo. El Player
+## se los pasa cada frame.
 func avanzar(dt: float, mult_actividad: float = 1.0) -> bool:
 	var d: float = maxf(dt, 0.0)
 	var m: float = maxf(mult_actividad, 0.0)
 	# Rates base: una barra cada ~2 minutos de juego, suben con la actividad.
 	# Con enfermedad el hambre se va el doble de rápido.
 	var extra: float = 1.0 + (0.6 if enfermedad > 0.0 else 0.0)
+	var antes_enfermedad: bool = enfermedad > 0.0
 	hambre = clampf(hambre - d * 0.85 * m * extra * maxf(mult_hambre, 0.0), 0.0, MAXIMO)
 	sed = clampf(sed - d * 0.62 * m * maxf(mult_sed, 0.0), 0.0, MAXIMO)
 	energia = clampf(energia - d * 0.40 * m, 0.0, MAXIMO)
 	if enfermedad > 0.0:
 		enfermedad = maxf(enfermedad - d, 0.0)
+	_avisar_cambio(antes_enfermedad)
 	return vacio()
+
+
+## Fase 63: si algún valor se movió lo bastante, emite. Devuelve si emitió, que
+## es lo que usan los tests para comprobar que NO emite en cada frame.
+func _avisar_cambio(antes_enfermedad: bool) -> bool:
+	var ahora_enfermedad: bool = enfermedad > 0.0
+	if ahora_enfermedad != antes_enfermedad:
+		enfermedad_cambiada.emit(ahora_enfermedad)
+	var movido: bool = not _ya_emitido \
+			or absf(hambre - _ultimo_hambre) >= TOQUE_MIN \
+			or absf(sed - _ultimo_sed) >= TOQUE_MIN \
+			or absf(energia - _ultimo_energia) >= TOQUE_MIN
+	if not movido:
+		return false
+	_ya_emitido = true
+	_ultimo_hambre = hambre
+	_ultimo_sed = sed
+	_ultimo_energia = energia
+	vital_cambiado.emit(hambre, sed, energia, enfermedad)
+	return true
 
 
 ## ¿Alguno de los tres está en la franja baja?

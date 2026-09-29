@@ -24,6 +24,10 @@ const INTERVALO_SEG: float = 5.0
 signal lena_cambiada(segundos: float)
 ## Emitida al terminar de cocinar algo.
 signal cocinado(item_id: String, cantidad: int)
+## Fase 64: se acaba de prender. Para el aviso del feed.
+signal llama_encendida
+## Fase 64: E sobre una fogata YA encendida pide el panel de recetas.
+signal cocinar_solicitado
 
 var lena: float = 0.0
 ## Cuánto falta para volver a intentar encenderse sola.
@@ -36,6 +40,10 @@ var _particulas: GPUParticles3D = null
 func _ready() -> void:
 	_construir()
 	set_process(true)
+	# Fase 64: el jugador lo encuentra por proximidad, no por selección (no es
+	# una `Entity`). El grupo lo pone el `Player._interactuable_mas_cercano`.
+	if not is_in_group(Player.GRUPO_INTERACTUABLE):
+		add_to_group(Player.GRUPO_INTERACTUABLE)
 
 
 func _construir() -> void:
@@ -154,3 +162,57 @@ func _process(delta: float) -> void:
 	_espera -= delta
 	if _espera <= 0.0:
 		_espera = INTERVALO_SEG
+
+
+# ---------------------------------------------- fase 64: interacción ---
+
+## Fase 64: la fogata pasa a ser interactuable por proximidad.
+##
+## Antes tenía `CAPA` declarada y NINGÚN cuerpo de colisión: era un adorno
+## invisible al jugador, siempre apagada, sin forma de prenderla. SeDeclare
+## interactuable para que el prompt aparezca al acercarse y E la use; el
+## cuerpo de colisión sigue sin hacer falta porque la distancia se mide
+## contra la posición del nodo, no contra un raycast.
+func texto_interaccion(j: Player) -> String:
+	if encendida():
+		return "Cocinar"
+	if j != null and j.inventario != null and j.inventario.contar("tronco_roble") <= 0 \
+			and j.inventario.contar("tronco_acacia") <= 0 \
+			and j.inventario.contar("tronco_picaro") <= 0 \
+			and j.inventario.contar("tronco_pino") <= 0 \
+			and j.inventario.contar("tronco_sauce") <= 0:
+		return "Fogata (sin leña)"
+	return "Prender fogata"
+
+
+## Fase 64: E en la fogata. Prende con un tronco del inventario, o avisa por
+## qué no. Devuelve el motivo para que lo testee y lo muestre el feed.
+func interactuar_jugador(j: Player) -> String:
+	if j == null or not is_instance_valid(j):
+		return "sin_jugador"
+	if encendida():
+		# Ya arde: la E pide el panel, no vuelve a prenderla. Es la misma tecla
+		# para las dos cosas y el estado de la fogata decide cuál.
+		cocinar_solicitado.emit()
+		return "cocinar"
+	var tronco: String = _primer_tronco(j)
+	if tronco == "":
+		return "sin_lena"
+	if not j.inventario.quitar(tronco, 1):
+		return "sin_lena"
+	cargar_lena(LENA_POR_TRONCO)
+	llama_encendida.emit()
+	return "ok"
+
+
+## El primer tronco que tenga el jugador. Se prueban los cinco porque la
+## tala da madera de especie según el árbol, y no tiene sentido obligar al
+## jugador a llevar roble cuando taló un sauce.
+func _primer_tronco(j: Player) -> String:
+	if j == null or j.inventario == null:
+		return ""
+	for t in ["tronco_roble", "tronco_acacia", "tronco_picaro", "tronco_pino",
+			"tronco_sauce"]:
+		if j.inventario.contar(t) > 0:
+			return t
+	return ""

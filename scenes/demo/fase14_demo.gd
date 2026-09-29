@@ -32,6 +32,16 @@ var _respawn: RespawnHeros = null
 var _sistemas: Systems = null
 ## Fase 53: barra de jefe (UI). La maneja la selección del jugador.
 var _barra_jefe: BarraJefe = null
+## Hotfix 62.1: feed global de avisos (capa 16), registrado en `Systems`.
+var _feed: FeedAvisos = null
+## Fase 63: hambre, sed y energía (capa 17).
+var _vitales: IndicadorVitales = null
+## Fase 64: el rótulo "E — Prender fogata" (capa 18).
+var _prompt: PromptInteraccion = null
+## Fase 64: el panel de recetas (capa 34).
+var _cocina: PanelCocina = null
+## Fase 64: el modo construcción (capa 33).
+var _construccion: PanelConstruccion = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
 ## Fase 56: las fogatas de las ciudades (estación de cocina).
@@ -117,6 +127,12 @@ func _colocar_refugios() -> void:
 			r.position.y = _terreno.altura_en(r.position.x, r.position.z)
 		_refugios.append(r)
 		_sistemas.registrar(r, StringName("refugio:" + id))
+		# Fase 64: al reclamar, el refugio pasa a ser punto seguro. Antes el
+		# ancla de reaparición venía solo de `CiudadLuna` y reclamar no
+		# cambiaba NADA, que era una de las debts del bloque 53–62.
+		r.reclamado.connect(_al_reclamar_refugio.bind(r))
+		# Fase 64: en un refugio reclamado, la E abre el modo construcción.
+		r.construir_solicitado.connect(_al_construir.bind(r))
 
 
 ## Fase 56: una fogata junto a cada plaza. Sin leña no se cocina, y la leña
@@ -136,6 +152,10 @@ func _colocar_fogatas() -> void:
 		add_child(f)
 		_fogatas.append(f)
 		f.add_to_group(&"fogatas")
+		# Fase 64: prender una fogata se anuncia, y el panel se abre con un
+		# segundo E (la primera vez solo la prende).
+		f.llama_encendida.connect(_al_prender_fogata.bind(f))
+		f.cocinar_solicitado.connect(_al_pedir_cocina.bind(f))
 
 
 ## Fase 53: barra de jefe. Escucha la selección del jugador: si lo que
@@ -146,6 +166,88 @@ func _instalar_barra_jefe() -> void:
 	_barra_jefe.name = "BarraJefe"
 	add_child(_barra_jefe)
 	_jugador.seleccion_cambiada.connect(_al_seleccion_cambiada)
+
+
+## Hotfix 62.1: el feed global de avisos, y el enganche de los Hechos.
+##
+## El feed se registra en `Systems` para que lo encuentre CUALQUIER sistema
+## (`Systems.obtener(&"feed_avisos")`) sin tener que pasárselo de mano, que es
+## lo que §9 quiere. Y los Hechos se escuchan acá y no dentro de `Hechos`,
+## para que la lógica no sepa que existe una UI.
+func _instalar_feed_avisos() -> void:
+	_feed = FeedAvisos.new()
+	_feed.name = "FeedAvisos"
+	add_child(_feed)
+	_sistemas.registrar(_feed, &"feed_avisos")
+	if _jugador.hechos != null:
+		_jugador.hechos.hecho_desbloqueado.connect(_al_desbloquear_hecho)
+## Fase 64: E sobre un refugio reclamado abre el modo construcción. Es la
+## misma tecla que prende la fogata y que reclama el refugio: qué hace la E
+## depende de en qué estás parado, y el prompt lo dice.
+func _al_construir(r: Refugio) -> void:
+	if _construccion != null and _jugador != null and r != null:
+		_construccion.abrir(_jugador, r)
+
+
+## Fase 64: la fogata se prendió. Se anuncia en el feed con el tronco que
+## se gastó, que es la información que el jugador necesita para decidir la
+## próxima vez ("un tronco = 12 s, y la carne asada gasta 1").
+func _al_prender_fogata(f: Fogata) -> void:
+	if _feed != null and f != null:
+		_feed.aviso("Fogata prendida · %d s de leña" % int(f.lena))
+
+
+## Fase 64: E sobre la fogata encendida abre las recetas.
+func _al_pedir_cocina(f: Fogata) -> void:
+	if _cocina != null and _jugador != null and f != null:
+		_cocina.abrir(_jugador, f)
+
+
+## Fase 64: un refugio reclamado se vuelve el ancla de reaparición. Se conecta
+## a la SEÑAL y no dentro de `Refugio.reclamar()`, para que la lógica no sepa
+## que existe un sistema de respawn.
+func _al_reclamar_refugio(_refugio_id: String, r: Refugio) -> void:
+	if _respawn != null and r != null:
+		_respawn.anclar_refugio(r)
+		if _feed != null:
+			_feed.logro(r.nombre, "Punto seguro. Ya reaparecés acá.")
+
+
+func _instalar_fase63_64_ui() -> void:
+	# Fase 63: los tres vitales en pantalla. `vigilar` se suscribe a las
+	# señales de `Vitals`; la UI no lee nada por frame.
+	_vitales = IndicadorVitales.new()
+	_vitales.name = "IndicadorVitales"
+	add_child(_vitales)
+	_sistemas.registrar(_vitales, &"indicador_vitales")
+	_vitales.vigilar(_jugador)
+	# Fase 64: el prompt contextual. Se pone junto al feed porque los dos son
+	# "capas de información del mundo", no paneles.
+	_prompt = PromptInteraccion.new()
+	_prompt.name = "PromptInteraccion"
+	add_child(_prompt)
+	_sistemas.registrar(_prompt, &"prompt_interaccion")
+	_prompt.vigilar(_jugador)
+	# Fase 64: el panel de cocina. Nace cerrado (lección 11) y se abre desde
+	# la fogata, no desde el HUD: cocinar es una decisión de sitio.
+	_cocina = PanelCocina.new()
+	_cocina.name = "PanelCocina"
+	add_child(_cocina)
+	_sistemas.registrar(_cocina, &"panel_cocina")
+	# Fase 64: el modo construcción del refugio.
+	_construccion = PanelConstruccion.new()
+	_construccion.name = "PanelConstruccion"
+	add_child(_construccion)
+	_sistemas.registrar(_construccion, &"panel_construccion")
+
+
+func _al_desbloquear_hecho(hecho_id: String) -> void:
+	if _feed == null or _jugador.hechos == null:
+		return
+	# El título solo ("Leñador") no dice nada; el detalle es lo que explica qué
+	# cambió de verdad. Por eso el feed de logros lleva dos líneas.
+	_feed.logro(_jugador.hechos.nombre_de(hecho_id),
+		_jugador.hechos.descripcion_de(hecho_id))
 
 
 func _al_seleccion_cambiada(e: Entity) -> void:
@@ -176,6 +278,7 @@ func _instalar_respawn() -> void:
 
 	_respawn.configurar(_jugador, _arena)
 	_instalar_barra_jefe()
+	_instalar_feed_avisos()
 	# Fase 51: la arena y el respawn se conocen. Mientras corre una partida de
 	# arena, el respawn se pone a punto (si no, al morir el heroe se iria a la
 	# ciudad a media partida).

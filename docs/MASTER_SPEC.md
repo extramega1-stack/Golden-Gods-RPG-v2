@@ -1992,14 +1992,173 @@ eximen ahora el grupo `titan` como ya eximían `jefe_fragmento`. Test: 52.
 
 ---
 
+# Hotfix 62.1 + Fases 63 y 64 — que el bloque 53–62 exista de verdad (2026-09-29)
+
+Las diez fases anteriores cerraron con **93/93 en verde** y con un problema
+que la suite no podía ver: de todo el bloque, lo único que el jugador veía era
+la barra de jefe. Hambre, sed, energía, habilidades, Hechos, fogatas y
+refugios estaban implementados, testeados y **inalcanzables**.
+
+La lección ya estaba escrita en el repo (§3 del traspaso a la PC nueva): *"una
+verificación en Blender no es una verificación. El fallo de las manos era
+visible en pantalla y yo lo di por bueno porque los renders cuadraban"*. 93/93
+en verde fue exactamente eso: los tests probaban la LÓGICA, no que el juego se
+pudiera jugar. Y había un agujero peor que la UI.
+
+## El bug que la suite no cazó
+
+`Arbol` hereda de `Veta` (fase 55, para no duplicar el nodo de recurso). Esa
+decisión, aislada, era correcta. El problema: **`Mineria.minar` tenía
+`"mineria"` hardcodeado**, así que talar un árbol pasaba por la lógica de
+minería y subía `mineria`. `Talar`, la clase que implementa `tala_area` y
+`tala_rangos`, **no la llamaba nadie**: era código muerto.
+
+Consecuencia: la habilidad `tala` no subía NUNCA y los Hechos de tala eran
+permanentemente inalcanzables. Justo la decisión que la fase 59 escribió en el
+spec como *"esa decisión ES el juego"* — gastar el Hecho de Tala para resolver
+el hambre rápido, o caminar hasta la fogata — era imposible jugando.
+
+El agujero no fue la lógica, fue la cobertura: los tests de la 55 y la 59
+probaban `Talar` y `Mineria` por separado, y nadie probó el **camino real**
+(`GestorVetas._al_minar_solicitado` → `Mineria` → `habilidades.ganar`). Ese
+camino es el que ahora cubre `test_hotfix_62_1_tala.gd`.
+
+El arreglo, con "datos primero" (§9.4): la habilidad la **declara el nodo**.
+`Veta.habilidad_id` vale `"mineria"` y `Arbol` la sobreescribe a `"tala"` en su
+`_init` (GDScript no deja redeclarar un miembro del padre). `Mineria` pregunta
+al nodo y, si es un árbol, delega a `Talar` para que el Hecho `tala_area`
+(3 troncos por un uso) se aplique de verdad.
+
+## Hotfix 62.1 — que el bloque no mienta
+
+Cinco correcciones, sin features nuevas salvo el feed:
+
+- **Tala → `tala`**: como arriba.
+- **Hechos que sobreviven al save/load**: `Habilidades.cargar_estado` escribe el
+  XP en silencio y **no emitía `tramo_ganado`**, así que el `hechos.aplicar()`
+  del Player no corría y los mods `hecho:*` se perdían en cada F10. El arreglo
+  es recalcular, no persistir: `Hechos.desbloqueado()` es exactamente
+  `habilidades.alcanza(habilidad, tramo)`, o sea que los Hechos son datos
+  DERIVADOS. Guardarlos crearía una segunda fuente de verdad que puede
+  discrepar, y no hace falta tocar el formato del save.
+- **`system_id` en `Refugio` y `GestorArboles`**: sin eso `Systems.registrar`
+  rechazaba los 9 refugios y el gestor con `push_warning`, y no eran
+  descubribles. Solo 5 de 11 sistemas lo declaraban.
+- **`RespawnHeros.actualizar_ancla()` al caminar**: su docstring lo prometía
+  desde la 51 y nadie lo llamaba; el punto seguro solo se refrescaba al morir
+  o al viajar rápido. Ahora tiene `_process` con reloj de 0,5 s (sin allocs).
+- **`FeedAvisos`** (`scripts/ui/feed_avisos.gd`, capa 16): el feed que hace
+  OBSERVABLE el arreglo. El toast de la 15 está entrelazado con el banner de
+  misión de `PanelMisiones` y desarmar ese ovillo es un refactor con riesgo
+  propio, así que este vive en la 16 y los dos conviven. Se registra en
+  `Systems` como `feed_avisos` y `hecho_desbloqueado` lo engancha, con el
+  título **y la descripción**: "Leñador" solo no dice que ahora sacás 3
+  troncos. Cumple la intención que la 45.2 ya declaraba ("el toast es un feed
+  GLOBAL") y que ningún sistema tenía por dónde usar.
+
+Test: 54 checks.
+
+## Fase 63 — que se vea
+
+- **`IndicadorVitales`** (capa 17): hambre, sed, energía con color propio, más
+  el icono de enfermedad, y escucha `Player.vital_bajo`, que hasta acá no tenía
+  ni un listener. **La UI no lee por frame**: `Vitals` gana la señal
+  `vital_cambiado`, que es "sucia" (solo emite si un valor se movió
+  `TOQUE_MIN = 0.5`), porque `avanzar()` corre cada frame y lo caro no es la
+  señal, es el redibujado de tres barras detrás. `consumir()` también avisa:
+  comer tiene que verse en el acto.
+  - El aviso bajo NO se latchea: la alerta se recalcula cada frame. Un HUD que
+    avisa "te mueres de hambre" y lo deja pegado aunque comas es peor que no
+    avisar. El test camina el ciclo de pulso entero porque con una sola llamada
+    se mide el reloj y no la función.
+- **Dos pestañas nuevas en el K** (`Recolección` y `Hechos`), no un panel
+  nuevo: el K ya tenía Skills y Talentos, y un cuarto sitio para mirar lo mismo
+  sería una tecla más que recordar. Recolección muestra las 4 barras de XP
+  (al siguiente tramo, no al total: una barra llena cada tramo sí dice algo) y
+  Hechos los 10 con su requisito, que es lo que permite verlos venir mientras
+  caminás hacia la veta.
+
+Test: 47 checks.
+
+## Fase 64 — que se pueda usar
+
+**Decisión de modelo**: `Fogata` y `Refugio` heredan de `Node3D`, no de
+`Entity`. No se hicieron `Entity` para poder reusar el camino de selección: eso
+les daría puntos de vida y aggro a una hoguera, que es un modelo equivocado. Se
+interactúa por **proximidad** con la E, el mismo idioma que el patrón
+"acercarse y actuar" de los NPCs, con `PromptInteraccion` (capa 18) diciendo qué
+hace esa tecla. `Player.interactuable_cerca` es una señal con reloj de 0,25 s
+que solo emite cuando el objetivo cambia.
+
+- **Fogata**: apagada, la E la prende con un tronco (de cualquiera de las cinco
+  especies: la tala da madera varied y obligar a llevar roble sería absurdo) y
+  lo gasta de verdad. Encendida, la misma E pide cocinar. Se announcementa en el
+  feed con los segundos de leña.
+- **`PanelCocina`** (capa 34): cierra el círculo recolectar → cocinar → comer.
+  Gasta el ingrediente, **entrega el asado** (que no enferma, que es todo el
+  punto de cocinar), gasta leña de la fogata y sube `habilidad cocina`.
+- **Refugio**: la E lo reclama, y al reclamar se **cablea al `RespawnHeros`**
+  (`anclar_refugio`), así que un refugio reclamado ES el punto seguro. Es la
+  deuda que la 60 dejó abierta. Reclamado, la E pasa a construir.
+- **`PanelConstruccion`** (capa 33) + **`PiezaVisual`**: la UI que le faltaba a
+  `Constructor`. Catálogo de las 8 piezas, preview fantasma, rotación, colocar
+  y deshacer. Las mallas son **procedurales a partir de la caja AABB del dato**
+  (si `cajas` cambia en el JSON, la malla cambia con él) y los materiales son
+  **8 compartidos**, no uno por pieza colocada (§9.5). No usa GLB: los 85 de
+  Meshy son estáticos de 96,7M triángulos.
+  - El preview va **delante del jugador, automático**, no detrás del ratón: con
+    el panel abierto el ratón está sobre los botones y un preview que lo
+    persiguiera saltaría cada vez que se busca una pieza.
+  - Seleccionar una pieza que NO admite rotación ahora **resetea la rotación**.
+    Sin eso, mirar "Antorcha" con los 90 grados de la Mesa de antes la hacía
+    inclazable, sin explicación en pantalla.
+  - **Los materiales se gastan de verdad**: `Constructor.descontar` muta el
+    `Dictionary` que se le pasa, y el panel le pasa una COPIA. Sin volcar el
+    diff al `Inventario` real, las piezas salían gratis. Y deshacer los
+    devuelve: sin eso, un clic mal puesto era un material perdido para siempre,
+    que es la forma de hacer que el jugador deje de construir por miedo.
+
+- **Acción de Input Map `construir` = V**, no C: la C ya era `abrir_equipo` y
+  el `test_fase47_teclas` caught la colisión. Ese test existe para esto.
+
+Test: 70 checks.
+
+## Verificación
+
+- **96/96 en verde** (92 tests + 4 smokes) contra los 93 de antes.
+- **211 archivos .gd con `--check-only`, 0 errores de parseo.**
+- Los tres tests nuevos: `test_hotfix_62_1_tala.gd` (54), `test_fase63_…` (47),
+  `test_fase64_uso.gd` (70).
+
+## Lo que aprendí en estas tres fases, y va al spec
+
+1. **Un test unitario de cada pieza NO cubre la costura.** Los de la 55 y la 59
+   pasaban y el camino real estaba roto. Cuando dos sistemas se unen por una
+   señal, el test tiene que ir por la señal, no por las dos clases.
+2. **GDScript captura por valor en las lambdas.** Un `var n: int` protegido por
+   una lambda nunca se ve cambiar desde fuera: el test pasa "0 emisiones" y
+   parece que la señal no funciona. Se acumula en un `Array`.
+3. **GDScript no deja redeclarar un miembro del padre.** Para que `Arbol`
+   tuviera otra `habilidad_id` hay que asignarla en `_init`, no declararla.
+4. **`queue_free()` es diferido.** Un test que "limpia" un grupo con
+   `queue_free` y después lo escanea está midiendo los nodos viejos: en este
+   caso, la fogata de un test anterior seguía siendo la más cercana.
+5. **La cobertura de la UI tiene que ser del dato, no del nodo.** Conectarse a
+   una señal dentro de un test no prueba nada: hay que mover el dato y ver que
+   la barra se mueve.
+
+---
+
 ## Lo que sigue abierta
 
-- **UI de los nuevos sistemas**: la barra de jefe existe, pero no hay panel
-  de vitals visible, ni menu de Hechos, ni modo de construcción con preview.
-  La lógica está entera y testeada; falta la capa de pantalla.
-- **Los Hechos de Mina/Cocina/Recolección no están leídos** por los sistemas
-  correspondientes todavía (solo Tala y Vitals los consumen hoy).
-- **`Refugio` no se conecta al `RespawnHeros`**: el ancla sigue viniendo de
-  `CiudadLuna`. La conexión está diseñada pero no cableada.
-- **Los 2 flags `TEMPORAL` del viaje rápido** siguen activos: es una
-  decisión de Juan Diego, no una corrección.
+- **El equipo no sigue a la animación** (casco y armas anclados a offsets
+  fijos). Es la deuda #1 del traspaso y NO es de este bloque: es de la 50.
+- **79 modelos de los 85 packs por integrar**, y el mundo sigue siendo
+  placeholder. La 64 construyó las piezas del refugio a mano porque los GLB
+  de Meshy son estáticos y de 96,7M triángulos: meterlos para una antorcha
+  de 1,4 m habría sido absurdo.
+- **El mago conserva las manos abiertas** a propósito, con la guarda de ropa
+  de la 50.3 (§3 del traspaso).
+- **Los Hechos de Mina y de Recolección no los lee nadie todavía**: solo
+  Tala (vía `Talar`) y Vitals (vía `Player._tick_vitals`) los consumen. Los
+  de Cocina los consume el XP de la habilidad, no una bandera.

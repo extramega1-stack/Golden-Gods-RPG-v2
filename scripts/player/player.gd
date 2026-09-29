@@ -39,6 +39,14 @@ signal hablar_con(npc: NPC)
 ## seleccionada, o segundo clic sobre ella). La emite solo Player; la
 ## escucha `GestorVetas`, que coloca las vetas y tiene la `Mineria`.
 signal minar_solicitado(veta: Veta)
+
+## Fase 64: hay algo que interactuar cerca (fogata, refugio) y este es el
+## texto del prompt ("Prender fogata", "Reclamar refugio"). Se emite con ""
+## cuando ya no hay nada, que es lo que hace aparecer y ocultar el prompt.
+##
+## Es una señal y no una consulta: el prompt tiene que aparecer AL LLEGAR, no
+## cuando el jugador abra un panel.
+signal interactuable_cerca(texto: String, nodo: Node)
 ## Fase 11: cambió la identidad del héroe (nombre y/o clase visible en la
 ## UI). La emiten `fijar_identidad` y la carga del save; la escuchan el
 ## retrato del HUD y la UI futura (solo lectura).
@@ -66,6 +74,12 @@ const RADIO_AUTOATAQUE: float = 8.0
 ## seleccionado que esté más lejos camina hasta él y al llegar habla solo;
 ## si ya está dentro de este radio, el segundo clic abre el diálogo directo.
 const RADIO_INTERACCION: float = 3.0
+## Fase 64: alcance de la mano. Más generoso que `RADIO_INTERACCION` (3.0, que
+## es para que el heroe `se acerque` a un NPC) porque una fogata es grande y
+## hay que poder llegar a ella sin pisarla.
+const RADIO_MUNDO: float = 4.5
+## Grupo de los nodos con los que se puede interactuar por proximidad.
+const GRUPO_INTERACTUABLE: StringName = &"interactuable"
 
 ## Fase 6.2 (modelo Flyff, pedido de Juan Diego): el clic izquierdo es UN
 ## solo gesto y la intención depende de lo clicado y del estado:
@@ -346,9 +360,77 @@ func interactuar() -> void:
 		_acercarse_a_veta(veta)
 		return
 	var npc: NPC = seleccion as NPC
-	if npc == null or not npc.esta_vivo():
+	if npc != null and npc.esta_vivo():
+		_acercarse_a_npc(npc)
 		return
-	_acercarse_a_npc(npc)
+	# Fase 64: fogata o refugio. SIN selección, por proximidad: son Node3D y no
+	# `Entity`, así que no entran en `seleccion` (que es de combate y NPC).
+	# Making them Entities just to reuse the selection path would give a
+	# campfire hit points and aggro, que es un modelo equivocado.
+	var n: Node = _interactuable_mas_cercano()
+	if n != null:
+		_interactuar_con(n)
+
+
+## Fase 64: reloj del prompt. Un cuarto de segundo es suficiente para que el
+## rótulo se vea estable, y es lo que cuesta un `get_nodes_in_group`.
+const INTERVALO_INTERACTUABLE: float = 0.25
+var _reloj_interactuable: float = 0.0
+## Lo último que se le dijo al prompt, para no emitir la señal igual.
+var _interactuable_ultimo: String = ""
+
+
+## Fase 64: emite `interactuable_cerca` solo cuando el objetivo cambia. Si
+## emitiera cada medio segundo con el mismo texto, el prompt se redibujaría
+## sin motivo, que es exactamente lo que §9.5 prohíbe.
+func _tick_interactuable(delta: float) -> void:
+	_reloj_interactuable -= delta
+	if _reloj_interactuable > 0.0:
+		return
+	_reloj_interactuable = INTERVALO_INTERACTUABLE
+	var n: Node = _interactuable_mas_cercano()
+	var texto: String = texto_interactuable(n) if n != null else ""
+	if texto == _interactuable_ultimo and n != null:
+		return
+	if texto == "" and _interactuable_ultimo == "":
+		return
+	_interactuable_ultimo = texto
+	interactuable_cerca.emit(texto, n)
+
+
+## Lo que hay al alcance de la mano, o null. NUNCA pone la `y` a cero en la
+## comparación: una fogata con el player un metro más abajo tiene que seguir
+## siendo alcanzable, y comparar en 3D daba falso negativo.
+func _interactuable_mas_cercano() -> Node:
+	var mejor: Node = null
+	var mejor_d: float = RADIO_MUNDO
+	for n in get_tree().get_nodes_in_group(GRUPO_INTERACTUABLE):
+		var nd: Node3D = n as Node3D
+		if nd == null or not is_instance_valid(nd):
+			continue
+		var d: float = nd.global_position.distance_to(global_position)
+		if d <= mejor_d:
+			mejor_d = d
+			mejor = nd
+	return mejor
+
+
+## El texto del prompt para lo que hay al alcance ("" si no hay nada). Lo lee
+## el nodo por su propia API, para que añadir un interactuable nuevo no
+## obligue a tocar este archivo.
+func texto_interactuable(n: Node) -> String:
+	if n == null or not is_instance_valid(n):
+		return ""
+	var p: Callable = n.get("texto_interaccion")
+	if not p.is_valid():
+		return ""
+	return str(p.call(self))
+
+
+func _interactuar_con(n: Node) -> void:
+	var p: Callable = n.get("interactuar_jugador")
+	if p.is_valid():
+		p.call(self)
 
 
 ## Fase 5.1 — selecciona una entidad (mob o NPC). Idempotente: seleccionar
@@ -750,6 +832,10 @@ func _physics_process(delta: float) -> void:
 	# Fase 58: los vitales decaen con el tiempo y la actividad. Va primero
 	# para que el resto del frame ya sienta el efecto de la energía.
 	_tick_vitals(delta)
+	# Fase 64: qué hay al alcance de la mano. Va con reloj propio para no
+	# recorrer el grupo 60 veces por segundo (§9.5): comparar dos flotantes
+	# cada medio segundo es imperceptible y cuesta casi nada.
+	_tick_interactuable(delta)
 	if skills != null:
 		skills.tick(delta)
 	_cd_ataque = maxf(_cd_ataque - delta, 0.0)

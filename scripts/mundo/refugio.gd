@@ -20,10 +20,17 @@ extends Node3D
 
 const DEFAULT_PIEZAS_MAX: int = 24
 
+## Hotfix 62.1: sin esto `Systems.registrar` rechazaba los 9 refugios con un
+## `push_warning` y no quedaban descubribles con `Systems.obtener()`. Se
+## sobreescribe en `configurar_por_id` con "refugio:<id>".
+var system_id: StringName = &""
+
 ## Emitida al reclamar. La UI y el sistema de respawn la escuchan.
 signal reclamado(refugio_id: String)
 ## Emitida al colocar la primera pieza (fase 61).
 signal pieza_colocada(pieza_id: String, total: int)
+## Fase 64: la E pidió entrar al modo construcción de este refugio.
+signal construir_solicitado
 
 var refugio_id: String = ""
 var nombre: String = "Refugio"
@@ -51,6 +58,8 @@ func configurar_por_id(id: String) -> bool:
 	radio = RefugioDB.radio(id)
 	piezas_max = RefugioDB.piezas_max(id)
 	global_position = Vector3(float(d.get("x", 0.0)), 0.0, float(d.get("z", 0.0)))
+	# Hotfix 62.1: el id con el que este refugio se registra en `Systems`.
+	system_id = StringName("refugio:" + id)
 	return true
 
 
@@ -139,6 +148,9 @@ func contiene(pos: Vector3) -> bool:
 
 func _ready() -> void:
 	add_to_group(&"refugios")
+	# Fase 64: además del grupo propio, el de interactuables por proximidad.
+	if not is_in_group(Player.GRUPO_INTERACTUABLE):
+		add_to_group(Player.GRUPO_INTERACTUABLE)
 
 
 func _construir_marca() -> void:
@@ -173,3 +185,31 @@ func cargar_estado(d: Dictionary) -> void:
 	cargar_piezas(d.get("piezas", []))
 	if _reclamado:
 		_construir_marca()
+
+
+# ---------------------------------------------- fase 64: interacción ---
+
+## Fase 64: el texto del prompt. Antes el refugio era un nodo invisible: sin
+## colisión, sin marca hasta reclamarlo y sin forma de reclamarlo, porque
+## `reclamar()` no lo llamaba nadie fuera de los tests.
+func texto_interaccion(j: Player) -> String:
+	if _reclamado:
+		return "Construir refugio"
+	if j != null and j.nivel < nivel_minimo():
+		return "Refugio (nivel %d)" % nivel_minimo()
+	return "Reclamar refugio"
+
+
+## Fase 64: E en el refugio reclama. Si ya está reclamado, devuelve por qué
+## no se puede volver a reclamar, que es lo que el prompt muestra.
+func interactuar_jugador(j: Player) -> String:
+	if j == null or not is_instance_valid(j):
+		return "sin_jugador"
+	if _reclamado:
+		# Ya es tuyo: la E deja de reclamar y empieza a construir. Es el mismo
+		# botón para las dos cosas y el estado del refugio decide cuál.
+		construir_solicitado.emit()
+		return "construir"
+	if not reclamar(j.nivel):
+		return "nivel"
+	return "ok"

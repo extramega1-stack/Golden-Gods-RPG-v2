@@ -25,12 +25,19 @@ signal talada(item_id: String, cantidad: int, xp: int)
 const ALTO_TRONCO: float = 4.2
 const RADIO_COPA: float = 2.3
 
+## Hotfix 62.1: talar sube `tala`, no `mineria`. El padre declara "mineria" y
+## esta línea es la que hace que la tala tenga su propio XP de habilidad. Sin
+## ella los Hechos de tala (tala_area, tala_rangos) nunca se desbloquean.
+## No se puede redeclarar el miembro (GDScript lo prohíbe sobre un padre), así
+## que se sobreescribe el valor en `_init`.
+
 var _tronco: MeshInstance3D = null
 var _copa: MeshInstance3D = null
 
 
 func _init() -> void:
 	super()
+	habilidad_id = "tala"
 	# La veta se avisa a sí misma de que se agotó; el árbol se engancha a esa
 	# señal para sacarle la copa, y al reponer para devolvérsela. No se
 	# sobreescribe `consumir_uso()` (eso tocaría la lógica de respawn del

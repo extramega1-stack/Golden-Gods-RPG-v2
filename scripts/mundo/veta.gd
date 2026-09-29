@@ -50,6 +50,13 @@ var xp: int = 0
 ## Nivel mínimo para poder minarla (gate de progresión por región). Se llama
 ## `nivel_min` y no `nivel` porque `nivel` ya es el nivel de la Entity.
 var nivel_min: int = 1
+## Hotfix 62.1: qué habilidad de la fase 57 sube al minar ESTE nodo.
+##
+## Antes `Mineria` tenía "mineria" hardcodeado, así que talar un árbol —que
+## HEREDA de `Veta`— contaba como minería y la habilidad `tala` no subía nunca,
+## dejando los Hechos de tala permanentemente inalcanzables. Con esto la
+## habilidad la declara el nodo, no la lógica: `Arbol` la sobreescribe.
+var habilidad_id: String = "mineria"
 ## Usos que aguanta antes de agotarse (3, decided en la fase 45).
 var usos_max: int = 3
 ## Usos que le quedan. 0 = agotada (no se puede minar).
