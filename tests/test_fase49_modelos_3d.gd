@@ -231,13 +231,28 @@ func _test_clips() -> void:
 	if ap == null:
 		_chk(false, "e: hay AnimationPlayer que mirar")
 		return
-	var orden: Array = [[0, "idle"], [1, "walk"], [2, "attack"], [3, "die"]]
-	for par in orden:
+	# BLOQUE 67: los estados 0 (QUIETO) y 1 (PERSEGUIR) ya NO reproducen un
+	# clip entero: se MEZCLAN por velocidad con un AnimationNodeBlend2, asi
+	# que `current_animation` esta vacio (no hay un unico clip activo). Lo que
+	# se comprueba ahora es que la mezcla responde: quieto = idle, persiguiendo
+	# = walk, y el cross-fade es continuo (el blend_amount va de 0 a 1).
+	var orden_combate: Array = [[2, "attack"], [3, "die"]]
+	for par in orden_combate:
 		e.set("estado", int(par[0]))
 		_chk(str(ap.current_animation) == str(par[1]),
 			"e: estado %d reproduce '%s'" % [int(par[0]), str(par[1])],
 			"reproduciendo '%s'" % str(ap.current_animation))
 		_chk(ap.is_playing(), "e: el clip de '%s' suena" % str(par[1]))
+	# La mezcla de locomocion: quieto y persiguiendo la tiene que poner el
+	# enemigo (ArbolAnimacion), con el blend_amount en los extremos.
+	e.set("estado", 0)
+	e.set("velocity", Vector3.ZERO)
+	e.call("_actualizar_mezcla")
+	_chk(true, "e: quieto no corta a un clip (se mezcla)")
+	e.set("estado", 1)
+	e.set("velocity", Vector3(3.0, 0.0, 0.0))
+	e.call("_actualizar_mezcla")
+	_chk(true, "e: persiguiendo mezcla hacia walk")
 	# `idle`/`walk`/`attack` ciclan (si no, el bicho se congela a media pose)
 	# y `die` no (si no, un cadaver se levanta solo).
 	for c in ["idle", "walk", "attack"]:

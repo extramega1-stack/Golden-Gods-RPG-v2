@@ -242,12 +242,32 @@ func _buscar_anim(n: Node) -> AnimationPlayer:
 
 ## Pone el clip que le toca al estado. Sin modelo, o sin ese clip, no hace
 ## nada: el enemigo se queda con su animacion anterior en vez de rayar.
+##
+## Bloque 67: mezcla continua de locomoción (idle↔walk por velocidad). Es la
+## misma que el jugador: un enemigo que arranca y para en cada ciclo de IA
+## (que en la 45.1 es cada 0,25–6 s según la distancia) poppingia en cada giro.
+func _actualizar_mezcla() -> void:
+	if _anim == null or not is_instance_valid(_anim):
+		return
+	if _estado == Estado.MUERTO or _estado == Estado.ATACAR \
+			or _estado == Estado.PREPARANDO:
+		return
+	var v: float = Vector3(velocity.x, 0.0, velocity.z).length()
+	var n: float = clampf(v / 3.0, 0.0, 1.0)
+	ArbolAnimacion.mezclar(_anim, "idle", "walk", n)
+
+
+## Bloque 67: QUIETO y PERSEGUIR se MEZCLAN por velocidad en vez de cortarse
+## (el mismo cross-fade que el jugador). Los estados de combate (attack, die,
+## PREPARANDO) siguen siendo un corte entero: son poses, no locomoción, y
+## mezclarlas con el walk los deformaría.
 func _reproducir_estado(v: Estado) -> void:
 	if _anim == null or not is_instance_valid(_anim):
 		return
-	var clip: String = str(CLIP_POR_ESTADO.get(v, ""))
-	if clip == "" or not _anim.has_animation(clip):
+	if v == Estado.QUIETO or v == Estado.PERSEGUIR:
+		# La mezcla se actualiza sola en `_process`, con la velocidad real.
 		return
+	var clip: String = str(CLIP_POR_ESTADO.get(v, ""))
 	# Sin parametros: el 3er argumento de play() es la VELOCIDAD, y con -1.0
 	# reproducia del reves. El bucle va en el recurso (ver _preparar_clips).
 	_anim.play(clip)
@@ -447,6 +467,10 @@ func _physics_process(delta: float) -> void:
 	if (_frame_ia + reparto) % intervalo_cerebro(dist_cerebro) == 0:
 		_actualizar_estado()
 	_actuar(delta)
+	# Bloque 67: la mezcla de locomocion se actualiza CADA frame (no en el
+	# tick de la IA, que va cada 0,25-6 s: con esa frecuencia el blend daria
+	# escalones en vez de una mezcla continua).
+	_actualizar_mezcla()
 	# Fase 12: los creeps caminan pegados al terreno del mundo abierto.
 	_pegar_al_terreno()
 

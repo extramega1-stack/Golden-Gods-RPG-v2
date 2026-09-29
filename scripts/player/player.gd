@@ -173,6 +173,7 @@ var _t_swing: float = 0.0
 const CLIP_CAMINAR: StringName = &"walk"
 const CLIP_ATAQUE: StringName = &"attack"
 const CLIP_MUERTE: StringName = &"die"
+const CLIP_IDLE: StringName = &"idle"
 ## Por debajo de esta velocidad horizontal el jugador se considera quieto: con
 ## el umbral en 0 el idle y el walk parpadean al soltar el WASD.
 const UMBRAL_CAMINAR: float = 0.45
@@ -1313,10 +1314,19 @@ func _actualizar_animacion(delta: float) -> void:
 		_poner_clip(str(CLIP_ATAQUE))
 		return
 	var plano: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	if plano.length() > UMBRAL_CAMINAR:
+	# Bloque 67: en vez de un corte entre idle y walk, se MEZCLAN por la
+	# velocidad normalizada. El `AnimationNodeBlend2` hace el cross-fade
+	# solo (continuo), y el pop de arrancar/parar/girar desaparece.
+	var v: float = plano.length()
+	if _anim != null and is_instance_valid(_anim) \
+			and ArbolAnimacion.mezclar(_anim, str(CLIP_IDLE), "walk",
+				clampf((v - UMBRAL_CAMINAR) / UMBRAL_CAMINAR, 0.0, 1.0)):
+		# La mezcla se encarga; no hay que poner clip.
+		pass
+	elif v > UMBRAL_CAMINAR:
 		_poner_clip("walk")
 	else:
-		_poner_clip("idle")
+		_poner_clip(str(CLIP_IDLE))
 
 
 
