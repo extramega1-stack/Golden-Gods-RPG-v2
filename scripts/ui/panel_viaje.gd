@@ -241,12 +241,21 @@ func _al_viajar(destino_id: String) -> void:
 	viaje_solicitado.emit(destino_id)
 
 
+## Fase 50.4: el panel se fabricaba SU PROPIA `ViajeRapido` mientras la demo
+## ya tenía la suya. Dos cachés de `viaje_rapido.json` vivas a la vez, dos
+## ciclos de vida y dos fuentes de verdad para los mismos datos. Ahora el
+## dueño del sistema (la demo) le pasa la suya con `fijar_viaje`; el fallback
+## perezoso queda solo para los tests, que no montan una demo.
 func _viaje_asegurado() -> ViajeRapido:
 	if _viaje == null:
 		_viaje = ViajeRapido.new()
 		_viaje.cargar_datos()
 	return _viaje
 
+
+## Inyecta la instancia del sistema. La llama quien crea el panel.
+func fijar_viaje(v: ViajeRapido) -> void:
+	_viaje = v
 
 ## _input corre antes que el _unhandled_input del Player: el panel
 ## consume ESC (cerrar) antes de que llegue al juego.

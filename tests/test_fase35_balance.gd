@@ -110,8 +110,15 @@ func _test_configurar() -> void:
 	_chk(g.stats.has_mod("balance:vida"), "b: vía MOD reversible")
 	var j: Enemy = _mob((aqs.get("aullido_pico", {}) as Dictionary).duplicate(true))
 	_chk(not j.stats.has_mod("balance:vida"), "b: el jefe sin mod")
-	_chk(is_equal_approx(j.stats.vida_max, 100.0 + 26.0 * 20.0),
-		"b: vida del jefe intacta", str(j.stats.vida_max))
+	# Fase 52: el jefe multiplica su vida por `jefe.vida_mult` del dato, así
+	# que la base ya no es 620 pelada. Lo que este test protege es que el mod
+	# de balance NO le toque, así que se compara contra la derivación por el
+	# multiplicador del jefe.
+	var mult_jefe: float = float((aqs["aullido_pico"] as Dictionary)
+		.get("jefe", {}).get("vida_mult", 1.0))
+	_chk(is_equal_approx(j.stats.vida_max, (100.0 + 26.0 * 20.0) * mult_jefe),
+		"b: vida del jefe intacta (derivacion x vida_mult del jefe)",
+		"%s mult=%s" % [j.stats.vida_max, mult_jefe])
 	# El pool re-aplica al reiniciar (configurar fresco, sin mods viejos).
 	g.stats.add_mod("externo", "ataque", StatBlock.ModKind.PLANO, 99.0)
 	# Fase 37: sin bloque élite (el sorteo 5% del goblin hacía este check

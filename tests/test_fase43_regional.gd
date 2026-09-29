@@ -91,7 +91,9 @@ func _mob(arq_id: String) -> Enemy:
 ## (a) Datos.
 func _test_datos() -> void:
 	var arqs: Dictionary = _arquetipos()
-	_chk(arqs.size() == 19, "a: 19 arquetipos (9 + 10 regionales)", str(arqs.size()))
+	# Fase 62: +1 (titan_acecho). 20 en total.
+	_chk(arqs.size() == 20, "a: 20 arquetipos (9 + 10 regionales + 1 titan)",
+		str(arqs.size()))
 	for mid in REGIONALES:
 		_chk(arqs.has(mid), "a: existe " + mid)
 		var a: Dictionary = arqs.get(mid, {})
@@ -185,7 +187,9 @@ func _test_spawns() -> void:
 	for s in spawns:
 		var d: Dictionary = s
 		var grupo: String = str(d.get("grupo", ""))
-		if grupo == "jefe_fragmento" or grupo == "prueba_combate":
+		# Fase 62: el grupo "titan" tambien queda exento: es un arquetipo
+		# unico que acecha, no fauna de la region.
+		if grupo == "jefe_fragmento" or grupo == "prueba_combate" or grupo == "titan":
 			continue
 		var r: Dictionary = db.region_en(float(d.get("x", 0.0)), float(d.get("z", 0.0)))
 		var fauna: Array = r.get("mobs", [])

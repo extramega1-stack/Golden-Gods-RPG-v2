@@ -1,925 +1,1271 @@
 {
- "items": [
-  {
-   "apilable": true,
-   "descripcion": "Restaura 60 de vida al beberla.",
-   "efecto": {
-    "cantidad": 60.0,
-    "tipo": "curar"
-   },
-   "id": "pocion_vida",
-   "mods": [],
-   "nombre": "Poción de vida",
-   "precio": 25,
-   "rareza": "comun",
-   "slot": "",
-   "tipo": "consumible"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Restaura 40 de maná al beberla.",
-   "efecto": {
-    "cantidad": 40.0,
-    "tipo": "mana"
-   },
-   "id": "pocion_mana",
-   "mods": [],
-   "nombre": "Poción de maná",
-   "precio": 25,
-   "rareza": "comun",
-   "slot": "",
-   "tipo": "consumible"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Una daga vieja de goblin. Mejor que nada.",
-   "efecto": {},
-   "id": "daga_gastada",
-   "mods": [
+  "items": [
     {
-     "kind": 0,
-     "stat": "ataque",
-     "valor": 4.0
-    }
-   ],
-   "nombre": "Daga gastada",
-   "precio": 15,
-   "rareza": "comun",
-   "slot": "arma",
-   "tipo": "arma"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Espada corta de hierro. Fiable y afilada.",
-   "efecto": {},
-   "id": "espada_corta",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "ataque",
-     "valor": 9.0
-    }
-   ],
-   "nombre": "Espada corta",
-   "precio": 80,
-   "rareza": "comun",
-   "slot": "arma",
-   "tipo": "arma"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Forjada con esmero; su filo encuentra puntos débiles.",
-   "efecto": {},
-   "id": "espada_hierro",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "ataque",
-     "valor": 14.0
+      "apilable": true,
+      "descripcion": "Restaura 60 de vida al beberla.",
+      "efecto": {
+        "cantidad": 60.0,
+        "tipo": "curar"
+      },
+      "id": "pocion_vida",
+      "mods": [],
+      "nombre": "Poción de vida",
+      "precio": 25,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
     },
     {
-     "kind": 0,
-     "stat": "crit_prob",
-     "valor": 0.02
-    }
-   ],
-   "nombre": "Espada de hierro",
-   "precio": 220,
-   "rareza": "magico",
-   "slot": "arma",
-   "tipo": "arma"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Ropa gruesa reforzada. Protección básica.",
-   "efecto": {},
-   "id": "armadura_tela",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "defensa",
-     "valor": 6.0
-    }
-   ],
-   "nombre": "Armadura de tela",
-   "precio": 40,
-   "rareza": "comun",
-   "slot": "armadura",
-   "tipo": "armadura"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Cuero curtido que aguanta golpes y da vigor.",
-   "efecto": {},
-   "id": "armadura_cuero",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "defensa",
-     "valor": 12.0
+      "apilable": true,
+      "descripcion": "Restaura 40 de maná al beberla.",
+      "efecto": {
+        "cantidad": 40.0,
+        "tipo": "mana"
+      },
+      "id": "pocion_mana",
+      "mods": [],
+      "nombre": "Poción de maná",
+      "precio": 25,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
     },
     {
-     "kind": 0,
-     "stat": "vida_max",
-     "valor": 20.0
+      "apilable": false,
+      "descripcion": "Una daga vieja de goblin. Mejor que nada.",
+      "efecto": {},
+      "id": "daga_gastada",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "ataque",
+          "valor": 4.0
+        }
+      ],
+      "nombre": "Daga gastada",
+      "precio": 15,
+      "rareza": "comun",
+      "slot": "arma",
+      "tipo": "arma"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Espada corta de hierro. Fiable y afilada.",
+      "efecto": {},
+      "id": "espada_corta",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "ataque",
+          "valor": 9.0
+        }
+      ],
+      "nombre": "Espada corta",
+      "precio": 80,
+      "rareza": "comun",
+      "slot": "arma",
+      "tipo": "arma"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Forjada con esmero; su filo encuentra puntos débiles.",
+      "efecto": {},
+      "id": "espada_hierro",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "ataque",
+          "valor": 14.0
+        },
+        {
+          "kind": 0,
+          "stat": "crit_prob",
+          "valor": 0.02
+        }
+      ],
+      "nombre": "Espada de hierro",
+      "precio": 220,
+      "rareza": "magico",
+      "slot": "arma",
+      "tipo": "arma"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Ropa gruesa reforzada. Protección básica.",
+      "efecto": {},
+      "id": "armadura_tela",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "defensa",
+          "valor": 6.0
+        }
+      ],
+      "nombre": "Armadura de tela",
+      "precio": 40,
+      "rareza": "comun",
+      "slot": "armadura",
+      "tipo": "armadura"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Cuero curtido que aguanta golpes y da vigor.",
+      "efecto": {},
+      "id": "armadura_cuero",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "defensa",
+          "valor": 12.0
+        },
+        {
+          "kind": 0,
+          "stat": "vida_max",
+          "valor": 20.0
+        }
+      ],
+      "nombre": "Armadura de cuero",
+      "precio": 150,
+      "rareza": "comun",
+      "slot": "armadura",
+      "tipo": "armadura"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Anillas de acero entrelazadas. Para guerreros serios.",
+      "efecto": {},
+      "id": "cota_malla",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "defensa",
+          "valor": 20.0
+        },
+        {
+          "kind": 0,
+          "stat": "vida_max",
+          "valor": 40.0
+        }
+      ],
+      "nombre": "Cota de malla",
+      "precio": 350,
+      "rareza": "magico",
+      "slot": "armadura",
+      "tipo": "armadura"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Colmillo afilado de lobo salvaje. Se vende bien.",
+      "efecto": {},
+      "id": "colmillo",
+      "mods": [],
+      "nombre": "Colmillo de lobo",
+      "precio": 5,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": false,
+      "descripcion": "Pesada maza de guerra ogra. Golpea fuerte, pero lenta.",
+      "efecto": {},
+      "id": "maza_ogro",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "ataque",
+          "valor": 18.0
+        },
+        {
+          "kind": 0,
+          "stat": "vel_ataque",
+          "valor": -0.1
+        }
+      ],
+      "nombre": "Maza de ogro",
+      "precio": 300,
+      "rareza": "raro",
+      "slot": "arma",
+      "tipo": "arma"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Eco solidificado del Devorador: arena que canta a destiempo. Huele a Tártaro.",
+      "efecto": {},
+      "id": "fragmento_duna",
+      "mods": [],
+      "nombre": "Fragmento de las Dunas",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Escama de fuego del Fundidor: aún tibia. La fragua la reconoce.",
+      "efecto": {},
+      "id": "fragmento_volcan",
+      "mods": [],
+      "nombre": "Fragmento del Volcán",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Colmillo de escarcha del Aullido: frío que no derrite. La nieve lo teme.",
+      "efecto": {},
+      "id": "fragmento_pico",
+      "mods": [],
+      "nombre": "Fragmento del Pico",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Nota rota del Eco: vibra en una frecuencia imposible. Elthar la estudia.",
+      "efecto": {},
+      "id": "fragmento_cristal",
+      "mods": [],
+      "nombre": "Fragmento del Cristal",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Ojo ciego del Susurro: ya no mira, pero recuerda. Guárdalo del Velo.",
+      "efecto": {},
+      "id": "fragmento_umbral",
+      "mods": [],
+      "nombre": "Fragmento del Umbral",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Corona mellada del Campeón: manchada de algo más viejo que la sangre.",
+      "efecto": {},
+      "id": "fragmento_arena",
+      "mods": [],
+      "nombre": "Fragmento de la Arena",
+      "precio": 100,
+      "rareza": "rara",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": false,
+      "descripcion": "El Molde templado en la última guerra: ya no corta, pero pesa como una promesa cumplida.",
+      "efecto": {},
+      "id": "verdugo_eco",
+      "mods": [
+        {
+          "kind": 0,
+          "stat": "ataque",
+          "valor": 30.0
+        },
+        {
+          "kind": 0,
+          "stat": "crit_prob",
+          "valor": 0.05
+        }
+      ],
+      "nombre": "Eco del Verdugo",
+      "precio": 0,
+      "rareza": "legendario",
+      "slot": "arma",
+      "tipo": "arma"
+    },
+    {
+      "id": "escudo_madera",
+      "nombre": "Escudo de madera",
+      "descripcion": "Un escudo simple pero firme.",
+      "tipo": "armadura",
+      "slot": "escudo",
+      "mods": [
+        {
+          "stat": "defensa",
+          "kind": 0,
+          "valor": 8.0
+        },
+        {
+          "stat": "vida_max",
+          "kind": 0,
+          "valor": 10.0
+        }
+      ],
+      "precio": 50,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "casco_cuero",
+      "nombre": "Casco de cuero",
+      "descripcion": "Protege la cabeza del aventurero.",
+      "tipo": "armadura",
+      "slot": "casco",
+      "mods": [
+        {
+          "stat": "defensa",
+          "kind": 0,
+          "valor": 6.0
+        }
+      ],
+      "precio": 50,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "guantes_cuero",
+      "nombre": "Guantes de cuero",
+      "descripcion": "Agarre firme y manos veloces.",
+      "tipo": "armadura",
+      "slot": "guantes",
+      "mods": [
+        {
+          "stat": "defensa",
+          "kind": 0,
+          "valor": 5.0
+        },
+        {
+          "stat": "vel_ataque",
+          "kind": 0,
+          "valor": 0.05
+        }
+      ],
+      "precio": 50,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "botas_cuero",
+      "nombre": "Botas de cuero",
+      "descripcion": "Para caminar el mundo sin cansarse.",
+      "tipo": "armadura",
+      "slot": "botas",
+      "mods": [
+        {
+          "stat": "defensa",
+          "kind": 0,
+          "valor": 5.0
+        },
+        {
+          "stat": "vel_mov",
+          "kind": 0,
+          "valor": 0.3
+        }
+      ],
+      "precio": 50,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "collar_cobre",
+      "nombre": "Collar de cobre",
+      "descripcion": "Un collar sencillo con un dije lunar.",
+      "tipo": "accesorio",
+      "slot": "collar",
+      "mods": [
+        {
+          "stat": "vida_max",
+          "kind": 0,
+          "valor": 25.0
+        }
+      ],
+      "precio": 60,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "pendiente_luna",
+      "nombre": "Pendiente de luna",
+      "descripcion": "Brilla con luz plateada; aclara la mente.",
+      "tipo": "accesorio",
+      "slot": "pendiente",
+      "mods": [
+        {
+          "stat": "mana_max",
+          "kind": 0,
+          "valor": 15.0
+        }
+      ],
+      "precio": 60,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "pendiente_sol",
+      "nombre": "Pendiente de sol",
+      "descripcion": "Un punto cálido que afina el instinto.",
+      "tipo": "accesorio",
+      "slot": "pendiente",
+      "mods": [
+        {
+          "stat": "crit_prob",
+          "kind": 0,
+          "valor": 0.01
+        }
+      ],
+      "precio": 70,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "anillo_poder",
+      "nombre": "Anillo de poder",
+      "descripcion": "Pesa poco, pega fuerte.",
+      "tipo": "accesorio",
+      "slot": "anillo",
+      "mods": [
+        {
+          "stat": "ataque",
+          "kind": 0,
+          "valor": 4.0
+        }
+      ],
+      "precio": 70,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "anillo_sabio",
+      "nombre": "Anillo del sabio",
+      "descripcion": "Susurra fórmulas arcanas.",
+      "tipo": "accesorio",
+      "slot": "anillo",
+      "mods": [
+        {
+          "stat": "poder",
+          "kind": 0,
+          "valor": 6.0
+        }
+      ],
+      "precio": 70,
+      "rareza": "comun",
+      "apilable": false
+    },
+    {
+      "id": "amuleto_guardian",
+      "nombre": "Amuleto del guardián",
+      "descripcion": "Un ojo tallado que vela por ti.",
+      "tipo": "accesorio",
+      "slot": "amuleto",
+      "mods": [
+        {
+          "stat": "defensa",
+          "kind": 0,
+          "valor": 8.0
+        },
+        {
+          "stat": "vida_max",
+          "kind": 0,
+          "valor": 15.0
+        }
+      ],
+      "precio": 90,
+      "rareza": "raro",
+      "apilable": false
+    },
+    {
+      "id": "escorpion_carina",
+      "apilable": true,
+      "nombre": "Carina de Escorpión",
+      "descripcion": "Placa quitinosa del desierto. Material de artesanía.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "ascua_viva",
+      "apilable": true,
+      "nombre": "Ascua Viva",
+      "descripcion": "Brasa que nunca enfría en la mano. Material de forja.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "nucleo_ascua",
+      "apilable": true,
+      "nombre": "Núcleo de Ascua",
+      "descripcion": "Corazón de un gólem de ceniza. Material de forja.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "nucleo_hielo",
+      "apilable": true,
+      "nombre": "Núcleo de Hielo",
+      "descripcion": "Núcleo de hielo eterno. Material prizeso.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "seda_venenosa",
+      "apilable": true,
+      "nombre": "Seda Venenosa",
+      "descripcion": "Hilo del Velo que sigue envenenando. Material.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "eco_umbral",
+      "apilable": true,
+      "nombre": "Eco del Umbral",
+      "descripcion": "Susurro que repite lo que oye. Material arcano.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "perla_rio",
+      "apilable": true,
+      "nombre": "Perla del Abismo",
+      "descripcion": "Perla negra del río sin nombre. Material.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "lamento_eco",
+      "apilable": true,
+      "nombre": "Eco del Lamento",
+      "descripcion": "El último canto de la costa. Material.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "lingote_oro",
+      "apilable": true,
+      "nombre": "Lingote Ancestral",
+      "descripcion": "Oro de la Corona Quebrada. Material de lujo.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "sello_vacio",
+      "apilable": true,
+      "nombre": "Sello Vacío",
+      "descripcion": "Cera negra sin nombre. Material del Velo.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "daga_carina",
+      "nombre": "Daga de Carina",
+      "descripcion": "Daga ligera del desierto: rápido y certero.",
+      "tipo": "arma",
+      "slot": "arma",
+      "rareza": "rara",
+      "precio_venta": 195,
+      "precio_compra": 78,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "ataque",
+          "valor": 14.0,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.06,
+          "kind": 0
+        },
+        {
+          "stat": "vel_ataque",
+          "valor": 0.04,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "lanza_hielo",
+      "nombre": "Lanza de Hielo",
+      "descripcion": "Acero del norte que no se deshace.",
+      "tipo": "arma",
+      "slot": "arma",
+      "rareza": "magico",
+      "precio_venta": 240,
+      "precio_compra": 96,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "ataque",
+          "valor": 20.0,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.08,
+          "kind": 0
+        },
+        {
+          "stat": "mana_max",
+          "valor": 15.0,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "daga_seda",
+      "nombre": "Daga de Seda",
+      "descripcion": "El filo sigue envenenado mucho después del golpe.",
+      "tipo": "arma",
+      "slot": "arma",
+      "rareza": "magico",
+      "precio_venta": 240,
+      "precio_compra": 96,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "ataque",
+          "valor": 16.0,
+          "kind": 0
+        },
+        {
+          "stat": "vel_ataque",
+          "valor": 0.06,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.04,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "guantes_umbral",
+      "nombre": "Guantes del Umbral",
+      "descripcion": "El Veloz se aferra a tus manos un instante más.",
+      "tipo": "armadura",
+      "slot": "guantes",
+      "rareza": "rara",
+      "precio_venta": 180,
+      "precio_compra": 72,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "defensa",
+          "valor": 6.0,
+          "kind": 0
+        },
+        {
+          "stat": "vel_ataque",
+          "valor": 0.1,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.04,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "amuleto_perla",
+      "nombre": "Amuleto de Perla",
+      "descripcion": "La perla del abismo late cuando te acercas al fin.",
+      "tipo": "accesorio",
+      "slot": "amuleto",
+      "rareza": "rara",
+      "precio_venta": 210,
+      "precio_compra": 84,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "vida_max",
+          "valor": 30.0,
+          "kind": 0
+        },
+        {
+          "stat": "mana_max",
+          "valor": 10.0,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.03,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "botas_lamento",
+      "nombre": "Botas del Lamento",
+      "descripcion": "Pisas donde cantó la costa.",
+      "tipo": "armadura",
+      "slot": "botas",
+      "rareza": "rara",
+      "precio_venta": 180,
+      "precio_compra": 72,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "defensa",
+          "valor": 6.0,
+          "kind": 0
+        },
+        {
+          "stat": "vel_mov",
+          "valor": 0.8,
+          "kind": 0
+        },
+        {
+          "stat": "vida_max",
+          "valor": 20.0,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "hoja_ascua",
+      "nombre": "Hoja de Ascua",
+      "descripcion": "Fuego del volcán tallado en acero.",
+      "tipo": "arma",
+      "slot": "arma",
+      "rareza": "magico",
+      "precio_venta": 255,
+      "precio_compra": 102,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "ataque",
+          "valor": 22.0,
+          "kind": 0
+        },
+        {
+          "stat": "ataque",
+          "valor": 0.12,
+          "kind": 1
+        }
+      ]
+    },
+    {
+      "id": "martillo_golem",
+      "nombre": "Martillo de Gólem",
+      "descripcion": "Pesado como su origen. Lento, demoledor.",
+      "tipo": "arma",
+      "slot": "arma",
+      "rareza": "magico",
+      "precio_venta": 240,
+      "precio_compra": 96,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "ataque",
+          "valor": 26.0,
+          "kind": 0
+        },
+        {
+          "stat": "vel_ataque",
+          "valor": -0.08,
+          "kind": 0
+        },
+        {
+          "stat": "vida_max",
+          "valor": 20.0,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "coraza_centinela",
+      "nombre": "Coraza de la Centinela",
+      "descripcion": "Oro de la Corona Quebrada en placas.",
+      "tipo": "armadura",
+      "slot": "armadura",
+      "rareza": "magico",
+      "precio_venta": 300,
+      "precio_compra": 120,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "defensa",
+          "valor": 26.0,
+          "kind": 0
+        },
+        {
+          "stat": "vida_max",
+          "valor": 60.0,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "foco_vacio",
+      "nombre": "Foco Vacío",
+      "descripcion": "Un fragmento del Velo encendido desde dentro.",
+      "tipo": "accesorio",
+      "slot": "anillo",
+      "rareza": "magico",
+      "precio_venta": 300,
+      "precio_compra": 120,
+      "max_stack": 1,
+      "mods": [
+        {
+          "stat": "poder",
+          "valor": 8.0,
+          "kind": 0
+        },
+        {
+          "stat": "crit_prob",
+          "valor": 0.06,
+          "kind": 0
+        },
+        {
+          "stat": "mana_max",
+          "valor": 15.0,
+          "kind": 0
+        }
+      ]
+    },
+    {
+      "id": "mineral_cobre",
+      "apilable": true,
+      "nombre": "Mineral de Cobre",
+      "descripcion": "Vena rojiza de las Tierras Francas. El primer metal de todo herrero.",
+      "tipo": "material",
+      "rareza": "comun",
+      "precio_venta": 18,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "mineral_hierro",
+      "apilable": true,
+      "nombre": "Mineral de Hierro",
+      "descripcion": "Bloque gris y pesado. Aguanta el golpe: base de armas y armaduras.",
+      "tipo": "material",
+      "rareza": "comun",
+      "precio_venta": 26,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "mineral_plata",
+      "apilable": true,
+      "nombre": "Mineral de Plata",
+      "descripcion": "Metal pálido y frío. Se afila fino: herramientas de calidad.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 45,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "mineral_obsidiana",
+      "apilable": true,
+      "nombre": "Mineral de Obsidiana",
+      "descripcion": "Vidrio volcánico negro. Corta el acero y pesa como una maldición.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 60,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "mineral_cristal",
+      "apilable": true,
+      "nombre": "Mineral de Cristal",
+      "descripcion": "Prisma de luz fría. Late solo, incluso de noche.",
+      "tipo": "material",
+      "rareza": "rara",
+      "precio_venta": 80,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "id": "mineral_esmeralda",
+      "apilable": true,
+      "nombre": "Mineral de Esmeralda",
+      "descripcion": "Verde profundo del Bosque Hondo. Concentra más luz de la que emite.",
+      "tipo": "material",
+      "rareza": "magico",
+      "precio_venta": 110,
+      "max_stack": 99,
+      "mods": []
+    },
+    {
+      "apilable": true,
+      "descripcion": "Cruda. Hay que cocinarla.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 8.0,
+        "riesgo": "enfermedad"
+      },
+      "id": "carne_cruda_goblin",
+      "mods": [],
+      "nombre": "Carne de goblin",
+      "precio": 2,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Cruda y Fiberosa.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 10.0,
+        "riesgo": "enfermedad"
+      },
+      "id": "carne_cruda_lobo",
+      "mods": [],
+      "nombre": "Carne de lobo",
+      "precio": 4,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Cruda. Harta carne.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 18.0,
+        "riesgo": "enfermedad"
+      },
+      "id": "carne_cruda_ogro",
+      "mods": [],
+      "nombre": "Carne de ogro",
+      "precio": 8,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Pesada. Casi nadie se atreve.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 30.0,
+        "riesgo": "enfermedad"
+      },
+      "id": "carne_cruda_titán",
+      "mods": [],
+      "nombre": "Carne de titán",
+      "precio": 60,
+      "rareza": "raro",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Comida de viaje. Aguanta un rato.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 22.0,
+        "energia": 4.0
+      },
+      "id": "carne_asada_goblin",
+      "mods": [],
+      "nombre": "Goblin asado",
+      "precio": 12,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Nutritiva. La del Hunter clásico.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 30.0,
+        "energia": 6.0
+      },
+      "id": "carne_asada_lobo",
+      "mods": [],
+      "nombre": "Lobo asado",
+      "precio": 20,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Un banquete. Pesada.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 48.0,
+        "energia": 8.0
+      },
+      "id": "carne_asada_ogro",
+      "mods": [],
+      "nombre": "Ogro asado",
+      "precio": 34,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Ración de guerra. Se siente el poder.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 85.0,
+        "energia": 20.0
+      },
+      "id": "carne_asada_titán",
+      "mods": [],
+      "nombre": "Titán asado",
+      "precio": 180,
+      "rareza": "raro",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Ácida. Mejor no abusar.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 5.0,
+        "sed": 2.0
+      },
+      "id": "baya_roja",
+      "mods": [],
+      "nombre": "Baya roja",
+      "precio": 3,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Solo crece donde la titanización quemó el suelo.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 9.0,
+        "energia": 3.0
+      },
+      "id": "hongo_lumbre",
+      "mods": [],
+      "nombre": "Hongo de lumbre",
+      "precio": 9,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Amarga, pero sostiene.",
+      "efecto": {
+        "tipo": "comida",
+        "hambre": 12.0
+      },
+      "id": "raiz_piedra",
+      "mods": [],
+      "nombre": "Raíz de piedra",
+      "precio": 6,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Beberla sin hervir es un riesgo. Tráela a la fogata.",
+      "efecto": {
+        "tipo": "bebida",
+        "sed": 14.0,
+        "riesgo": "enfermedad"
+      },
+      "id": "agua_sucia",
+      "mods": [],
+      "nombre": "Agua turbia",
+      "precio": 1,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Hervida en la fogata. Sin riesgo.",
+      "efecto": {
+        "tipo": "bebida",
+        "sed": 30.0
+      },
+      "id": "agua_limpia",
+      "mods": [],
+      "nombre": "Agua limpia",
+      "precio": 5,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Rinde más que el agua y algo más.",
+      "efecto": {
+        "tipo": "bebida",
+        "sed": 45.0,
+        "energia": 10.0
+      },
+      "id": "caldo_huesos",
+      "mods": [],
+      "nombre": "Caldo de huesos",
+      "precio": 30,
+      "rareza": "raro",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Resina titánica. Sabe a metal y da un empujón.",
+      "efecto": {
+        "tipo": "bebida",
+        "sed": 60.0,
+        "energia": 35.0
+      },
+      "id": "gota_anima",
+      "mods": [],
+      "nombre": "Gota de ánima",
+      "precio": 220,
+      "rareza": "epico",
+      "slot": "",
+      "tipo": "consumible"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Madera densa de las Tierras Francas. La base de todo.",
+      "efecto": {},
+      "id": "tronco_roble",
+      "mods": [],
+      "nombre": "Tronco de roble",
+      "precio": 4,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Árido y duro. Aguanta el fuego.",
+      "efecto": {},
+      "id": "tronco_acacia",
+      "mods": [],
+      "nombre": "Tronco de acacia",
+      "precio": 4,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Negro por la ceniza. Pesado.",
+      "efecto": {},
+      "id": "tronco_picaro",
+      "mods": [],
+      "nombre": "Tronco de pícaro",
+      "precio": 5,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Resinoso. Arde rápido.",
+      "efecto": {},
+      "id": "tronco_pino",
+      "mods": [],
+      "nombre": "Tronco de pino",
+      "precio": 5,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Translúcido si lo cortás bien.",
+      "efecto": {},
+      "id": "tronco_sauce",
+      "mods": [],
+      "nombre": "Tronco de sauce",
+      "precio": 6,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Blandito. No sirve para mucho, pero ahuyentabugs.",
+      "efecto": {},
+      "id": "tronco_hongo",
+      "mods": [],
+      "nombre": "Tronco de hongo",
+      "precio": 3,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "La madera más dura del continente.",
+      "efecto": {},
+      "id": "tronco_frembo",
+      "mods": [],
+      "nombre": "Tronco de frembo",
+      "precio": 7,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Trae los dientes embalsamados del propio árbol.",
+      "efecto": {},
+      "id": "tronco_totem",
+      "mods": [],
+      "nombre": "Tronco de tótem",
+      "precio": 6,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
+    },
+    {
+      "apilable": true,
+      "descripcion": "Late si lo apoyás en el suelo.",
+      "efecto": {},
+      "id": "tronco_muerdago",
+      "mods": [],
+      "nombre": "Tronco de muérdago",
+      "precio": 8,
+      "rareza": "comun",
+      "slot": "",
+      "tipo": "material"
     }
-   ],
-   "nombre": "Armadura de cuero",
-   "precio": 150,
-   "rareza": "comun",
-   "slot": "armadura",
-   "tipo": "armadura"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Anillas de acero entrelazadas. Para guerreros serios.",
-   "efecto": {},
-   "id": "cota_malla",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "defensa",
-     "valor": 20.0
-    },
-    {
-     "kind": 0,
-     "stat": "vida_max",
-     "valor": 40.0
-    }
-   ],
-   "nombre": "Cota de malla",
-   "precio": 350,
-   "rareza": "magico",
-   "slot": "armadura",
-   "tipo": "armadura"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Colmillo afilado de lobo salvaje. Se vende bien.",
-   "efecto": {},
-   "id": "colmillo",
-   "mods": [],
-   "nombre": "Colmillo de lobo",
-   "precio": 5,
-   "rareza": "comun",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": false,
-   "descripcion": "Pesada maza de guerra ogra. Golpea fuerte, pero lenta.",
-   "efecto": {},
-   "id": "maza_ogro",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "ataque",
-     "valor": 18.0
-    },
-    {
-     "kind": 0,
-     "stat": "vel_ataque",
-     "valor": -0.1
-    }
-   ],
-   "nombre": "Maza de ogro",
-   "precio": 300,
-   "rareza": "raro",
-   "slot": "arma",
-   "tipo": "arma"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Eco solidificado del Devorador: arena que canta a destiempo. Huele a Tártaro.",
-   "efecto": {},
-   "id": "fragmento_duna",
-   "mods": [],
-   "nombre": "Fragmento de las Dunas",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Escama de fuego del Fundidor: aún tibia. La fragua la reconoce.",
-   "efecto": {},
-   "id": "fragmento_volcan",
-   "mods": [],
-   "nombre": "Fragmento del Volcán",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Colmillo de escarcha del Aullido: frío que no derrite. La nieve lo teme.",
-   "efecto": {},
-   "id": "fragmento_pico",
-   "mods": [],
-   "nombre": "Fragmento del Pico",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Nota rota del Eco: vibra en una frecuencia imposible. Elthar la estudia.",
-   "efecto": {},
-   "id": "fragmento_cristal",
-   "mods": [],
-   "nombre": "Fragmento del Cristal",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Ojo ciego del Susurro: ya no mira, pero recuerda. Guárdalo del Velo.",
-   "efecto": {},
-   "id": "fragmento_umbral",
-   "mods": [],
-   "nombre": "Fragmento del Umbral",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": true,
-   "descripcion": "Corona mellada del Campeón: manchada de algo más viejo que la sangre.",
-   "efecto": {},
-   "id": "fragmento_arena",
-   "mods": [],
-   "nombre": "Fragmento de la Arena",
-   "precio": 100,
-   "rareza": "rara",
-   "slot": "",
-   "tipo": "material"
-  },
-  {
-   "apilable": false,
-   "descripcion": "El Molde templado en la última guerra: ya no corta, pero pesa como una promesa cumplida.",
-   "efecto": {},
-   "id": "verdugo_eco",
-   "mods": [
-    {
-     "kind": 0,
-     "stat": "ataque",
-     "valor": 30.0
-    },
-    {
-     "kind": 0,
-     "stat": "crit_prob",
-     "valor": 0.05
-    }
-   ],
-   "nombre": "Eco del Verdugo",
-   "precio": 0,
-   "rareza": "legendario",
-   "slot": "arma",
-   "tipo": "arma"
-  },
-  {
-   "id": "escudo_madera",
-   "nombre": "Escudo de madera",
-   "descripcion": "Un escudo simple pero firme.",
-   "tipo": "armadura",
-   "slot": "escudo",
-   "mods": [
-    {
-     "stat": "defensa",
-     "kind": 0,
-     "valor": 8.0
-    },
-    {
-     "stat": "vida_max",
-     "kind": 0,
-     "valor": 10.0
-    }
-   ],
-   "precio": 50,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "casco_cuero",
-   "nombre": "Casco de cuero",
-   "descripcion": "Protege la cabeza del aventurero.",
-   "tipo": "armadura",
-   "slot": "casco",
-   "mods": [
-    {
-     "stat": "defensa",
-     "kind": 0,
-     "valor": 6.0
-    }
-   ],
-   "precio": 50,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "guantes_cuero",
-   "nombre": "Guantes de cuero",
-   "descripcion": "Agarre firme y manos veloces.",
-   "tipo": "armadura",
-   "slot": "guantes",
-   "mods": [
-    {
-     "stat": "defensa",
-     "kind": 0,
-     "valor": 5.0
-    },
-    {
-     "stat": "vel_ataque",
-     "kind": 0,
-     "valor": 0.05
-    }
-   ],
-   "precio": 50,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "botas_cuero",
-   "nombre": "Botas de cuero",
-   "descripcion": "Para caminar el mundo sin cansarse.",
-   "tipo": "armadura",
-   "slot": "botas",
-   "mods": [
-    {
-     "stat": "defensa",
-     "kind": 0,
-     "valor": 5.0
-    },
-    {
-     "stat": "vel_mov",
-     "kind": 0,
-     "valor": 0.3
-    }
-   ],
-   "precio": 50,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "collar_cobre",
-   "nombre": "Collar de cobre",
-   "descripcion": "Un collar sencillo con un dije lunar.",
-   "tipo": "accesorio",
-   "slot": "collar",
-   "mods": [
-    {
-     "stat": "vida_max",
-     "kind": 0,
-     "valor": 25.0
-    }
-   ],
-   "precio": 60,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "pendiente_luna",
-   "nombre": "Pendiente de luna",
-   "descripcion": "Brilla con luz plateada; aclara la mente.",
-   "tipo": "accesorio",
-   "slot": "pendiente",
-   "mods": [
-    {
-     "stat": "mana_max",
-     "kind": 0,
-     "valor": 15.0
-    }
-   ],
-   "precio": 60,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "pendiente_sol",
-   "nombre": "Pendiente de sol",
-   "descripcion": "Un punto cálido que afina el instinto.",
-   "tipo": "accesorio",
-   "slot": "pendiente",
-   "mods": [
-    {
-     "stat": "crit_prob",
-     "kind": 0,
-     "valor": 0.01
-    }
-   ],
-   "precio": 70,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "anillo_poder",
-   "nombre": "Anillo de poder",
-   "descripcion": "Pesa poco, pega fuerte.",
-   "tipo": "accesorio",
-   "slot": "anillo",
-   "mods": [
-    {
-     "stat": "ataque",
-     "kind": 0,
-     "valor": 4.0
-    }
-   ],
-   "precio": 70,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "anillo_sabio",
-   "nombre": "Anillo del sabio",
-   "descripcion": "Susurra fórmulas arcanas.",
-   "tipo": "accesorio",
-   "slot": "anillo",
-   "mods": [
-    {
-     "stat": "poder",
-     "kind": 0,
-     "valor": 6.0
-    }
-   ],
-   "precio": 70,
-   "rareza": "comun",
-   "apilable": false
-  },
-  {
-   "id": "amuleto_guardian",
-   "nombre": "Amuleto del guardián",
-   "descripcion": "Un ojo tallado que vela por ti.",
-   "tipo": "accesorio",
-   "slot": "amuleto",
-   "mods": [
-    {
-     "stat": "defensa",
-     "kind": 0,
-     "valor": 8.0
-    },
-    {
-     "stat": "vida_max",
-     "kind": 0,
-     "valor": 15.0
-    }
-   ],
-   "precio": 90,
-   "rareza": "raro",
-   "apilable": false
-  },
-  {
-   "id": "escorpion_carina",
-   "apilable": true,
-   "nombre": "Carina de Escorpión",
-   "descripcion": "Placa quitinosa del desierto. Material de artesanía.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "ascua_viva",
-   "apilable": true,
-   "nombre": "Ascua Viva",
-   "descripcion": "Brasa que nunca enfría en la mano. Material de forja.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "nucleo_ascua",
-   "apilable": true,
-   "nombre": "Núcleo de Ascua",
-   "descripcion": "Corazón de un gólem de ceniza. Material de forja.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "nucleo_hielo",
-   "apilable": true,
-   "nombre": "Núcleo de Hielo",
-   "descripcion": "Núcleo de hielo eterno. Material prizeso.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "seda_venenosa",
-   "apilable": true,
-   "nombre": "Seda Venenosa",
-   "descripcion": "Hilo del Velo que sigue envenenando. Material.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "eco_umbral",
-   "apilable": true,
-   "nombre": "Eco del Umbral",
-   "descripcion": "Susurro que repite lo que oye. Material arcano.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "perla_rio",
-   "apilable": true,
-   "nombre": "Perla del Abismo",
-   "descripcion": "Perla negra del río sin nombre. Material.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "lamento_eco",
-   "apilable": true,
-   "nombre": "Eco del Lamento",
-   "descripcion": "El último canto de la costa. Material.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "lingote_oro",
-   "apilable": true,
-   "nombre": "Lingote Ancestral",
-   "descripcion": "Oro de la Corona Quebrada. Material de lujo.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "sello_vacio",
-   "apilable": true,
-   "nombre": "Sello Vacío",
-   "descripcion": "Cera negra sin nombre. Material del Velo.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "daga_carina",
-   "nombre": "Daga de Carina",
-   "descripcion": "Daga ligera del desierto: rápido y certero.",
-   "tipo": "arma",
-   "slot": "arma",
-   "rareza": "rara",
-   "precio_venta": 195,
-   "precio_compra": 78,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "ataque",
-     "valor": 14.0,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.06,
-     "kind": 0
-    },
-    {
-     "stat": "vel_ataque",
-     "valor": 0.04,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "lanza_hielo",
-   "nombre": "Lanza de Hielo",
-   "descripcion": "Acero del norte que no se deshace.",
-   "tipo": "arma",
-   "slot": "arma",
-   "rareza": "magico",
-   "precio_venta": 240,
-   "precio_compra": 96,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "ataque",
-     "valor": 20.0,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.08,
-     "kind": 0
-    },
-    {
-     "stat": "mana_max",
-     "valor": 15.0,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "daga_seda",
-   "nombre": "Daga de Seda",
-   "descripcion": "El filo sigue envenenado mucho después del golpe.",
-   "tipo": "arma",
-   "slot": "arma",
-   "rareza": "magico",
-   "precio_venta": 240,
-   "precio_compra": 96,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "ataque",
-     "valor": 16.0,
-     "kind": 0
-    },
-    {
-     "stat": "vel_ataque",
-     "valor": 0.06,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.04,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "guantes_umbral",
-   "nombre": "Guantes del Umbral",
-   "descripcion": "El Veloz se aferra a tus manos un instante más.",
-   "tipo": "armadura",
-   "slot": "guantes",
-   "rareza": "rara",
-   "precio_venta": 180,
-   "precio_compra": 72,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "defensa",
-     "valor": 6.0,
-     "kind": 0
-    },
-    {
-     "stat": "vel_ataque",
-     "valor": 0.1,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.04,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "amuleto_perla",
-   "nombre": "Amuleto de Perla",
-   "descripcion": "La perla del abismo late cuando te acercas al fin.",
-   "tipo": "accesorio",
-   "slot": "amuleto",
-   "rareza": "rara",
-   "precio_venta": 210,
-   "precio_compra": 84,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "vida_max",
-     "valor": 30.0,
-     "kind": 0
-    },
-    {
-     "stat": "mana_max",
-     "valor": 10.0,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.03,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "botas_lamento",
-   "nombre": "Botas del Lamento",
-   "descripcion": "Pisas donde cantó la costa.",
-   "tipo": "armadura",
-   "slot": "botas",
-   "rareza": "rara",
-   "precio_venta": 180,
-   "precio_compra": 72,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "defensa",
-     "valor": 6.0,
-     "kind": 0
-    },
-    {
-     "stat": "vel_mov",
-     "valor": 0.8,
-     "kind": 0
-    },
-    {
-     "stat": "vida_max",
-     "valor": 20.0,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "hoja_ascua",
-   "nombre": "Hoja de Ascua",
-   "descripcion": "Fuego del volcán tallado en acero.",
-   "tipo": "arma",
-   "slot": "arma",
-   "rareza": "magico",
-   "precio_venta": 255,
-   "precio_compra": 102,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "ataque",
-     "valor": 22.0,
-     "kind": 0
-    },
-    {
-     "stat": "ataque",
-     "valor": 0.12,
-     "kind": 1
-    }
-   ]
-  },
-  {
-   "id": "martillo_golem",
-   "nombre": "Martillo de Gólem",
-   "descripcion": "Pesado como su origen. Lento, demoledor.",
-   "tipo": "arma",
-   "slot": "arma",
-   "rareza": "magico",
-   "precio_venta": 240,
-   "precio_compra": 96,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "ataque",
-     "valor": 26.0,
-     "kind": 0
-    },
-    {
-     "stat": "vel_ataque",
-     "valor": -0.08,
-     "kind": 0
-    },
-    {
-     "stat": "vida_max",
-     "valor": 20.0,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "coraza_centinela",
-   "nombre": "Coraza de la Centinela",
-   "descripcion": "Oro de la Corona Quebrada en placas.",
-   "tipo": "armadura",
-   "slot": "armadura",
-   "rareza": "magico",
-   "precio_venta": 300,
-   "precio_compra": 120,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "defensa",
-     "valor": 26.0,
-     "kind": 0
-    },
-    {
-     "stat": "vida_max",
-     "valor": 60.0,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "foco_vacio",
-   "nombre": "Foco Vacío",
-   "descripcion": "Un fragmento del Velo encendido desde dentro.",
-   "tipo": "accesorio",
-   "slot": "anillo",
-   "rareza": "magico",
-   "precio_venta": 300,
-   "precio_compra": 120,
-   "max_stack": 1,
-   "mods": [
-    {
-     "stat": "poder",
-     "valor": 8.0,
-     "kind": 0
-    },
-    {
-     "stat": "crit_prob",
-     "valor": 0.06,
-     "kind": 0
-    },
-    {
-     "stat": "mana_max",
-     "valor": 15.0,
-     "kind": 0
-    }
-   ]
-  },
-  {
-   "id": "mineral_cobre",
-   "apilable": true,
-   "nombre": "Mineral de Cobre",
-   "descripcion": "Vena rojiza de las Tierras Francas. El primer metal de todo herrero.",
-   "tipo": "material",
-   "rareza": "comun",
-   "precio_venta": 18,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "mineral_hierro",
-   "apilable": true,
-   "nombre": "Mineral de Hierro",
-   "descripcion": "Bloque gris y pesado. Aguanta el golpe: base de armas y armaduras.",
-   "tipo": "material",
-   "rareza": "comun",
-   "precio_venta": 26,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "mineral_plata",
-   "apilable": true,
-   "nombre": "Mineral de Plata",
-   "descripcion": "Metal pálido y frío. Se afila fino: herramientas de calidad.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 45,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "mineral_obsidiana",
-   "apilable": true,
-   "nombre": "Mineral de Obsidiana",
-   "descripcion": "Vidrio volcánico negro. Corta el acero y pesa como una maldición.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 60,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "mineral_cristal",
-   "apilable": true,
-   "nombre": "Mineral de Cristal",
-   "descripcion": "Prisma de luz fría. Late solo, incluso de noche.",
-   "tipo": "material",
-   "rareza": "rara",
-   "precio_venta": 80,
-   "max_stack": 99,
-   "mods": []
-  },
-  {
-   "id": "mineral_esmeralda",
-   "apilable": true,
-   "nombre": "Mineral de Esmeralda",
-   "descripcion": "Verde profundo del Bosque Hondo. Concentra más luz de la que emite.",
-   "tipo": "material",
-   "rareza": "magico",
-   "precio_venta": 110,
-   "max_stack": 99,
-   "mods": []
-  }
- ],
- "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo. Fase 45 (minería): 6 minerales de veta (`mineral_*`), apilables. Los 10 materiales de la F43.sin `apilable` tampoco apilaban: con 20 slots la mochila se llenaba minando.",
- "version": 1
+  ],
+  "nota": "Catálogo de items de la Fase 5 (datos + inventario). Los enemigos de data/enemies.json ya dropean pocion_vida, daga_gastada, colmillo y maza_ogro; esos cuatro ids deben seguir existiendo. Fase 45 (minería): 6 minerales de veta (`mineral_*`), apilables. Los 10 materiales de la F43.sin `apilable` tampoco apilaban: con 20 slots la mochila se llenaba minando.",
+  "version": 1
 }

@@ -192,6 +192,28 @@ func cooldown_restante(skill_id: String) -> float:
 	return float(_cds.get(skill_id, 0.0))
 
 
+## Fase 51: purga TODOS los efectos temporales (la mourte del héroe). Recorre
+## `_efectos` al revés, quita el mod del StatBlock de cada objetivo vivo y
+## vacía el array. Misma lógica que `_expirar_efectos` con d = infinito.
+##
+## Barre también los debuffs que el jugador le puso a los enemigos: al morir,
+## el combate termina y dejar un debuff huérfano 20 s más es ruido, no
+## contenido. Los objetivos ya liberados se limpian sin tocar nada.
+func purgar_temporales() -> void:
+	for i in range(_efectos.size() - 1, -1, -1):
+		var ef: Dictionary = _efectos[i]
+		var ent: Entity = (ef.get("objetivo") as WeakRef).get_ref() as Entity
+		if ent != null and is_instance_valid(ent):
+			ent.stats.remove_mod(str(ef.get("mod_id", "")))
+	_efectos.clear()
+
+
+## Fase 51: deja los cooldowns a cero. Sin esto, reaparecer con un skill en
+## cooldown de 12 s es un castigo invisible por morir.
+func purgar_cooldowns() -> void:
+	_cds.clear()
+
+
 ## ¿El efecto necesita un objetivo enemigo válido? (dano, debuff, y aoe
 ## dirigido con rango > 0). Las curaciones, los buffs y el aoe centrado en
 ## el lanzador (rango == 0) no chequean objetivo ni rango.
@@ -287,9 +309,10 @@ static func bono_curacion(poder: float) -> float:
 
 
 func _aplicar_dano(skill: Dictionary, lanzador: Entity, objetivo: Entity) -> void:
-	# Formulas.damage retorna Dictionary declarado: `=` es seguro aquí.
-	var res = Formulas.damage(lanzador.stats, objetivo.stats, skill, randf(), randf_range(-1.0, 1.0))
-	objetivo.take_damage(float(res["final"]), lanzador, bool(res["crit"]))
+	# Fase 51: sin Dictionary por golpe (ver Player.ejecutar_ataque).
+	var res: Formulas.ResultadoDano = Formulas.damage_sin_alloc(
+		lanzador.stats, objetivo.stats, skill, randf(), randf_range(-1.0, 1.0))
+	objetivo.take_damage(float(res.final), lanzador, res.crit)
 
 
 func _aplicar_aoe(skill: Dictionary, lanzador: Entity, objetivo: Entity, candidatos: Array) -> void:

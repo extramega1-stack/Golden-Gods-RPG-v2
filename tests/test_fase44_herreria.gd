@@ -5,7 +5,7 @@ extends SceneTree
 ##     y oro con orden de valor creciente por rareza.
 ## (b) Lógica: puede_forjar (sin materiales / sin oro / nivel / ok),
 ##     forjar consume materiales + oro, entrega el item, es idempotente
-##     (no reg材料 gratis) y NO toca stats.
+##     (no regala material gratis) y NO toca stats.
 ## (c) NPC: Bram y Durnan son herreros con su set de recetas; la ventana de
 ##     diálogo muestra el botón Forjar solo a ellos.
 ## (d) Panel: filtra por herrero, muestra "x/y" de materiales y el botón

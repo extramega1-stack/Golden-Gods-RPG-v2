@@ -151,7 +151,7 @@ script = ExtResource("16_ciclo")
 script = ExtResource("17_vigia")
 
 [node name="CapaBanner" type="CanvasLayer" parent="."]
-layer = 60
+layer = 70
 
 [node name="BannerRegion" type="Control" parent="CapaBanner"]
 anchors_preset = 15

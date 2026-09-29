@@ -221,17 +221,30 @@ func _puerta_respawn(_arquetipo: String, origen: Vector3) -> bool:
 	return d.length() <= ra
 
 
-## Fase 13: minimapa estilo WC3 + brújula. Cuelgan del HUD (CanvasLayer):
-## solo leen datos/señales (jugador, terreno, regiones, streaming, misiones).
+## Fase 13: minimapa estilo WC3 + brújula. Solo leen datos/señales (jugador,
+## terreno, regiones, streaming, misiones).
+## Fase 50.4: cada uno cuelga de SU CanvasLayer con la capa de UiLayers. Antes
+## los dos colgaban del CanvasLayer del HUD y el minimapa usaba
+## `z_index = UiLayers.MINIMAPA`, que es una capa puesta donde va un orden
+## entre hermanos (§9.1: la UI de cada sistema en su CanvasLayer propio).
 func _instalar_orientacion() -> void:
 	if _hud == null:
 		return
+	var capa_mapa := CanvasLayer.new()
+	capa_mapa.name = "CapaMinimapa"
+	capa_mapa.layer = UiLayers.MINIMAPA
+	add_child(capa_mapa)
 	var mm: Minimapa = Minimapa.new()
-	_hud.add_child(mm)
+	capa_mapa.add_child(mm)
 	mm.configurar(_jugador, _terreno, _rig, _region_db, _streaming)
 	mm.fijar_npcs(_lista_npcs)
+
+	var capa_brujula := CanvasLayer.new()
+	capa_brujula.name = "CapaBrujula"
+	capa_brujula.layer = UiLayers.BRUJULA
+	add_child(capa_brujula)
 	var br: Brujula = Brujula.new()
-	_hud.add_child(br)
+	capa_brujula.add_child(br)
 	br.configurar(_rig, _jugador, _misiones, _streaming)
 	br.fijar_npcs(_lista_npcs)
 

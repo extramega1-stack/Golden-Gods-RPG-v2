@@ -205,7 +205,7 @@ func _process(delta: float) -> void:
 
 
 ## Muestra/oculta el cuerpo Y la colisión. Sin esto una veta agotada seguiría
-##挡住了 el raycast del clic (un CharacterBody3D invisible colisiona igual).
+## Tapaba el raycast del clic (un CharacterBody3D invisible colisiona igual).
 func mostrar_cuerpo() -> void:
 	_capa = CAPA
 	visible = true

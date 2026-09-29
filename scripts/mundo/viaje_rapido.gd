@@ -31,6 +31,10 @@ const GRATIS_TEMPORAL: bool = true
 ## (el JSON conserva los niveles reales). Al quitarlo, volver a `false`.
 const SIN_NIVEL_TEMPORAL: bool = true
 
+## Fase 51.1 (§9.1): identidad del sistema para el contenedor `Systems`.
+## El grupo `gg_system` + este `system_id` sustituyen a las rutas de nodo
+## hardcodeadas que usaba la demo para encontrarlo.
+var system_id: StringName = &"viaje_rapido"
 var _datos: Dictionary = {}
 var _ciudades: Dictionary = {}
 

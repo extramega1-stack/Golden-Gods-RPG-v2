@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "nota": "Fase 57. Cada habilidad lleva SU propio XP. NO hay niveles 1-99 ni StatBlock nuevo: el nivel de personaje sigue siendo el del StatBlock (regla dura de la 30/42). El XP de habilidad se usa para abrir Talentos de Habilidad (fase 59). Curva: XP_BASE * (nivel)^EXPONENTE.",
+  "xp_base": 40,
+  "xp_exponente": 1.6,
+  "habilidades": {
+    "tala":      {"nombre": "Tala",       "icono": "arbol",  "curva": [40, 90, 180, 320, 520, 800, 1180, 1680]},
+    "mineria":   {"nombre": "Minería",    "icono": "pico",   "curva": [40, 90, 180, 320, 520, 800, 1180, 1680]},
+    "cocina":    {"nombre": "Cocina",     "icono": "fuego",  "curva": [40, 90, 180, 320, 520, 800, 1180, 1680]},
+    "recoleccion":{"nombre": "Recolección","icono": "bolsa",  "curva": [40, 90, 180, 320, 520, 800, 1180, 1680]}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "nota": "Fase 61. Piezas construibles del Refugio. 'costo' son materiales del inventario; 'cajas' es el AABB que ocupa, para que no se solapen. El presupuesto TOTAL de piezas por refugio vive en data/refugios.json (piezas_max) y es VRAM (§9.5).",
+  "piezas": {
+    "fogata":     {"nombre": "Fogata",          "costo": {"tronco_roble": 2},              "cajas": [1.6, 0.8, 1.6], "rot": false, "interactiva": "cocinar"},
+    "yunque":     {"nombre": "Yunque de Bram",  "costo": {"mineral_cobre": 4},              "cajas": [1.4, 1.0, 1.0], "rot": false, "interactiva": "forjar"},
+    "mesa":      {"nombre": "Mesa de cocina",  "costo": {"tronco_roble": 4},              "cajas": [2.0, 0.9, 1.2], "rot": true,  "interactiva": "cocinar"},
+    "cofre":     {"nombre": "Cofre",           "costo": {"tronco_pino": 3},               "cajas": [1.2, 0.9, 0.8], "rot": false, "interactiva": "almacen"},
+    "saco":      {"nombre": "Saco de dormir",  "costo": {"baya_roja": 4, "tronco_roble": 1},"cajas": [2.2, 0.5, 1.0], "rot": true,  "interactiva": "dormir"},
+    "estante":   {"nombre": "Estante",         "costo": {"tronco_roble": 5},              "cajas": [1.6, 2.0, 0.6], "rot": false, "interactiva": "almacen"},
+    "columna":   {"nombre": "Columna",         "costo": {"mineral_cobre": 6, "tronco_roble": 2}, "cajas": [1.0, 3.0, 1.0], "rot": false, "interactiva": ""},
+    "antorcha":  {"nombre": "Antorcha",        "costo": {"tronco_roble": 1},              "cajas": [0.6, 2.2, 0.6], "rot": false, "interactiva": ""}
+  }
+}

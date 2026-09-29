@@ -84,7 +84,11 @@ var _streaming_suscrito: StreamingMobs = null
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	z_index = UiLayers.MINIMAPA
+	# Fase 50.4: aquí iba `z_index = UiLayers.MINIMAPA`. Era una capa usada
+	# como si fuera orden entre hermanos: dentro de un CanvasLayer el z_index
+	# ordena contra los hermanos, no coloca nada en la capa 11. Funcionaba solo
+	# porque el minimapa se añadía el último. Ahora cuelga de su propio
+	# CanvasLayer con layer = UiLayers.MINIMAPA (fase12_demo).
 	# Abajo-derecha con margen; los offsets se fijan DESPUES del preset.
 	set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	var m: float = TAM_MAPA + MARGEN

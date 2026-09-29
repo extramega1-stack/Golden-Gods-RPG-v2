@@ -334,6 +334,9 @@ func _t_spawns() -> void:
 		# nivel->arquetipo (arquetipos unicos; su "nivel" es dificultad).
 		var es_prueba: bool = str(sd.get("grupo", "")) == "prueba_combate"
 		var es_jefe: bool = str(sd.get("grupo", "")) == "jefe_fragmento"
+		# Fase 62: el Titán Acecho es igual: arquetipo único a mano, y su
+		# "nivel" es dificultad, no banda de región.
+		var es_titan: bool = str(sd.get("grupo", "")) == "titan"
 		if x < -LIMITE or x > LIMITE or z < -LIMITE or z > LIMITE:
 			fuera += 1
 		if Vector2(x, z).length() < RADIO_SEGURO:
@@ -341,14 +344,16 @@ func _t_spawns() -> void:
 		# Fase 43: el arquetipo viene de la fauna de la REGIÓN (no del nivel).
 		var r: Dictionary = db.region_en(x, z)
 		var fauna: Array = r.get("mobs", [])
-		if not es_jefe and not es_prueba and (fauna.is_empty() or arq not in fauna):
+		if not es_jefe and not es_prueba and not es_titan \
+				and (fauna.is_empty() or arq not in fauna):
 			mal_arq += 1
 		if r.is_empty():
 			sin_region += 1
 		else:
 			var nmin: int = int(r.get("nivel_min", 0))
 			var nmax: int = int(r.get("nivel_max", 0))
-			if not es_prueba and not es_jefe and (nivel < nmin or nivel > nmax):
+			if not es_prueba and not es_jefe and not es_titan \
+					and (nivel < nmin or nivel > nmax):
 				fuera_banda += 1
 			if not es_prueba and str(r.get("id", "")) == "moon_town" \
 					and Vector2(x, z).length() < R_DISCO:

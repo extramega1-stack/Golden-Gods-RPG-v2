@@ -12,9 +12,24 @@ extends RefCounted
 const HUD: int = 10
 const BARRA_SKILLS: int = 12
 ## Fase 13: minimapa estilo WC3 (rango 10–19 = HUD persistente).
+## Fase 50.4: estos dos son capas DE VERDAD, no z_index. El minimapa cuelga
+## de su propio CanvasLayer (antes colgaba del CanvasLayer del HUD y usaba
+## `z_index = MINIMAPA`, que es usar una capa como si fuera orden entre
+## hermanos: funcionaba por casualidad de orden de árbol). Los anhade
+## `fase12_demo._instalar_orientacion`.
 const MINIMAPA: int = 11
 ## Fase 13: brújula superior (rango 10–19 = HUD persistente).
 const BRUJULA: int = 14
+## Fase 8: feed global de avisos (rango 10–19 = HUD persistente). Lo crea
+## `PanelMisiones` pero es del juego entero, no del panel (fase 45.2).
+const TOAST: int = 15
+## Fase 53: barra de jefe, arriba-centro (rango 10–19 = HUD persistente).
+## UI pura, a diferencia de `BarraVidaMob` que es 3D sobre el mob.
+const BARRA_JEFE: int = 13
+## Fase 12: banner de región descubierta. Rango 70–79 = progresión/mundo.
+## Ojo: `fase14_demo.tscn` pone este número a mano en el CanvasLayer
+## `CapaBanner`; si cambia una cosa hay que cambiar la otra.
+const BANNER_REGION: int = 70
 ## (13 reservado: fue BOTON_ATACAR, retirado en fase 6.1 por pedido de
 ## Juan Diego; el rebind de tecla vuelve con la barra de acciones.)
 const PANEL_INVENTARIO: int = 25

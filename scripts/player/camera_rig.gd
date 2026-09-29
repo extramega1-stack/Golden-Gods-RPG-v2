@@ -91,6 +91,23 @@ func yaw() -> float:
 	return rotation.y
 
 
+## Fase 51: reposiciona la cámara SIN interpolar. Necesario tras el
+## teletransporte del respawn: el lerp de `_process` cruzaría el mapa entero
+## (el ancla puede estar a 10 km) y durante un rato se vería la cámara
+## volando sobre el mundo.
+##
+## Mismo criterio que `_ready()`: pega la cámara al objetivo de golpe.
+func snap_seguimiento() -> void:
+	if _objetivo == null or not is_instance_valid(_objetivo):
+		return
+	global_position = _objetivo.global_position
+	# El trauma moría con el jugador; dejarlo a medias daría un shake suelto.
+	trauma = 0.0
+	if _camara != null and is_instance_valid(_camara):
+		_camara.h_offset = 0.0
+		_camara.v_offset = 0.0
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event

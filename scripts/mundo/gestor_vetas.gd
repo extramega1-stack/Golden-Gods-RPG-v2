@@ -30,6 +30,10 @@ const INTERVALO_SEG: float = 0.5
 
 const SAVE_VERSION: int = 1
 
+## Fase 51.1 (§9.1): identidad del sistema para el contenedor `Systems`.
+## El grupo `gg_system` + este `system_id` sustituyen a las rutas de nodo
+## hardcodeadas que usaba la demo para encontrarlo.
+var system_id: StringName = &"gestor_vetas"
 var _jugador: Player = null
 var _terreno: Terreno = null
 var _logica: Mineria = null

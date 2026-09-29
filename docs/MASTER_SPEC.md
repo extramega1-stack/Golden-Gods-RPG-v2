@@ -644,7 +644,7 @@ pasar a la siguiente; el bug se atrapa en la capa donde nació, no tres capas ar
 | 9.3 | **Hotfix: el muerto no queda seleccionado** ✅: al morir el objetivo pendiente o al matarlo el casteo, `_actualizar_lanzamiento_pendiente` cancela también la orden de acercarse (la fuga estaba en las skills, no en el ataque básico) · clic sobre un cadáver deselecciona sin ordenar moverse (`_clic_en_vacio`) · blindaje explícito `esta_vivo()` en `solicitar_ataque` | Pedido de Juan Diego: tras matar un mob, T o una skill ya no hacen caminar al héroe hacia el cadáver |
 | 10 | **Auto-ataque persistente** ✅: entrar en combate con un skill dañino fija `objetivo_ataque` (antes solo el pendiente sin selección lo hacía) — tras el casteo el héroe sigue golpeando solo con la cadencia y el daño intactos · si el objetivo sale del rango lo persigue y retoma (patrón "acercarse y actuar" existente) · el bucle lo detienen: muerte del objetivo (9.3), otra orden (mover/WASD/deselección/ESC), otro objetivo u otro skill dañino sobre otro objetivo · `deseleccionar()` ahora suelta el foco de combate completo (objetivo + orden de movimiento): ESC detiene el auto-ataque y la marcha · `tests/test_fase10.gd` (26 asserts) | Pedido de Juan Diego: "yo selecciono una habilidad y cuando llega le pega, el personaje le sigue atacando al mob" — T, doble clic o skill inician un bucle que solo para al morir el mob o al recibir otra orden |
 | 11 | **Héroe y presentación** ✅: `data/clases.json` + `ClaseDB` (mismo patrón que las otras DBs: `cargar()` idempotente, `ids()` en orden, `jugables()`, `es_jugable()`, `stats_base()`, `color_primario()`/`color_secundario()` con default dorado; solo el guerrero jugable —activar otra clase es solo datos—; guerrero 45/10/0/0, idéntico feel al demo) · `Player` con identidad (`nombre`, `clase_id`, señal `identidad_cambiada`, `fijar_identidad()`, `aplicar_clase()`; `_ready` ya no hardcodea stats: usa `ClaseDB`) · `DatosSesion` (holder estático entre escenas, sin autoload: `nueva_partida`/`pedir_continuar`/`limpiar`/`aplicar_a`) · pantalla de título (primera escena del juego: fondo 3D procedural propio —suelo oscuro, 6 pilares, 2 braseros con luz anaranjada, cielo casi negro, cámara con órbita lenta—; "GOLDEN GODS" dorado + botones Nueva partida / Continuar / Salir; Continuar deshabilitado sin save; ESC sale) · creación de personaje (nombre con validación 1–16 + tarjetas de clase desde datos —las no jugables salen "Próximamente"— + descripción y stats; "Comenzar aventura"/"Atrás") · retrato del héroe en el HUD (emblema procedural 64×64 con la inicial de la clase + nombre + nivel; `subio_nivel`/`murio`/`identidad_cambiada`; UI solo lee) · demo fase11 (hereda de fase9: nueva partida aplica `DatosSesion`, continuar carga el save con el flujo del F10 refactorizado en `_cargar_partida_guardada()`) · save con `"nombre"`/`"clase_id"` en el bloque jugador (sin bump de versión: partidas viejas cargan con "Héroe"/"guerrero") · `tests/test_fase11.gd` (56 asserts) | Loop jugable: título → crear héroe (nombre + clase) → jugar con retrato → guardar (F9) / cargar (F10) con nombre y clase restaurados; Continuar desde el título carga la partida |
-| 12 | **Mundo abierto real** ✅: `data/terreno.bin` (heightmap del legado 1:1 —289×289 alturas + colores RGB por vértice—, escala real 36.864 u sin reescalar) + `Terreno` (`altura_en()` bilineal, 36 chunks 6×6 con 2 LODs por `visibility_range`, colisión en capa 1 como el suelo anterior; el clic sigue resolviendo sobre el terreno) · `Entity.terreno` + `_pegar_al_terreno()` (jugador, NPCs y creeps caminan pegados al suelo) · `data/spawns.json` (1121 creeps del legado: gx=x, gz=4096−y; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro; zona segura 40 m en la aldea; generador determinista `tools/generar_spawns.py`) instanciados por `fase12_demo` con la factory de la fase 9 (respawn intacto) · `data/regiones.json` + `RegionDB` (10 regiones que cubren el mapa sin huecos: Piedraceniza 1–5, Tierras Francas 4–12, Ceniza y Forja 10–18, Costa del Lamento 12–20, Bosque Hondo 14–22, Abismo Lloroso 18–28, Tierras del Trueno 30–40, Umbral de Ladón 34–46, Corona Quebrada 40–52, El Velo 55–70) + `VigiaRegion` + `BannerRegion` ("Has descubierto: X", una vez por región) · `data/ciclo.json` + `CicloDia` (día de 720 s data-driven: sol/luna direccionales, cielo procedural, señales amanecer/anochecer) + `Antorcha` (OmniLight3D cálida con flicker, más intensa de noche; 6 en la aldea) · cámara con `far = 40000`; el título abre `fase12_demo` · tests fase12 (terreno 215 + regiones 52 + spawns 14 + ciclo 35 + integración) | Loop jugable: salir de Piedraceniza y caminar el mundo abierto con día/noche, descubrir regiones y pelear creeps por bandas de nivel |
+| 12 | **Mundo abierto real** ✅: `data/terreno.bin` (heightmap del legado 1:1 —289×289 alturas + colores RGB por vértice—, escala real 36.864 u sin reescalar) + `Terreno` (`altura_en()` bilineal, 36 chunks 6×6 con 2 LODs por `visibility_range`, colisión en capa 1 como el suelo anterior; el clic sigue resolviendo sobre el terreno) · `Entity.terreno` + `_pegar_al_terreno()` (jugador, NPCs y creeps caminan pegados al suelo) · `data/spawns.json` (1121 creeps del legado: gx=x, gz=4096−y; nivel→arquetipo: ≤30 goblin, 31–200 lobo, >200 ogro; zona segura 40 m en la aldea; generador determinista `tools/generar_spawns.py`, **BORRADO en la fase 50.4**: lo reemplazó `tools/generar_spawns_rework.py` (región→arquetipo en vez de nivel→arquetipo) y su docstring describía una regla que ya no aplica. Ningún test ni script lo ejecutaba.) instanciados por `fase12_demo` con la factory de la fase 9 (respawn intacto) · `data/regiones.json` + `RegionDB` (10 regiones que cubren el mapa sin huecos: Piedraceniza 1–5, Tierras Francas 4–12, Ceniza y Forja 10–18, Costa del Lamento 12–20, Bosque Hondo 14–22, Abismo Lloroso 18–28, Tierras del Trueno 30–40, Umbral de Ladón 34–46, Corona Quebrada 40–52, El Velo 55–70) + `VigiaRegion` + `BannerRegion` ("Has descubierto: X", una vez por región) · `data/ciclo.json` + `CicloDia` (día de 720 s data-driven: sol/luna direccionales, cielo procedural, señales amanecer/anochecer) + `Antorcha` (OmniLight3D cálida con flicker, más intensa de noche; 6 en la aldea) · cámara con `far = 40000`; el título abre `fase12_demo` · tests fase12 (terreno 215 + regiones 52 + spawns 14 + ciclo 35 + integración) | Loop jugable: salir de Piedraceniza y caminar el mundo abierto con día/noche, descubrir regiones y pelear creeps por bandas de nivel |
 | 12.1 | **Hotfix rendimiento: streaming de mobs** ✅ (pedido de Juan Diego: "va super lageado"): causa — la fase 12 instanciaba los 1121 creeps de una vez como nodos `Enemy` completos (`_physics_process` + `move_and_slide` + material propio + draw call cada uno) · `StreamingMobs` (`data/streaming.json`: radio_alta 600 / radio_baja 800 / intervalo 0.25 s): los spawns viven como DATOS y solo se instancian los cercanos, con histéresis (la banda intermedia no hace churn; invisible para el jugador) · el respawn de la fase 9 sigue programando sus timers pero la `puerta_reaparicion` del `SpawnerMobs` veta reaparecer lejos del jugador (el pendiente se reprograma cada 5 s, no se pierde) · IA escalonada por distancia (`Enemy.intervalo_cerebro`: <60 m cada frame, <250 m cada 3, resto cada 6; `reparto` 0–7 por instancia) · materiales compartidos por color de arquetipo (antes uno por mob) · la demo conecta botín/muerte/vigilancia al instanciar y saca de la lista al liberar (el save guarda la lista viva como siempre) · `tests/test_streaming.gd` (26 asserts: solo cercanos / histéresis / liberar+reinstanciar / puerta de respawn / intervalo_cerebro / materiales compartidos) | Loop jugable: el mundo abierto va fluido; los mobs aparecen al acercarse y el respawn sigue funcionando |
 | 13 | **Orientación en el mundo: minimapa + brújula** ✅: `Minimap` (`scripts/ui/minimapa.gd`, capa `UiLayers.MINIMAPA` = 11): 200×200 abajo-derecha estilo WC3 con el terreno real pre-renderizado una vez (`Terreno.color_en`, grilla 144×144) · transformaciones puras `mundo_a_mapa`/`mapa_a_mundo` (redondas) · flecha blanca del jugador, puntos rojos de mobs (`StreamingMobs.mobs_vivos()`), dorados de NPCs · fade a 0.35 tras 4 s quieto · Alt+clic = ping dorado de 5 s · clic/arrastrar normal = `Player.ordenar_mover_a` (clamp al mundo + `altura_en`) · etiqueta con la región actual (`RegionDB`) · `mouse_filter STOP` solo en su rect (nunca come clics fuera) · `Brujula` (`scripts/ui/brujula.gd`, capa `UiLayers.BRUJULA` = 14, `MOUSE_FILTER_IGNORE`): tira 420×30 arriba-centro con N/E/S/O que giran con `CameraRig.yaw()` (norte = -Z) + diamante dorado hacia el objetivo de `QuestLog.mision_activa()` (lista → NPC `npc_origen`; activa matar → mob vivo más cercano del arquetipo; hablar → NPC objetivo; otro → origen) con distancia en m, pegado al borde si está detrás · ambas solo leen datos/señales · APIs de soporte: `Terreno.color_en`, `CameraRig.yaw`, `Player.ordenar_mover_a`, `StreamingMobs.mobs_vivos`, `QuestLog.mision_activa` · `tests/test_fase13_minimapa.gd` (31 asserts) + `tests/test_fase13_brujula.gd` (33 asserts) | Loop jugable: orientarse con el minimapa, pingear, clicar para moverse y seguir la brújula hasta el objetivo de la misión |
 
@@ -1601,7 +1601,7 @@ hacia abajo"*. Es lo único que quedaba de la pose.
   `RADIO_MANO` (19 cm) de la muñeca, por delante de ella y por debajo del
   pecho. Está escrito en el docstring para que no se repita.
 - **El límite honesto**: esto no es un puño real, es una mano cerrada de
- Cg粗. Para un puño de verdad hay que riggear los dedos (5 huesos por mano, 10
+ C ago. Para un puño de verdad hay que riggear los dedos (5 huesos por mano, 10
   más de esqueleto) y en vez de colapsar vértices, doblarlos: es un trabajo
   grande y queda para cuando el resto del arte esté cerrado.
 - Los 6 modelos re-riggean con esto. Sin coste de rendimiento (mover vértices no
@@ -1712,3 +1712,294 @@ del mundo expone el mineral con el que se identifica.
   minando. Con `apilable: true` el mineral apila (verificado por test).
 - Tests: `tests/test_fase45_mineria.gd` — 318/318. Suite 100% verde (70
   suites + 4 smokes) + regresión de los conteos de items y la versión de save.
+
+---
+
+## Fase 50.4 — Saneamiento (2026-09-29)
+
+Sin features: 13 correcciones, la mayoría heredadas de un diagnóstico del
+proyecto. 12 de 13 aplicadas; la 13 (los flags `TEMPORAL` del viaje rápido)
+queda para Juan Diego porque es una decisión de diseño, no una corrección.
+
+- **Capas UI (§9.2):** `hud.gd` no asignaba `layer` y se quedaba en la 1
+  (por debajo de la barra en 12 y de todos los paneles en 25+). Ahora
+  `layer = UiLayers.HUD` (10). El minimapa usaba
+  `z_index = UiLayers.MINIMAPA`, es decir una CAPA puesta donde va un orden
+  entre hermanos: funcionaba solo por orden de árbol. El minimapa y la
+  brújula cuelgan ahora de su propio `CanvasLayer` con
+  `UiLayers.MINIMAPA` / `UiLayers.BRUJULA`, que es lo que §9.1 pide
+  ("la UI de cada sistema en su CanvasLayer propio"). Nuevas constantes
+  `TOAST` (15) y `BANNER_REGION` (70) en `ui_layers.gd`; el toast de
+  `panel_misiones.gd` y el `CapaBanner` de `fase14_demo.tscn` dejan de
+  llevar el número a mano.
+- **`tools/run_tests.sh` (nuevo):** había 80 tests y ninguna forma de
+  correrlos de una vez; la regresión completa era manual. Itera
+  `tests/test_*.gd` (y `smoke_*.gd` con `--smokes`), suma exit codes e
+  imprime el resumen.
+- **Un test que rompía el repo:** `test_fase12_spawns.gd` ejecutaba
+  `generar_spawns_rework.py` dos veces sobre `data/spawns.json` REAL. Si el
+  generador fallaba a mitad, dejaba 1133 entradas corruptas. El generador
+  ahora acepta una ruta de salida y el test escribe en `user://`, además de
+  comprobar que el archivo del repo queda intacto.
+- **Tests que faltaban:** la Fase 34 reescribió el modelo entero de stats
+  (STR/STA/DEX/INT sin agilidad) y su único guardián era un check parcial
+  de `test_stats.gd`; la Fase 45.1 cambió `run/main_scene` y no tenía
+  check. Los dos van ahora en `tests/test_fase34_stats.gd` (124 checks).
+- **Higiene:** 3 comentarios corruptos con caracteres CJK reparados
+  (`test_fase44_herreria.gd`, `veta.gd`, este spec);
+  `tools/generar_spawns.py` borrado (superseded por
+  `generar_spawns_rework.py`, y su docstring describía una regla
+  NIVEL→ARQUETIPO que ya no aplica);
+  `panel_herreria.gd` creaba 4 `Herreria` y usaba 1 (3 objetos muertos);
+  `panel_viaje.gd` se fabricaba su PROPIA `ViajeRapido` mientras la demo
+  tenía la suya (dos cachés de `viaje_rapido.json` vivas a la vez) — ahora
+  la demo le pasa la suya con `fijar_viaje`;
+  `npc.gd` creaba un `StandardMaterial3D` por NPC (21 materiales), ahora
+  comparte cache por color como `Enemy._mats_cache`.
+
+## Fase 51 — Muerte y respawn del héroe (2026-09-29)
+
+**El bug más grave del repo, y no lo detectaba ningún test.**
+`Entity.die()` apagaba `_process`/`_physics_process` y ponía
+`collision_layer = 0`, y `Player.murio` solo estaba conectado en
+`arena.gd`. Morirse **fuera de la arena congelaba el juego para siempre**:
+sin input, sin física y sin forma de revivir. El único escape era F10. Con
+6 jefes de nivel 70 en el mapa no era un bug, era un muro.
+
+- `Entity.revivir(vida, mana)` (nuevo): envuelve el `_revivir_silencioso()`
+  que ya existía y solo se usaba al cargar un save, y además pone vida/maná
+  y emite `vida_cambiada`/`mana_cambiado` (sin ellas el retrato se queda
+  gris). Idempotente.
+- `SkillSystem.purgar_temporales()` y `purgar_cooldowns()` (nuevos): el
+  respawn limpia buffs, debuffs y cooldowns. La purga temporal barre
+  también los debuffs que el jugador puso a los enemigos: al morir, el
+  combate termina.
+- `CameraRig.snap_seguimiento()` (nuevo): reposiciona sin interpolar. Sin
+  esto, el teletransporte del respawn hacía volar la cámara cruzando el
+  mapa entero.
+- `Player.anclar_en_ciudad()` / `ancla()` / `reaparecer()` (nuevos).
+- `scripts/mundo/respawn_heroe.gd` (nuevo, `RespawnHeros`): escucha
+  `jugador.murio`, mantiene el punto seguro y llama a `reaparecer()`.
+- **El ancla NO sale de `data/viaje_rapido.json`.** Sus plazas son `[x, z]`
+  de dos elementos, sin `y`, y la altura real del terreno va de 40 u en
+  Moon Town a 220 u en `rage` (175 u de descuadre). La fuente es
+  `CiudadLuna.punto_aparicion_jugador()`, que sí consulta el terreno, y son
+  las 9 ciudades que la demo ya construye.
+- **Guardia de arena, con trampa evitada:** mirar `arena.activa()` en el
+  instante de morir NO alcanza. La arena se conecta a `jugador.murio` antes
+  que el respawn, así que su handler corre PRIMERO, termina la derrota y
+  deja `activa() = false`; para cuando llega la señal del respawn, la arena
+  ya parece inactiva y el héroe se iría a la ciudad a media partida. La
+  arena ahora pone y quita el respawn a punto explícitamente
+  (`RespawnHeros.suspender()`), y `_terminar()` NO lo libera (corre dentro
+  de la misma señal); lo libera `detener()`.
+- **Segundo bug de la misma clase, encontrado por el test de la fase:** al
+  perder en la arena, la demo avisaba "habla con Renn" y dejaba al jugador
+  **muerto y congelado en el campo**. Ahora al perder revive, teletransporta
+  fuera y recién ahí devuelve el control al respawn.
+- `Formulas.damage_sin_alloc()` (nuevo) devuelve un `ResultadoDano`
+  reutilizado en vez de un `Dictionary` literal: eran dos asignaciones por
+  golpe (el Dictionary de retorno y el literal `{"power": 1.0}`), en los
+  tres call sites del hot path (`player.gd`, `enemy.gd`, `skill_system.gd`).
+  `Formulas.damage()` sigue existiendo para los tests.
+- `tests/test_fase51_muerte.gd` (nuevo, 62 checks).
+
+## Fase 51.1 — Registro mínimo de sistemas (§9.1, parcial) (2026-09-29)
+
+`gg_system` y `system_id` aparecían **0 veces en los 82 scripts**, aunque el
+spec los exige: el descubrimiento era 100% rutas de nodo hardcodeadas desde
+una cadena de demos de 6 niveles de herencia, con 12 variables `@onready`.
+
+- `scripts/core/systems.gd` (nuevo, `Systems`): `registrar()`,
+  `obtener()`, `exigir()`, `desregistrar()`. Acepta los dos tipos que hay
+  en el proyecto: los `Node` entran además al grupo `gg_system`, y los
+  `RefCounted` (`SaveSystem`, `ViajeRapido`, que no viven en el árbol) solo
+  quedan en el diccionario del contenedor.
+- Migrados los CUATRO que estorban —los que la demo instanciaba con `.new()`
+  dentro de una demo y por tanto rompían cualquier test de integración—:
+  `SaveSystem`, `Arena`, `GestorVetas` y `ViajeRapido`.
+- **Deuda que queda declarada, no escondida:** los otros 78 scripts siguen
+  con acceso directo. Esta fase es deliberadamente parcial: migrar los 82
+  es mecánico pero son varias sesiones y retrasa el trabajo visible.
+
+## Fase 52 — Jefes de verdad (2026-09-29)
+
+Los 6 jefes de fragmento eran `Enemy` con más vida. En `data/enemies.json`
+no había **ningún campo** que los distinguiera de un goblin: se reconocían
+solo por tener XP >= 400.
+
+- **Dato primero (§9.4):** bloque `jefe` en los 6 arquetipos, con
+  `vida_mult` (4.5–5.1), `telegrafia_seg` (0.7–1.3), `enrage_seg` (40–70),
+  `mult_dano` (3.0) y `fases[]` (3 tramos: 100–66 %, 66–33 %, 33–0 % con
+  multiplicadores de velocidad y daño). Perfil por jefe: el Champion y el
+  Fundidor telegrafían lento, el Susurro y el Devorador rápido.
+- `Estado.PREPARANDO` en la FSM: el jefe se planta y se tiñe (material
+  emisivo rojo) antes de cada golpe. Sin clip propio —el rig solo trae
+  idle/walk/attack/die— reusa el de ataque, que es la pose de carga; la
+  señal real es el tinte.
+- Fases: cambian al cruzar el umbral de vida y **solo suben** (curarle al
+  jefe no lo devuelve a la fase anterior). El enrage baja solo y termina
+  sumando daño.
+- Un arquetipo sin bloque `jefe` se comporta exactamente igual que antes:
+  misma FSM, sin telegrafía, sin fases.
+- `tests/test_fase52_jefes.gd` (nuevo, 78 checks).
+- **Pendiente:** la barra de jefe estilo GoW (`BarraJefe`). Se decidió que
+  sería un `Control` en su propio `CanvasLayer`, no como `BarraVidaMob` (que
+  es 3D y vive sobre la cabeza del mob): se reutiliza la LÓGICA (el
+  `pct`, el drenaje retardado, los colores por tramo) y no el render.
+
+---
+
+# BLOQUE DRAGONWILDS — Fases 53 a 62 (2026-09-29)
+
+Diez fases que agregan la **capa de presión y de recolección** que el juego
+no tenía, manteniendo el canon de Liberty, las 5 clases y la regla dura de
+single-player local (§7.1). La inspiration fue RuneScape: Dragonwilds, pero
+lo que se tomó es su **bucle**, no su forma: no hay construcción libre
+estilo Dragonwilds más allá del Refugio, ni dragones, ni cofres, ni nada
+online.
+
+Estado al cerrar el bloque: **93 suites en verde** (89 tests + 4 smokes),
+`tools/run_tests.sh` como runner único.
+
+Las tres decisiones que framing el bloque (Juan Diego):
+- **XP por habilidad**, sin niveles 1-99: el nivel de personaje NO se toca.
+- **Hambre y sed suaves**: a 0 NO matan, dan debuff.
+- **Refugio con construcción libre**, partida en dos fases (60/61) por ser
+  la más cara.
+
+---
+
+## Fase 53 — Barra de jefe
+
+Desde la 52 los jefes telegrafiaban, cambiaban de fase y entraban en rage, y
+el jugador no veía nada. `scripts/ui/barra_jefe.gd`: un `Control` en
+`UiLayers.BARRA_JEFE` (13), con nombre, barra, "fantasma" de daño diferido,
+marcas de umbral en 66% y 33%, y latido en rage. Se engancha a
+`Player.seleccion_cambiada` y solo aparece si el enemigo es jefe.
+
+`BarraVidaMob` es 3D (un QuadMesh sobre la cabeza del mob); esta es UI. Se
+reutiliza la LÓGICA (pct, drenaje retardado, peldaños de color) y no el
+render. Test: 31 checks.
+
+## Fase 54 — Comida y tick-eat
+
+El proyecto tenía **2 consumibles y cero comida**. Ahora: 15 alimentos y
+bebidas, con `hambre`/`sed`/`energia`/`riesgo` en `data/items.json` (77
+items). La carne cruda que tiran goblin/lobo/ogro (85%) enferma; la asada
+no. `scripts/core/vitals.gd` (puro, testeable sin nodos) es el contenedor
+de los tres vitales; `Inventario.usar()` enruta comida y bebida a él, que es
+el tick-eat. Test: 78 checks.
+
+## Fase 55 — Tala
+
+`data/arboles.json` (126 árboles, 9 especies por bioma,
+`tools/generar_arboles.py` determinista). **`Arbol` HEREDA de `Veta`**: la
+veta de la 45 ya era un nodo de recurso genérico (usos, respawn, aviso,
+tinte, streaming con histéresis) y la tala es lo mismo con otro `item_id` y
+otra silueta. Copiarlo habría repetido el `skill_fx.gd` vs `damage_flash.gd`
+que ya está marcado como deuda. Lo único propio: tronco + copa, la señal
+`talada` reemitida de `minada`, y la copa que desaparece al talarse.
+`Talar` es la lógica pura, calcada de `Mineria`. Test: 3197 checks.
+
+**Trampa pagada (segunda vez):** `_al_agotar()` tiene que aceptar el
+`veta_id` que emite la señal. Declararlo sin argumentos hace que Godot corte
+la conexión en runtime con *"Method expected 0 argument(s), but called
+with 1"*, y no se ve en ningún `--check-only`.
+
+## Fase 56 — Cocina
+
+Cierra el círculo recolectar→cocinar→comer, y **no depende de la 61**: la
+`Fogata` es una estación fija por ciudad, como los herreros. Cocinar es lo
+que convierte el riesgo de la comida cruda en una decisión. `Cocina` es
+pura; la leña sale de los troncos de la 55, así que la tala tiene consumidor.
+La fogata se apaga sin leña (y con eso no gasta ni luz real ni partículas).
+Test: 80 checks.
+
+## Fase 57 — Habilidades con XP propio
+
+Segundo eje PARALELO al nivel de personaje: `Habilidades` (pura) con XP por
+habilidad y tramos, en `data/habilidades.json`. **El nivel de personaje no
+se toca** y sigue mandando en StatBlock, combate y equipo. El XP de
+habilidad abre los Hechos de la 59. La minería da los dos XP. Test: 58.
+
+## Fase 58 — Hambre, sed y energía
+
+El núcleo. `Vitals.avanzar(dt, actividad)` decae por tiempo y actividad
+(pegar 2.2x, caminar 1.5x, parar 1.0x), nunca sale de 0..100, y la
+enfermedad acelera el hambre. El `Player._tick_vitals` sincroniza por MODS
+del StatBlock (`vital:energia`, `vital:debil`): la UI nunca escribe stats y
+todo es reversible.
+
+**DECISIÓN, blindada por test: a 0 NO matan.** Dan debuff (menos ataque y
+defensa) y nada más: no drenan vida. Vaciarte la vida sería matarte de a
+poco por otro nombre. La muerte sigue siendo de enemigos y jefes. El test
+falla si alguien "arregla" el 0 para que mate.
+
+Test: 41 checks.
+
+## Fase 59 — Hechos de Habilidad
+
+La mejor idea de Dragonwilds, traída: **subir una habilidad no te da "+5% de
+daño", te da un HECHO que transforma la recolección**. 10 hechos en
+`data/hechos.json`, dos tipos:
+- `mod` → MOD del StatBlock, fuente `hecho:<id>` (distinta de `talento:<id>`
+  de la 28 y de `buff:<id>` de los temporales, para que no se pisen).
+- `bandera` → la leen los sistemas: `tala_area` (3 troncos por tajo,
+  gastando UN uso), `tala_rangos` (+2 tramos de nivel), `veta_persistente`,
+  `doble_respawn`, `cocina_lote`, `sed_ausente`, `hambre_ausente`.
+
+Sin la 59, la 58 es un castigo. Con ella, cada vez que tenés hambre decidís
+si gastás tu Hecho de Tala para resolverla rápido o si caminás a la fogata.
+Esa decisión ES el juego. Test: 84 checks.
+
+## Fase 60 — El Refugio: reclamar
+
+El "refugio del Verdugo" es canon desde §6 Dominio 7 y hasta acá no existía.
+9 puntos, uno por plaza, en `data/refugios.json`. Reclamar da ancla de
+respawn, nodo de viaje rápido sin costo y el presupuesto de piezas de la 61.
+
+**El dato trae [x, z] y NUNCA `y`**: la altura la consulta el terreno, por el
+mismo motivo que en la 55 (las plazas de `viaje_rapido.json` tienen un `y`
+desfasado hasta 175 u). Hay un test que lo comprueba. Test: 96 checks.
+
+## Fase 61 — El Refugio: construir
+
+La fase más cara, y la de más riesgo de VRAM (el mundo ya tenía 72
+`ArrayMesh` y 36 `ConcavePolygonShape3D` residentes, §9.5). 8 piezas en
+`data/piezas.json` con costo, caja y acción. `Constructor` es PURA: rejilla
+de 2 u, 4 rotaciones (1 si la pieza no admite), AABB con holgura para que
+no se solapen, y **el presupuesto de piezas se aplica ANTES de instanciar
+nada**.
+
+A propósito NO es un editor de construcción libre: sin rotación continua,
+sin terreno, sin preview en 3D. Es un sistema acotado que no se come la
+VRAM. El techo (24 por refugio) vive en el dato y hay un test que falla si
+se pasa. Test: 80 checks.
+
+## Fase 62 — Titanes que hostigan
+
+El equivalente al dragón de Velgar: presente desde temprano, no solo en el
+jefe. `titan_acecho` es un arquetipo NORMAL con bloque élite (no un jefe de
+fragmento: no lleva `jefe`) y `factor_suelta: 6.0` — suelta la presa al
+6x su aggro, contra 1.5x de un goblin. 8 spawns, uno por región menos Moon
+Town (la primera tiene que respirar).
+
+Los 1133 spawns se mantienen: 8 cupos salieron de la fauna. Eso tocó los
+conteos de `test_fase12_spawns`, `test_fase14_terreno` y `test_fase43_regional`
+(que contaban arquetipos y aplicaban la regla región→arquetipo), y los tres
+eximen ahora el grupo `titan` como ya eximían `jefe_fragmento`. Test: 52.
+
+---
+
+## Lo que sigue abierta
+
+- **UI de los nuevos sistemas**: la barra de jefe existe, pero no hay panel
+  de vitals visible, ni menu de Hechos, ni modo de construcción con preview.
+  La lógica está entera y testeada; falta la capa de pantalla.
+- **Los Hechos de Mina/Cocina/Recolección no están leídos** por los sistemas
+  correspondientes todavía (solo Tala y Vitals los consumen hoy).
+- **`Refugio` no se conecta al `RespawnHeros`**: el ancla sigue viniendo de
+  `CiudadLuna`. La conexión está diseñada pero no cableada.
+- **Los 2 flags `TEMPORAL` del viaje rápido** siguen activos: es una
+  decisión de Juan Diego, no una corrección.

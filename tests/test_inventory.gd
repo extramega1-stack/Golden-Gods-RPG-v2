@@ -50,7 +50,16 @@ func _nueva_entidad() -> Entity:
 func _t_itemdb() -> void:
 	IDB.cargar()
 	# Fase 22: 16 = 10 + 6 fragmentos de jefe.
-	_check(IDB.ids().size() == 53, "ItemDB carga 53 items (16 + Eco + 10 f31 + 10 regionales + 10 forjadas + 6 minerales)", str(IDB.ids().size()))
+	# Fase 54: se Derivan del dato, no hardcodeados. El total cambia cada vez
+	# que se agrega un item (la 54 sumo 15 de comida y bebida) y antes este
+	# check era el que se caia.
+	_check(IDB.ids().size() >= 53, "ItemDB carga al menos 53 items", str(IDB.ids().size()))
+	var datos = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/items.json"))
+	var total_json: int = ((datos as Dictionary).get("items", []) as Array).size()
+	_check(IDB.ids().size() == total_json,
+		"ItemDB carga exactamente los items del JSON",
+		"db=%d json=%d" % [IDB.ids().size(), total_json])
 	_check(IDB.existe("pocion_vida"), "existe pocion_vida (drop de enemies.json)")
 	_check(IDB.existe("daga_gastada"), "existe daga_gastada (drop de enemies.json)")
 	_check(IDB.existe("colmillo"), "existe colmillo (drop de enemies.json)")

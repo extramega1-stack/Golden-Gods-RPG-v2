@@ -16,7 +16,12 @@ extends Entity
 
 signal botin_generado(drops: Array, posicion: Vector3)
 
-enum Estado { QUIETO, PERSEGUIR, ATACAR, MUERTO }
+## Fase 52: `PREPARANDO` es la telegrafía del jefe. El jefe se detiene, se
+## tiñe y avisa antes de pegar; al salir de él, el golpe entra.
+enum Estado { QUIETO, PERSEGUIR, ATACAR, MUERTO, PREPARANDO }
+
+## Fase 51: el ataque básico, en una const (no un literal por golpe).
+const SKILL_ATAQUE_BASICO: Dictionary = {"power": 1.0}
 
 const GRAVEDAD: float = 24.0
 const TASA_PERSECUCION: float = 8.0
@@ -59,11 +64,37 @@ const CLIP_POR_ESTADO: Dictionary = {
 	Estado.PERSEGUIR: "walk",
 	Estado.ATACAR: "attack",
 	Estado.MUERTO: "die",
+	# Fase 52: el rig solo trae 4 clips, así que la telegrafía reusa el de
+	# ataque (es la pose de carga). La señal real de que viene el golpe es el
+	# tinte, no el clip. Con un clip propio sería "cast".
+	Estado.PREPARANDO: "attack",
 }
 var radio_aggro: float = 10.0
+## Fase 62: cuánto multiplica `radio_aggro` la suelta. Un goblin suelta al
+## 1.5x su aggro (FACTOR_SUELTA); un Titán Acecho llega a 6x, o sea que te
+## sigue mucho más lejos. Sale del arquetipo.
+var factor_suelta: float = FACTOR_SUELTA
 var rango_ataque: float = 2.2
 var cooldown_ataque: float = 1.6
+## Fase 52: bloque `jefe` de data/enemies.json ({} si el arquetipo no es
+## jefe). Es lo que distingue a los 6 jefes de fragmento del resto: hasta la
+## fase 52 se los reconocía solo por tener XP >= 400.
+var _jefe: Dictionary = {}
+## Índice de la fase actual (0..2). Cambia al bajar del 66% y del 33%.
+var _fase: int = 0
+## Multiplicadores de la fase actual, ya resueltos.
+var _mult_vel: float = 1.0
+var _mult_dano: float = 1.0
+## Segundos restantes de telegrafía y de enrage.
+var _telegrafia: float = 0.0
+var _enrage: float = 0.0
+## Cuerpo del jefe teñido durante la telegrafía (fase 52).
+var _material_jefe: StandardMaterial3D = null
+var _cuerpo_jefe: MeshInstance3D = null
+## ¿Es este enemigo un jefe? (Fase 52)
+var es_jefe: bool = false
 var xp_recompensa: int = 10
+
 ## Fase 43: base del arquetipo (para escalar sin acumular) y XP sin escala.
 var xp_recompensa_base: int = 10
 var _base_arquetipo: Dictionary = {}
@@ -240,6 +271,7 @@ func configurar(arquetipo: Dictionary) -> void:
 	vida_actual = stats.vida_max
 	mana_actual = stats.mana_max
 	radio_aggro = float(arquetipo.get("radio_aggro", 10.0))
+	factor_suelta = float(arquetipo.get("factor_suelta", FACTOR_SUELTA))
 	rango_ataque = float(arquetipo.get("rango_ataque", 2.2))
 	cooldown_ataque = float(arquetipo.get("cooldown_ataque", 1.6))
 	xp_recompensa = int(arquetipo.get("xp", 10))
@@ -270,6 +302,11 @@ func configurar(arquetipo: Dictionary) -> void:
 	# lo trae, se vuelve a la cápsula (el pool reutiliza el nodo) y se tiñe.
 	if not _aplicar_modelo(arquetipo):
 		_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
+	# Fase 52: el bloque `jefe` se lee AL FINAL, con el StatBlock ya
+	# construido: multiplica su vida_max y deja los multiplicadores de fase.
+	# Si se leyera antes, `stats` sería el del uso anterior del nodo (el
+	# pool reutiliza enemigos) o uno vacío.
+	_leer_jefe(arquetipo)
 
 
 ## Fase 43 — escala regional (data/regiones.json → bloque `escala`):
@@ -441,7 +478,7 @@ func _actualizar_estado() -> void:
 			if dist <= radio_aggro:
 				estado = Estado.PERSEGUIR
 		Estado.PERSEGUIR:
-			if dist == INF or dist > radio_aggro * FACTOR_SUELTA:
+			if dist == INF or dist > radio_aggro * factor_suelta:
 				estado = Estado.QUIETO
 			elif dist <= rango_ataque:
 				estado = Estado.ATACAR
@@ -450,12 +487,28 @@ func _actualizar_estado() -> void:
 				estado = Estado.QUIETO
 			elif dist > rango_ataque * 1.25:
 				estado = Estado.PERSEGUIR
+			elif es_jefe and _cd <= 0.0:
+				# Fase 52: el jefe telegrafía antes de cada golpe. Sale de
+				# PREPARANDO al agotarse `_telegrafia`, y ahí `_actuar` pega.
+				_telegrafia = telegrafia_seg()
+				estado = Estado.PREPARANDO
+		Estado.PREPARANDO:
+			if dist == INF or dist > rango_ataque * 1.5:
+				estado = Estado.QUIETO
+			elif _telegrafia <= 0.0:
+				estado = Estado.ATACAR
 		Estado.MUERTO:
 			pass
 
 
 ## Cuerpo: actúa según el estado (movimiento + golpes + física).
 func _actuar(delta: float) -> void:
+	# Fase 52: el enrage baja solo y la fase se reevalua con la vida. Va acá
+	# y no en `_actualizar_estado` porque esa es pura y sin argumentos (la
+	# usan los tests de IA de la fase 4).
+	if es_jefe:
+		_tick_jefe(delta)
+		_revisar_fase()
 	var meta: Vector3 = Vector3.ZERO
 	if estado == Estado.PERSEGUIR and objetivo != null and objetivo.esta_vivo():
 		var hacia: Vector3 = objetivo.global_position - global_position
@@ -472,7 +525,16 @@ func _actuar(delta: float) -> void:
 				rotation.y = lerp_angle(rotation.y, Movimiento.yaw_hacia(mirar), clampf(10.0 * delta, 0.0, 1.0))
 		if _cd <= 0.0:
 			_golpear()
-			_cd = cooldown_ataque / maxf(stats.vel_ataque, 0.1)
+			# Fase 52: la fase acorta el cooldown del jefe.
+			_cd = cooldown_ataque / maxf(stats.vel_ataque * _mult_vel, 0.1)
+	elif estado == Estado.PREPARANDO:
+		# Fase 52: se planta y avisa. El golpe sale al salir de aquí.
+		_telegrafia = maxf(_telegrafia - delta, 0.0)
+		if _telegrafia <= 0.0:
+			_tintear_jefe(false)
+			_cd = 0.0
+		else:
+			_tintear_jefe(true)
 	var plano: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var suave: Vector3 = Movimiento.suavizar(plano, meta, delta, TASA_PERSECUCION)
 	if is_on_floor():
@@ -484,14 +546,120 @@ func _actuar(delta: float) -> void:
 	move_and_slide()
 
 
+## Fase 52: lee el bloque `jefe` del arquetipo. Un arquetipo normal no lo
+## tiene y queda como estaba (mismas estadísticas, mismo comportamiento).
+func _leer_jefe(arquetipo: Dictionary) -> void:
+	_jefe = arquetipo.get("jefe", {})
+	es_jefe = not _jefe.is_empty()
+	_fase = 0
+	_telegrafia = 0.0
+	_enrage = float(_jefe.get("enrage_seg", 0.0)) if es_jefe else 0.0
+	_mult_vel = 1.0
+	_mult_dano = float(_jefe.get("mult_dano", 1.0)) if es_jefe else 1.0
+	if es_jefe:
+		# El bloque multiplica la vida del arquetipo: un jefe pegando 4,8x su
+		# vida base es un fight largo, no un ogro con más vida.
+		stats.vida_max *= float(_jefe.get("vida_mult", 1.0))
+		vida_actual = stats.vida_max
+	_fijar_fase(0)
+	_tintear_jefe(false)
+
+
+## Fase 52: resuelve los multiplicadores de la fase `i` del bloque.
+func _fijar_fase(i: int) -> void:
+	_fase = clampi(i, 0, maxi(0, _jefe.get("fases", []).size() - 1))
+	var fases: Array = _jefe.get("fases", [])
+	if _fase < 0 or _fase >= fases.size():
+		_mult_vel = 1.0
+		return
+	var f: Dictionary = fases[_fase]
+	_mult_vel = float(f.get("mult_vel", 1.0))
+	_mult_dano = float(f.get("mult_dano", 1.0)) * float(_jefe.get("mult_dano", 1.0))
+
+
+## Fase 52: fase actual del jefe (0..2). La lee la barra de jefe.
+func fase() -> int:
+	return _fase
+
+
+func fases_totales() -> int:
+	return maxi(1, _jefe.get("fases", []).size())
+
+
+## Fase 52: segundos de telegrafía (0 si no es jefe).
+func telegrafia_seg() -> float:
+	return float(_jefe.get("telegrafia_seg", 0.0))
+
+
+## Fase 52: ¿está en rage? La lee la barra de jefe.
+func en_rage() -> bool:
+	return es_jefe and _enrage <= 0.0
+
+
+## Fase 52: el enrage sube el daño de todos los golpes mientras dure.
+func _tick_jefe(delta: float) -> void:
+	if not es_jefe or _enrage <= 0.0:
+		return
+	_enrage = maxf(_enrage - delta, 0.0)
+
+
+## Fase 52: cambia de fase al cruzar el umbral de vida que le toca.
+func _revisar_fase() -> void:
+	if not es_jefe:
+		return
+	var fases: Array = _jefe.get("fases", [])
+	if _fase >= fases.size():
+		return
+	var pct: float = 1.0 if stats.vida_max <= 0.0 else vida_actual / stats.vida_max
+	# Se queda con la ÚLTIMA fase cuyo umbral cubre `pct`. Los umbrales van
+	# 1.0, 0.66, 0.33 y cada uno es el piso de su banda: fase 0 es (0.66,
+	# 1.0], fase 1 es (0.33, 0.66], fase 2 es [0, 0.33]. Cortar en la
+	# primera coincidencia dejaba a todos los jefes clavados en la fase 1.
+	var nueva: int = 0
+	for i in range(fases.size()):
+		if pct <= float((fases[i] as Dictionary).get("hasta", 1.0)):
+			nueva = i
+	# Las fases SOLO suben: si al jefe le curan o regenera vida, no vuelve a
+	# la fase anterior. Una escalada reversible hace el fight trivial.
+	nueva = maxi(nueva, _fase)
+	if nueva != _fase:
+		_fijar_fase(nueva)
+
+
+## Fase 52: tiñe el cuerpo del jefe durante la telegrafía. `activo` encend
+## y apaga el aviso visual de que viene el golpe.
+func _tintear_jefe(activo: bool) -> void:
+	if not es_jefe:
+		return
+	if _cuerpo_jefe == null or not is_instance_valid(_cuerpo_jefe):
+		_cuerpo_jefe = Cuerpo.malla(self) as MeshInstance3D
+		if _cuerpo_jefe == null:
+			return
+	if activo:
+		if _material_jefe == null:
+			_material_jefe = StandardMaterial3D.new()
+			_material_jefe.emission_enabled = true
+			_material_jefe.emission = Color(0.9, 0.2, 0.1)
+			_material_jefe.emission_energy_multiplier = 2.2
+			_material_jefe.albedo_color = Color(0.7, 0.1, 0.1)
+		_cuerpo_jefe.material_override = _material_jefe
+	elif _cuerpo_jefe.material_override == _material_jefe:
+		_tintar(_base_arquetipo.get("color", Color.WHITE))
+
+
 ## Un golpe al objetivo con las fórmulas puras (daño mínimo 1 garantizado).
 func _golpear() -> void:
 	if objetivo == null or not objetivo.esta_vivo():
 		return
-	var res: Dictionary = Formulas.damage(
-		stats, objetivo.stats, {"power": 1.0},
+	# Fase 51: sin Dictionary por golpe (ver Player.ejecutar_ataque).
+	# Fase 52: el jefe multiplica su dano por la fase y por el enrage.
+	var skill: Dictionary = SKILL_ATAQUE_BASICO
+	if _mult_dano != 1.0:
+		skill = {"power": _mult_dano}
+	var res: Formulas.ResultadoDano = Formulas.damage_sin_alloc(
+		stats, objetivo.stats, skill,
 		rng.randf(), rng.randf_range(-1.0, 1.0))
-	objetivo.take_damage(float(res["final"]), self, bool(res["crit"]))
+	objetivo.take_damage(float(res.final), self, res.crit)
 
 
 ## Muerte: además del apagado de Entity, emite el botín y premia al asesino.

@@ -13,6 +13,10 @@ const SAVE_VERSION: int = 13
 const RUTA: String = "user://partida.json"
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
+## Fase 51.1 (§9.1): identidad del sistema para el contenedor `Systems`.
+## El grupo `gg_system` + este `system_id` sustituyen a las rutas de nodo
+## hardcodeadas que usaba la demo para encontrarlo.
+var system_id: StringName = &"save_system"
 var jugador: Player = null
 var enemigos: Array = []
 ## Fase 6: NPCs en escena (id + posición; los NPCs no mueren, así que no se
@@ -63,6 +67,9 @@ func guardar() -> bool:
 			"puntos_atributo": jugador.puntos_atributo,
 			# Fase 31: niveles de skill + puntos sin gastar.
 			"skills": jugador.skills.to_dict() if jugador.skills != null else {},
+			# Fase 57: XP por habilidad. Los saves viejos (sin el bloque)
+			# cargan con todo en 0, que es lo correcto.
+			"habilidades": jugador.habilidades.to_dict() if jugador.habilidades != null else {},
 			"pos": [jugador.global_position.x, jugador.global_position.y, jugador.global_position.z],
 		},
 		"enemigos": _enemigos_a_datos(),
@@ -147,6 +154,7 @@ func _cargar_jugador(dj: Dictionary) -> void:
 	_cargar_equipo(dj)
 	_cargar_talentos(dj)
 	_cargar_skills(dj)
+	_cargar_habilidades(dj)
 	var pos: Array = dj.get("pos", [])
 	if pos.size() >= 3:
 		jugador.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
@@ -220,6 +228,15 @@ func _cargar_skills(dj: Dictionary) -> void:
 		jugador.skills.cargar_estado(dj.get("skills", {}), jugador.clase_id)
 	else:
 		jugador.skills.configurar_clase(jugador.clase_id)
+
+
+## Fase 57: restaura el XP por habilidad. Un save viejo (sin el bloque)
+## deja las habilidades en 0, no en un estado raro.
+func _cargar_habilidades(dj: Dictionary) -> void:
+	if jugador.habilidades == null:
+		jugador.habilidades = Habilidades.crear_desde_datos()
+	if dj.has("habilidades"):
+		jugador.habilidades.cargar_estado(dj.get("habilidades", {}))
 
 
 func _cargar_enemigos(lista: Array) -> void:

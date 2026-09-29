@@ -31,6 +31,12 @@ var _retrato: RetratoHeroe = null
 
 
 func _ready() -> void:
+	# Fase 50.4: el HUD se quedaba en la capa 1 (la de por defecto de un
+	# CanvasLayer), fuera de los rangos de §9.2 y POR DEBAJO de la barra de
+	# acciones (12) y de todos los paneles (25+). La capa es de la escena,
+	# pero el valor lo pone el script: es la convención del repo y así no
+	# depende de que alguien edite el .tscn.
+	layer = UiLayers.HUD
 	_construir()
 
 

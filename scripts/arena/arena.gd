@@ -25,7 +25,14 @@ signal arena_terminada(victoria: bool, oleada: int)
 ## Fase 42: los mobs supervivientes se acercaron al jugador (anti-stuck).
 signal ayuda_oleada(n: int)
 
+## Fase 51.1 (§9.1): identidad del sistema para el contenedor `Systems`.
+## El grupo `gg_system` + este `system_id` sustituyen a las rutas de nodo
+## hardcodeadas que usaba la demo para encontrarlo.
+var system_id: StringName = &"arena"
 var _jugador: Player = null
+## Fase 51: el sistema de respawn del heroe. Lo pone la demo con
+## `fijar_respawn`; la arena lo suspende mientras corre la partida.
+var _respawn: RespawnHeros = null
 var _factory: Callable = Callable()
 var _pool: PoolMobs = null
 var _arquetipos: Dictionary = {}
@@ -77,6 +84,11 @@ func fijar_arquetipos(arqs: Dictionary) -> void:
 	_arquetipos = arqs
 
 
+## Fase 51: inyecta el sistema de respawn del heroe.
+func fijar_respawn(r: RespawnHeros) -> void:
+	_respawn = r
+
+
 func fijar_jugador(j: Player) -> void:
 	if _jugador != null and is_instance_valid(_jugador):
 		if _jugador.murio.is_connected(_al_morir_jugador):
@@ -114,6 +126,13 @@ func iniciar() -> void:
 		push_warning("[Arena] sin jugador, factory u oleadas: no inicia")
 		return
 	_activa = true
+	# Fase 51: mientras corre la partida, el respawn del heroe se pone a
+	# punto. Sin esto, al morir el respawn lo teletransporta a la ciudad a
+	# media partida: esta arena se conecta a `jugador.murio` antes que el
+	# respawn, asi que su handler corre primero, termina la derrota y deja
+	# `activa() = false` antes de que el respawn mire.
+	if _respawn != null and is_instance_valid(_respawn):
+		_respawn.suspender(true)
 	_oleada = 0
 	_siguiente()
 
@@ -121,6 +140,9 @@ func iniciar() -> void:
 ## Limpia mobs (de vuelta al pool, desconectados) y apaga. Idempotente.
 func detener() -> void:
 	_activa = false
+	# Fase 51: al apagar la arena se le devuelve el control al respawn.
+	if _respawn != null and is_instance_valid(_respawn):
+		_respawn.suspender(false)
 	_oleada = 0
 	_espera = 0.0
 	_tiempo_oleada = 0.0
@@ -295,6 +317,12 @@ func _terminar(victoria: bool) -> void:
 		victorias += 1
 		mejor_oleada = maxi(mejor_oleada, int(_oleadas.size()))
 	_activa = false
+	# OJO (fase 51): aquí NO se libera la puesta a punto del respawn. Esta
+	# función corre DENTRO de la señal `jugador.murio`, antes de que
+	# `RespawnHeros._al_morir` la mire: si se liberara acá, el respawn vería
+	# `_suspendido = false` y expulsaría al héroe de la arena a media
+	# partida. Quien libera es `detener()`, que se llama cuando el héroe ya
+	# está de vuelta en el mundo y jugable.
 	_oleada = 0
 	_espera = 0.0
 	_tiempo_oleada = 0.0

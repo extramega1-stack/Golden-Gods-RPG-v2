@@ -31,14 +31,19 @@ const ARQUETIPOS_VALIDOS: Array[String] = ["goblin", "lobo", "ogro",
 	"escorpion_dunas", "slog_volcan", "golem_ascua", "yeti_hielo",
 	"arana_sombra", "espectro_velo", "carnicoro_rio", "mimo_hoja",
 	"centinela_oro", "sombra_vacia",
+	# Fase 62: el Titán Acecho. No es de la fauna de una región (es único y
+	# acecha), por eso va exento de la regla región→arquetipo, igual que los
+	# jefes de fragmento.
+	"titan_acecho",
 	"devorador_dunas", "fundidor_antiguo", "aullido_pico", "eco_cristal",
 	"susurro_umbral", "campeon_caido"]
 ## Conteos esperados del generador determinista (semilla 20260922).
-## Fase 22: 1133 = 1127 + 6 jefes de fragmento (grupo jefe_fragmento).
+## 1133 = 1113 trash + 6 jefes de fragmento (grupo jefe_fragmento)
+## + 6 de prueba (grupo prueba_combate) + 8 titanes (grupo titan, fase 62).
 ## Fase 43: 795 spawns reasignados a la fauna de su región.
 const TOTAL_ESPERADO := 1133
 const GOBLIN_ESPERADO := 49
-const LOBO_ESPERADO := 292
+const LOBO_ESPERADO := 290  # fase 62: 8 cupos se fueron a los titanes
 const OGRO_ESPERADO := 1
 
 var _ok: int = 0
@@ -123,7 +128,9 @@ func _t_contrato_spawns() -> void:
 	var regionales: int = 0
 	for a in por_arq:
 		if a in ["goblin", "lobo", "ogro", "devorador_dunas", "fundidor_antiguo",
-				"aullido_pico", "eco_cristal", "susurro_umbral", "campeon_caido"]:
+				"aullido_pico", "eco_cristal", "susurro_umbral", "campeon_caido",
+				# Fase 62: el titán tampoco es un mob regional.
+				"titan_acecho"]:
 			continue
 		if int(por_arq.get(a, 0)) > 0:
 			regionales += 1
@@ -151,7 +158,9 @@ func _t_contrato_spawns() -> void:
 		# tener un arquetipo de la fauna de la región donde está (los
 		# jefes de fragmento quedan exentos: son únicos por diseño).
 		var grupo: String = str(d.get("grupo", ""))
-		if grupo != "jefe_fragmento" and grupo != "prueba_combate":
+		# Fase 62: el grupo "titan" está exento, igual que "jefe_fragmento" y
+		# "prueba_combate": son arquetipos únicos, no fauna de la región.
+		if grupo != "jefe_fragmento" and grupo != "prueba_combate" and grupo != "titan":
 			var reg: Dictionary = _region_db.region_en(float(d["x"]), float(d["z"]))
 			var fauna: Array = reg.get("mobs", [])
 			if fauna.is_empty() or a not in fauna:
@@ -179,15 +188,28 @@ func _t_contrato_spawns() -> void:
 		"%d dentro" % en_zona_segura)
 
 	# 4. El generador es determinista: dos corridas -> mismo SHA.
-	var sha1: String = FileAccess.get_sha256(RUTA_SPAWNS)
+	#    Fase 50.4: se ejecuta sobre una COPIA en user://. Antes escribía
+	#    sobre data/spawns.json real: si el generador fallaba a mitad, el
+	#    test dejaba 1133 entradas corruptas en el repo. Además se compara
+	#    contra el SHA del archivo real, que debe coincidir con el generado.
+	var sha_repo: String = FileAccess.get_sha256(RUTA_SPAWNS)
 	var ruta_py: String = ProjectSettings.globalize_path("res://tools/generar_spawns_rework.py")
+	# OJO: `user://` es una ruta virtual de Godot; hay que globalizarla antes
+	# de pasársela a un proceso de Python, que no la entiende.
+	var prueba: String = ProjectSettings.globalize_path("user://spawns_prueba.json")
 	var salida: Array = []
-	var rc1: int = OS.execute("python3", PackedStringArray([ruta_py]), salida, true)
-	var sha2: String = FileAccess.get_sha256(RUTA_SPAWNS)
-	var rc2: int = OS.execute("python3", PackedStringArray([ruta_py]), salida, true)
-	var sha3: String = FileAccess.get_sha256(RUTA_SPAWNS)
+	var rc1: int = OS.execute("python3", PackedStringArray([ruta_py, prueba]), salida, true)
+	var sha1: String = FileAccess.get_sha256(prueba)
+	var rc2: int = OS.execute("python3", PackedStringArray([ruta_py, prueba]), salida, true)
+	var sha2: String = FileAccess.get_sha256(prueba)
 	_check(rc1 == 0 and rc2 == 0, "el generador corre dos veces sin errores",
 		"rc=%d/%d" % [rc1, rc2])
-	_check(sha1 != "" and sha1 == sha2 and sha2 == sha3,
+	_check(sha1 != "" and sha1 == sha2,
 		"dos corridas del generador dan el mismo SHA-256",
-		"%s / %s / %s" % [sha1, sha2, sha3])
+		"%s / %s" % [sha1, sha2])
+	_check(sha1 == sha_repo,
+		"el generador reproduce el spawns.json del repo byte a byte",
+		"repo=%s generado=%s" % [sha_repo, sha1])
+	_check(FileAccess.get_sha256(RUTA_SPAWNS) == sha_repo,
+		"el test NO dejó data/spawns.json modificado", "")
+	DirAccess.remove_absolute(prueba)

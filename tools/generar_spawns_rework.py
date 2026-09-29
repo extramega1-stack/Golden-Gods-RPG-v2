@@ -56,6 +56,15 @@ PROYECTO = os.path.dirname(HERE)
 DESTINO = os.path.join(PROYECTO, "data", "spawns.json")
 REGIONES = os.path.join(PROYECTO, "data", "regiones.json")
 
+# Fase 50.4: salida opcional por argumento. El test de determinismo
+# (test_fase12_spawns) corre el generador dos veces; antes escribia sobre
+# data/spawns.json REAL y, si fallaba a mitad, dejaba 1133 entradas
+# corruptas en el repo. Con esto escribe en user:// y el repo no se toca.
+#
+#   python3 tools/generar_spawns_rework.py [salida.json]
+if len(sys.argv) > 1:
+    DESTINO = sys.argv[1]
+
 SEMILLA = 20260922
 TOTAL = 1133
 SPAWNS_MOON = 24            # en el anillo 800 < r < 1450 de Moon Town
@@ -112,6 +121,12 @@ CIUDADES = [
 # disco urbano, dentro del terreno). El "nivel" es informativo (dificultad
 # sugerida 9-10); el arquetipo es unico y exento de la regla nivel ->
 # arquetipo (ver "grupo"). Las misiones q_* lo cazan por arquetipo.
+# Fase 62: un Titán Acecho por región, salvo Moon Town (que es donde el
+# jugador arranca y tiene que respirar). Es la amenaza que hostiga: un
+# arquetipo unico que no te suelta, no un jefe de fragmento.
+TITAN_ARQUETIPO = "titan_acecho"
+REGIONES_SIN_TITAN = {"moon_town"}
+
 PACK_JEFES = [
     {"arquetipo": "devorador_dunas", "x": 10216.0, "z": 250.0, "nivel": 9,
      "grupo": "jefe_fragmento"},
@@ -163,7 +178,17 @@ def main() -> int:
 
     # Reparto por area (resto mayor) para que la suma sea exacta.
     # Los packs fijo (prueba + jefes) se suman aparte: no entran en el reparto.
-    objetivo = TOTAL - SPAWNS_MOON - len(PACK_PRUEBA) - len(PACK_JEFES)
+    # Fase 62: se restan los titanes del presupuesto de fauna, y la cuenta
+    # se SAQUE del dato (una region con centro y no excluida), no del total
+    # de regiones: si mañana se excluye otra, esto se ajusta solo.
+    # Las regiones no traen `centro`: la plaza de cada una es la de CIUDADES
+    # que cae dentro de su rectangulo. Se resuelve acá y se usa abajo.
+    plazas = [(reg, plaza) for reg, plaza in
+              ((reg, c) for reg in regiones for c in CIUDADES
+               if reg["x0"] <= c[0] < reg["x1"] and reg["z0"] <= c[1] < reg["z1"])]
+    n_titanes = sum(1 for reg, _c in plazas
+                    if reg.get("id", "") not in REGIONES_SIN_TITAN)
+    objetivo = TOTAL - SPAWNS_MOON - len(PACK_PRUEBA) - len(PACK_JEFES) - n_titanes
     areas = [(r["x1"] - r["x0"]) * (r["z1"] - r["z0"]) for r in resto]
     area_total = sum(areas)
     cuotas = [objetivo * a / area_total for a in areas]
@@ -221,8 +246,27 @@ def main() -> int:
     # 4) Pack de jefes de fragmento (fase 22): igual de fijo y estable.
     spawns.extend(PACK_JEFES)
 
+    for reg, centro in plazas:
+        rid = reg.get("id", "")
+        if rid in REGIONES_SIN_TITAN:
+            continue
+        # La cuenta de arriba y este bucle tienen que coincidir: ambos usan
+        # `plazas`, así que no pueden desincronizarse.
+        import math as _m
+        ang = (len(spawns) + 1) * 0.7
+        d = 950.0 + (len(spawns) % 5) * 90.0
+        tx = max(-18432.0, min(18432.0, centro[0] + _m.cos(ang) * d))
+        tz = max(-18432.0, min(18432.0, centro[1] + _m.sin(ang) * d))
+        spawns.append({
+            "arquetipo": TITAN_ARQUETIPO,
+            "x": round(tx, 3), "z": round(tz, 3),
+            "nivel": reg.get("nivel_min", 1) + 2,
+            "grupo": "titan",
+        })
+
     assert len(spawns) == TOTAL, f"total={len(spawns)} != {TOTAL}"
 
+    # Fase 62: un Titán Acecho por región con ciudad, en su anillo exterior.
     with open(DESTINO, "w", encoding="utf-8") as f:
         json.dump(spawns, f, indent=2, ensure_ascii=False)
         f.write("\n")

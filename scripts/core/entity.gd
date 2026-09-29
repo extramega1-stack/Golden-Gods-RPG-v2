@@ -228,6 +228,9 @@ func restaurar(d: Dictionary) -> void:
 	vida_actual = clampf(float(d.get("vida_actual", stats.vida_max)), 0.0, stats.vida_max)
 	mana_actual = clampf(float(d.get("mana_actual", stats.mana_max)), 0.0, stats.mana_max)
 	flash_tiempo = 0.0
+	var vd: Dictionary = d.get("vitals", {})
+	if not vd.is_empty():
+		vitals = Vitals.from_dict(vd)
 	if vida_actual <= 0.0:
 		_apagar_muerto_silencioso()
 	elif estaba_muerto:
@@ -256,6 +259,34 @@ func _revivir_silencioso() -> void:
 	set_physics_process(true)
 
 
+## Fase 54: los vitales de supervivencia. Los consume el inventario al
+## comer/beber; el decaimiento por tiempo es de la fase 58. Es un objeto
+## puro, así que se prueba headless sin nodos.
+var vitals: Vitals = Vitals.new()
+
+## Fase 51: revive EN RUNTIME, no al cargar un save. Envuelve
+## `_revivir_silencioso()` (que ya restaura capas y procesado) y además pone
+## vida/maná y emite las señales, para que la UI se entere.
+##
+## Antes esto no existía: `die()` apagaba `_process`/`_physics_process` y
+## `collision_layer`, y solo la arena escuchaba a `Player.murio`. Morir
+## fuera de la arena congelaba el juego para siempre.
+##
+## `vida`/`mana` negativos = llenar el máximo. Sobre una entidad viva no
+## hace nada (idempotente, como `die()`).
+func revivir(vida: float = -1.0, mana: float = -1.0) -> void:
+	if not _muerto:
+		return
+	_revivir_silencioso()
+	vida_actual = stats.vida_max if vida < 0.0 else clampf(vida, 0.0, stats.vida_max)
+	mana_actual = stats.mana_max if mana < 0.0 else clampf(mana, 0.0, stats.mana_max)
+	flash_tiempo = 0.0
+	# Sin esto la UI queda con 0/máx hasta el siguiente cambio: el retrato se
+	# pinta de gris al morir y no se destiñe si no le llega nada.
+	vida_cambiada.emit(vida_actual, stats.vida_max)
+	mana_cambiado.emit(mana_actual, stats.mana_max)
+
+
 ## Serialización versionada (la usa el save/load de la fase 4).
 func to_dict() -> Dictionary:
 	return {
@@ -265,6 +296,7 @@ func to_dict() -> Dictionary:
 		"vida_actual": vida_actual,
 		"mana_actual": mana_actual,
 		"stats": stats.to_dict(),
+		"vitals": vitals.to_dict(),
 	}
 
 

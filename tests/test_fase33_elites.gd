@@ -76,7 +76,9 @@ func _enemigo(aq: Dictionary) -> Enemy:
 ## (a) Datos.
 func _test_datos() -> void:
 	var aqs: Dictionary = _arquetipos()
-	_chk(aqs.size() == 19, "a: 19 arquetipos (fase 43: +10 regionales)", str(aqs.size()))
+	# Fase 62: +1 (titan_acecho). 20 en total.
+	_chk(aqs.size() == 20, "a: 20 arquetipos (fase 43: +10 regionales, 62: +1 titan)",
+		str(aqs.size()))
 	for k in ["goblin", "lobo", "ogro"]:
 		var b: Dictionary = (aqs.get(k, {}) as Dictionary).get("elite", {})
 		_chk(not b.is_empty(), "a: %s con bloque élite" % k)

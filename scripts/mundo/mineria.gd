@@ -48,6 +48,10 @@ func minar(veta: Veta, jugador: Player) -> String:
 	jugador.inventario.agregar(item_id, cantidad)
 	if xp > 0:
 		jugador.gain_xp(xp)
+		# Fase 57: la minería da su propio XP de habilidad, aparte del de
+		# personaje. Los dos suben: el de personaje manda en StatBlock.
+		if jugador.habilidades != null:
+			jugador.habilidades.ganar("mineria", xp)
 	veta.mostrar_aviso(texto_minado(item_id, cantidad, xp))
 	minado.emit(veta.veta_id, item_id, cantidad, xp)
 	return "ok"

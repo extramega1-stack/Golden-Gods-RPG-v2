@@ -99,7 +99,12 @@ func marcador_tipo() -> int:
 	return _tipo_marcador
 
 
-## Color del cuerpo (material propio por instancia, igual que Enemy).
+## Color del cuerpo. Fase 50.4: antes era un `StandardMaterial3D.new()` por
+## NPC (21 NPCs = 21 materiales). Ahora comparte cache por color, igual que
+## `Enemy._mats_cache` — la clave es el color en 8 bits por canal, así que dos
+## NPCs del mismo color comparten el mismo material.
+static var _mats_cache: Dictionary = {}
+
 func _tintar(c: Variant) -> void:
 	var cuerpo: MeshInstance3D = get_node_or_null("Cuerpo") as MeshInstance3D
 	if cuerpo == null:
@@ -108,7 +113,10 @@ func _tintar(c: Variant) -> void:
 	var r: float = float(col[0]) if col.size() > 0 else 0.35
 	var g: float = float(col[1]) if col.size() > 1 else 0.55
 	var b: float = float(col[2]) if col.size() > 2 else 0.95
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.albedo_color = Color(r, g, b)
-	mat.roughness = 0.7
-	cuerpo.material_override = mat
+	var clave: String = "%d,%d,%d" % [int(r * 255.0), int(g * 255.0), int(b * 255.0)]
+	if not _mats_cache.has(clave):
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.albedo_color = Color(r, g, b)
+		mat.roughness = 0.7
+		_mats_cache[clave] = mat
+	cuerpo.material_override = _mats_cache[clave]

@@ -25,6 +25,19 @@ var _ciudad: CiudadLuna = null
 ## con `luces_reales = false` y su `centro` regional). Se construyen en
 ## _ready() antes de super._ready(), igual que Moon Town.
 var _ciudades_sec: Array = []
+## Fase 51: sistema de muerte y respawn del héroe (ver respawn_heroe.gd).
+var _respawn: RespawnHeros = null
+## Fase 51.1: contenedor de sistemas (§9.1). Descubrimiento por `system_id`
+## en vez de rutas de nodo hardcodeadas.
+var _sistemas: Systems = null
+## Fase 53: barra de jefe (UI). La maneja la selección del jugador.
+var _barra_jefe: BarraJefe = null
+## Fase 55: gestor de arboles talables (streaming por histéresis).
+var _arboles: GestorArboles = null
+## Fase 56: las fogatas de las ciudades (estación de cocina).
+var _fogatas: Array = []
+## Fase 60: los 9 refugios reclamables.
+var _refugios: Array = []
 
 const _SECUNDARIAS: Array = [
 	["CiudadDesert", "res://data/ciudad_desert.json", Vector2(9966, 0)],
@@ -89,24 +102,120 @@ func _ready() -> void:
 		add_child(c)
 		_ciudades_sec.append(c)
 	super._ready()
+	_instalar_respawn()
+
+
+## Fase 60: los 9 refugios, uno por plaza. Se registran en `Systems` para que
+## el jugador (y el respawn) los encuentren por id, no por ruta de nodo.
+func _colocar_refugios() -> void:
+	for id in RefugioDB.ids():
+		var r := Refugio.new()
+		r.name = "Refugio_%s" % id
+		add_child(r)
+		r.configurar_por_id(id)
+		if _terreno != null:
+			r.position.y = _terreno.altura_en(r.position.x, r.position.z)
+		_refugios.append(r)
+		_sistemas.registrar(r, StringName("refugio:" + id))
+
+
+## Fase 56: una fogata junto a cada plaza. Sin leña no se cocina, y la leña
+## sale de los troncos de la tala (fase 55): así la recolección tiene
+## consumidor y cocinar es una decisión, no un trámite.
+func _colocar_fogatas() -> void:
+	var plazas: Array = [Vector3(38.0, 0.0, 52.0)]
+	for c in _ciudades_sec:
+		plazas.append((c as CiudadLuna).punto_aparicion_jugador()
+			+ Vector3(26.0, 0.0, 26.0))
+	for i in range(plazas.size()):
+		var f := Fogata.new()
+		f.name = "Fogata_%d" % i
+		f.global_position = plazas[i]
+		if _terreno != null:
+			f.position.y = _terreno.altura_en(f.position.x, f.position.z)
+		add_child(f)
+		_fogatas.append(f)
+		f.add_to_group(&"fogatas")
+
+
+## Fase 53: barra de jefe. Escucha la selección del jugador: si lo que
+## seleccionó es un jefe (`Enemy.es_jefe`), la muestra; si no, la esconde.
+## Solo LEE al enemigo por señales.
+func _instalar_barra_jefe() -> void:
+	_barra_jefe = BarraJefe.new()
+	_barra_jefe.name = "BarraJefe"
+	add_child(_barra_jefe)
+	_jugador.seleccion_cambiada.connect(_al_seleccion_cambiada)
+
+
+func _al_seleccion_cambiada(e: Entity) -> void:
+	if _barra_jefe == null:
+		return
+	if e != null and e is Enemy and (e as Enemy).es_jefe:
+		_barra_jefe.vigilar(e)
+	else:
+		_barra_jefe.desvigilar()
+
+
+## Fase 51: el sistema que revive al héroe. Se registra DESPUÉS de
+## super._ready() porque las ciudades y el jugador ya existen: las plazas
+## salen de `CiudadLuna.punto_aparicion_jugador()`, que consulta la altura
+## real del terreno (las de `viaje_rapido.json` traen un `y = 45.0` que llega
+## a estar 175 u por debajo de la superficie).
+func _instalar_respawn() -> void:
+	_respawn = RespawnHeros.new()
+	_respawn.name = "RespawnHeros"
+	add_child(_respawn)
+
+	_respawn.registrar_ciudad("moon_town",
+		_ciudad.punto_aparicion_jugador(), _ciudad.yaw_aparicion())
+	for i in range(_ciudades_sec.size()):
+		var c: CiudadLuna = _ciudades_sec[i]
+		_respawn.registrar_ciudad(str(_SECUNDARIAS[i][0]),
+			c.punto_aparicion_jugador(), c.yaw_aparicion())
+
+	_respawn.configurar(_jugador, _arena)
+	_instalar_barra_jefe()
+	# Fase 51: la arena y el respawn se conocen. Mientras corre una partida de
+	# arena, el respawn se pone a punto (si no, al morir el heroe se iria a la
+	# ciudad a media partida).
+	if _arena != null and is_instance_valid(_arena):
+		_arena.fijar_respawn(_respawn)
 
 
 ## Fase 20: el mundo terminó de construirse por partes. Aquí (y no en
 ## _ready) van los pasos que necesitan ciudades completas: recolocar al
 ## jugador/NPCs (`npc_spawn` se llena al final de construir) y el viaje.
 func _al_mundo_listo() -> void:
+	# Fase 51.1: el contenedor de sistemas (§9.1). Los sistemas se registran
+	# acá, con su id, en vez de que cada uno ande buscándose por rutas de nodo.
+	_sistemas = Systems.new()
+	_sistemas.name = "Systems"
+	add_child(_sistemas)
+	# El SaveSystem lo crea la demo padre (fase4) en su _ready, que ya
+	# corrió: se registra acá, que es el primer punto donde el contenedor
+	# existe.
+	if _guardado != null and is_instance_valid(_guardado):
+		_sistemas.registrar(_guardado, &"save_system")
+
 	# Jugador y NPCs a sus puntos data-driven de Moon Town.
 	_colocar_en_ciudad()
 	# Fase 16: viaje rápido — "Viajar" en el diálogo del portero abre el
 	# PanelViaje con la ciudad del portero como origen.
 	_viaje = ViajeRapido.new()
 	_viaje.cargar_datos()
+	_sistemas.registrar(_viaje, &"viaje_rapido")
+	# Fase 50.4: el panel se fabricaba su propia `ViajeRapido` aparte de esta,
+	# y quedaban dos cachés de viaje_rapido.json vivas a la vez. Le pasamos la
+	# nuestra, que es la única fuente de verdad.
+	_panel_viaje.fijar_viaje(_viaje)
 	_dialogo.viaje_solicitado.connect(_al_viaje_dialogo)
 	_panel_viaje.viaje_solicitado.connect(_al_destino_viaje)
 	# Fase 41: arena — "Entrenar" con el Maestro teletransporta al campo
 	# remoto y arranca las oleadas; los trofeos se guardan con la partida.
 	_arena = Arena.new()
 	_arena.name = "Arena"
+	_sistemas.registrar(_arena, &"arena")
 	add_child(_arena)
 	_arena.configurar(_cargar_arena_json())
 	_arena.fijar_factory(_crear_enemigo_arena)
@@ -124,6 +233,17 @@ func _al_mundo_listo() -> void:
 	# con E; el estado de cada veta (usos + respawn) viaja en el save.
 	_mineria = GestorVetas.new()
 	_mineria.name = "GestorVetas"
+	_sistemas.registrar(_mineria, &"gestor_vetas")
+	# Fase 55: tala. Mismo streaming por histéresis que el de vetas.
+	_arboles = GestorArboles.new()
+	_arboles.name = "GestorArboles"
+	add_child(_arboles)
+	_arboles.fijar_jugador(_jugador)
+	_sistemas.registrar(_arboles, &"gestor_arboles")
+	# Fase 56: una fogata por ciudad, como los herreros. Es la estación de
+	# cocina; las piezas que el jugador coloca llegan en la fase 61.
+	_colocar_fogatas()
+	_colocar_refugios()
 	add_child(_mineria)
 	_mineria.configurar_desde_datos()
 	_mineria.fijar_terreno($Terreno as Terreno)
@@ -251,6 +371,16 @@ func _al_arena_terminada(victoria: bool, oleada: int) -> void:
 		_teletransportar_arena(_retorno_arena)
 	else:
 		_panel_misiones.toast("Caíste en la oleada %d — habla con Renn para repetir" % oleada)
+		# Fase 51: al perder, el héroe quedaba MUERTO y congelado en el
+		# campo, y el aviso le pedía hablar con Renn. La arena se queda con
+		# el control durante la partida y al perder hay que devolver al
+		# jugador al mundo jugable. Por eso: revive, teletransporta fuera y
+		# recién ahí suelta el respawn (`detener`).
+		if _jugador != null and is_instance_valid(_jugador):
+			_jugador.revivir()
+		_teletransportar_arena(_retorno_arena)
+		if _arena != null and is_instance_valid(_arena):
+			_arena.detener()
 
 
 ## Teletransporte genérico (como el del viaje: sin damping de cámara).
@@ -319,6 +449,10 @@ func _al_destino_viaje(destino_id: String) -> void:
 	_panel_viaje.cerrar_panel()
 	var plaza: Vector2 = res.get("plaza", Vector2.ZERO)
 	_teletransportar_viaje(plaza, str(res.get("destino", "")), int(res.get("costo", 0)))
+	# Fase 51: viajar pasa a ser el punto seguro. Si no,ViajeRapido te deja
+	# en la ciudad nueva con el ancla en la vieja y reaparecerías atrás.
+	if _respawn != null:
+		_respawn.actualizar_ancla()
 
 
 ## Fase 16 — teletransporte del viaje rápido: deselecciona, fija la

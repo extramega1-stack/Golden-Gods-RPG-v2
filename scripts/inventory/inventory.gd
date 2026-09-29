@@ -110,6 +110,10 @@ func usar(item_id: String, objetivo: Entity) -> bool:
 			objetivo.heal(float(efecto.get("cantidad", 0.0)))
 		"mana":
 			objetivo.restaurar_mana(float(efecto.get("cantidad", 0.0)))
+		# Fase 54: comida y bebida van a los vitales, no a vida/maná. Es el
+		# "tick-eat" de Dragonwilds: se consume al instante desde la barra.
+		"comida", "bebida":
+			objetivo.vitals.consumir(efecto)
 		_:
 			return false
 	quitar(item_id, 1)

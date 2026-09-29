@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "nota": "Fase 56. Cocinar convierte el riesgo de la comida cruda (enfermedad) en una decision. La lena se consume del tronco.",
+  "recetas": [
+    {
+      "ingrediente": "carne_cruda_goblin",
+      "resultado": "carne_asada_goblin",
+      "cantidad": 1,
+      "xp": 6,
+      "lena": 1.0,
+      "segundos": 3.0
+    },
+    {
+      "ingrediente": "carne_cruda_lobo",
+      "resultado": "carne_asada_lobo",
+      "cantidad": 1,
+      "xp": 8,
+      "lena": 1.0,
+      "segundos": 3.5
+    },
+    {
+      "ingrediente": "carne_cruda_ogro",
+      "resultado": "carne_asada_ogro",
+      "cantidad": 1,
+      "xp": 12,
+      "lena": 1.5,
+      "segundos": 4.5
+    },
+    {
+      "ingrediente": "carne_cruda_titán",
+      "resultado": "carne_asada_titán",
+      "cantidad": 1,
+      "xp": 25,
+      "lena": 2.5,
+      "segundos": 6.0
+    },
+    {
+      "ingrediente": "agua_sucia",
+      "resultado": "agua_limpia",
+      "cantidad": 1,
+      "xp": 2,
+      "lena": 1.0,
+      "segundos": 2.0
+    }
+  ]
+}

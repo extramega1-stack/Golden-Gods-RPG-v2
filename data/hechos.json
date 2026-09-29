@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "nota": "Fase 59. Talentos de Habilidad: a diferencia de los talentos por clase (fase 28, que suman stats), estos TRANSFORMAN la recoleccion. Es la mejor idea de Dragonwilds: subir Tala no te da +5%, te da un hechizo que tala tres arboles. Los efectos de stat van como MODS del StatBlock (fuente 'hecho:<id>'); los de comportamiento son banderas que leen los sistemas de recoleccion.",
+  "hechos": [
+    {
+      "id": "tala_area",
+      "nombre": "Tala en área",
+      "habilidad": "tala",
+      "tramo": 2,
+      "tipo": "bandera",
+      "flag": "tala_area",
+      "descripcion": "Cada tajo saca 3 troncos en vez de 1."
+    },
+    {
+      "id": "talar_maestro",
+      "nombre": "Leñador",
+      "habilidad": "tala",
+      "tramo": 4,
+      "tipo": "bandera",
+      "flag": "tala_rangos",
+      "descripcion": "Puede talar arboles de 2 tramos por encima de su nivel."
+    },
+    {
+      "id": "veta_persistente",
+      "nombre": "Veta persistente",
+      "habilidad": "mineria",
+      "tramo": 2,
+      "tipo": "bandera",
+      "flag": "veta_persistente",
+      "descripcion": "Las vetas nunca se agotan del todo."
+    },
+    {
+      "id": "doble_yacimiento",
+      "nombre": "Doble yacimiento",
+      "habilidad": "mineria",
+      "tramo": 3,
+      "tipo": "bandera",
+      "flag": "doble_respawn",
+      "descripcion": "Las vetas reaparecen el doble de rapido."
+    },
+    {
+      "id": "mena_rapida",
+      "nombre": "Mena rápida",
+      "habilidad": "mineria",
+      "tramo": 3,
+      "tipo": "mod",
+      "stat": "vel_ataque",
+      "valor": 0.1,
+      "descripcion": "+10% de velocidad de minado."
+    },
+    {
+      "id": "cocina_lote",
+      "nombre": "Cocina de lote",
+      "habilidad": "cocina",
+      "tramo": 2,
+      "tipo": "bandera",
+      "flag": "cocina_lote",
+      "descripcion": "Cocina 2 raciones por vez."
+    },
+    {
+      "id": "fogata_perenne",
+      "nombre": "Fogata perenne",
+      "habilidad": "cocina",
+      "tramo": 4,
+      "tipo": "bandera",
+      "flag": "fogata_perenne",
+      "descripcion": "La fogata se vuelve a encender sola."
+    },
+    {
+      "id": "sed_ausente",
+      "nombre": "Sed ausente",
+      "habilidad": "recoleccion",
+      "tramo": 2,
+      "tipo": "bandera",
+      "flag": "sed_ausente",
+      "descripcion": "La sed tarda el doble en bajar."
+    },
+    {
+      "id": "saco_ligero",
+      "nombre": "Saco ligero",
+      "habilidad": "recoleccion",
+      "tramo": 3,
+      "tipo": "mod",
+      "stat": "vel_mov",
+      "valor": 0.05,
+      "descripcion": "+5% de velocidad de movimiento."
+    },
+    {
+      "id": "hambre_ausente",
+      "nombre": "Hambre ausente",
+      "habilidad": "recoleccion",
+      "tramo": 4,
+      "tipo": "bandera",
+      "flag": "hambre_ausente",
+      "descripcion": "El hambre tarda la mitad en bajar."
+    }
+  ]
+}

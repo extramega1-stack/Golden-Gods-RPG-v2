@@ -1,0 +1,156 @@
+class_name Fogata
+extends Node3D
+## Fase 56: la fogata. Es la estación de cocina y la primera pieza
+## "colocable" del juego — aunque acá es fija, puesta por la demo.
+##
+## Las piezas colocables por el jugador llegan en la fase 61 (El Refugio).
+## Esta versión es la estación: la demo pone una por ciudad, igual que los
+## herreros. Que exista desde ya es lo que permite que la cocina (fase 56) no
+## dependa del sistema de construcción (fase 61): si no, el círculo
+## recolectar→cocinar→comer quedaría trabado hasta la última fase.
+##
+## - Lenna: se carga con troncos y se gasta al cocinar. Sin leña no se cocina.
+## - Se apaga sola cuando se queda sin leña, y se vuelve a encender al cargarle.
+## - `puede_usar()` es lo que consulta el panel y el clic.
+
+const CAPA: int = 4
+const RADIO_INTERACCION: float = 3.0
+## Segundos de leña que aporta un tronco (mismo valor que `Cocina`).
+const LENA_POR_TRONCO: float = 12.0
+## Cuánto tarda una fogata sin leña en reintentarse.
+const INTERVALO_SEG: float = 5.0
+
+## Emitida cuando cambia la leña (la UI la escucha para pintar el icono).
+signal lena_cambiada(segundos: float)
+## Emitida al terminar de cocinar algo.
+signal cocinado(item_id: String, cantidad: int)
+
+var lena: float = 0.0
+## Cuánto falta para volver a intentar encenderse sola.
+var _espera: float = 0.0
+var _fuego: OmniLight3D = null
+var _llama: MeshInstance3D = null
+var _particulas: GPUParticles3D = null
+
+
+func _ready() -> void:
+	_construir()
+	set_process(true)
+
+
+func _construir() -> void:
+	# Anillo de piedras: 5 icosaedros chiquitos, material compartido.
+	var mat_piedra := StandardMaterial3D.new()
+	mat_piedra.albedo_color = Color(0.32, 0.31, 0.30)
+	mat_piedra.roughness = 1.0
+	for i in range(5):
+		var piedra := MeshInstance3D.new()
+		var ico := SphereMesh.new()
+		ico.radius = 0.28
+		ico.height = 0.42
+		ico.radial_segments = 6
+		ico.rings = 3
+		piedra.mesh = ico
+		var ang: float = TAU * float(i) / 5.0
+		piedra.position = Vector3(cos(ang) * 0.62, 0.12, sin(ang) * 0.62)
+		piedra.material_override = mat_piedra
+		add_child(piedra)
+
+	# Llama: cono emisivo. Material propio (una fogata por ciudad, son pocas).
+	_llama = MeshInstance3D.new()
+	var cono := CylinderMesh.new()
+	cono.top_radius = 0.02
+	cono.bottom_radius = 0.3
+	cono.height = 0.9
+	_llama.mesh = cono
+	_llama.position = Vector3(0.0, 0.5, 0.0)
+	var mat_llama := StandardMaterial3D.new()
+	mat_llama.albedo_color = Color(0.9, 0.35, 0.05)
+	mat_llama.emission_enabled = true
+	mat_llama.emission = Color(1.0, 0.55, 0.1)
+	mat_llama.emission_energy_multiplier = 2.5
+	_llama.material_override = mat_llama
+	add_child(_llama)
+
+	# Brasas: partículas. UNA por fogata y de vida corta (§9.5).
+	_particulas = GPUParticles3D.new()
+	var pmat := ParticleProcessMaterial.new()
+	pmat.direction = Vector3(0, 1, 0)
+	pmat.spread = 12.0
+	pmat.initial_velocity_min = 0.7
+	pmat.initial_velocity_max = 1.6
+	pmat.gravity = Vector3(0, 0.4, 0)
+	pmat.scale_min = 0.06
+	pmat.scale_max = 0.14
+	pmat.color = Color(1.0, 0.6, 0.15)
+	_particulas.process_material = pmat
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.1, 0.1)
+	_particulas.draw_pass_1 = qm
+	_particulas.amount = 24
+	_particulas.lifetime = 1.2
+	_particulas.position = Vector3(0.0, 0.4, 0.0)
+	_particulas.emitting = false
+	add_child(_particulas)
+
+	_fuego = OmniLight3D.new()
+	_fuego.light_color = Color(1.0, 0.55, 0.2)
+	_fuego.light_energy = 2.0
+	_fuego.omni_range = 7.0
+	_fuego.position = Vector3(0.0, 0.9, 0.0)
+	add_child(_fuego)
+
+	_aplicar_estado()
+
+
+## Cargar leña. Devuelve los segundos restantes.
+func cargar_lena(segundos: float = LENA_POR_TRONCO) -> float:
+	lena = minf(lena + maxf(segundos, 0.0), 300.0)
+	_espera = 0.0
+	_aplicar_estado()
+	lena_cambiada.emit(lena)
+	return lena
+
+
+## ¿Está encendida?
+func encendida() -> bool:
+	return lena > 0.0
+
+
+## Se puede cocinar acá (y hayalgo que cocinar).
+func puede_usar() -> bool:
+	return encendida()
+
+
+## Gasta leña. Devuelve false si no había.
+func gastar_lena(segundos: float) -> bool:
+	if lena < segundos:
+		return false
+	lena = maxf(lena - segundos, 0.0)
+	_aplicar_estado()
+	lena_cambiada.emit(lena)
+	return true
+
+
+func _aplicar_estado() -> void:
+	var on: bool = encendida()
+	if _particulas != null:
+		_particulas.emitting = on
+	if _fuego != null:
+		_fuego.light_energy = 2.0 if on else 0.0
+	if _llama != null:
+		_llama.visible = on
+
+
+func _process(delta: float) -> void:
+	# Parpadeo de la llama, como el de `Antorcha` pero sin luz real.
+	if _llama != null and _llama.visible:
+		var f: float = 0.9 + 0.1 * sin(Time.get_ticks_msec() * 0.011)
+		_llama.scale = Vector3(f, 0.9 + 0.2 * f, f)
+	if encendida():
+		return
+	# Se apaga sola tras un rato sin leña: una fogata muerta no debe quedarse
+	# pegando permanente.
+	_espera -= delta
+	if _espera <= 0.0:
+		_espera = INTERVALO_SEG

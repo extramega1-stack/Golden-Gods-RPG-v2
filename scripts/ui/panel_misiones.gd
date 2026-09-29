@@ -132,7 +132,7 @@ func _construir() -> void:
 func _construir_toast() -> void:
 	_toast_layer = CanvasLayer.new()
 	_toast_layer.name = "Toast"
-	_toast_layer.layer = 15
+	_toast_layer.layer = UiLayers.TOAST
 	_toast_layer.visible = false
 	var escena: Node = get_parent()
 	# DIFERIDO a propósito: este _ready corre mientras la escena está

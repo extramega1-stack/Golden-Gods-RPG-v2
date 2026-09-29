@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "nota": "Fase 60. Puntos reclamables del Refugio del Verdugo (ya era canon en el spec, Dominio 7). Reclamar da: ancla de respawn, nodo de viaje rapido sin costo y limite de piezas construibles (fase 61). Las coordenadas son las 9 plazas de data/viaje_rapido.json; la altura la consulta el terreno, no el dato.",
+  "refugios": [
+    {
+      "id": "refugio_moon_town",
+      "nombre": "Refugio de Moon Town",
+      "ciudad": "moon_town",
+      "x": 0.0,
+      "z": 45.0,
+      "radio": 42.0,
+      "lugar": "La plaza de Moon Town, donde naciste y donde volverás.",
+      "nivel_min": 1,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_desert",
+      "nombre": "Refugio del Oasis",
+      "ciudad": "desert",
+      "x": 9966.0,
+      "z": 45.0,
+      "radio": 42.0,
+      "lugar": "Junto al oasis, el único agua dulce del desierto.",
+      "nivel_min": 4,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_fire",
+      "nombre": "Refugio de la Forja",
+      "ciudad": "fire",
+      "x": -9966.0,
+      "z": 45.0,
+      "radio": 42.0,
+      "lugar": "Al pie de la fragua, con el fondo todavía caliente.",
+      "nivel_min": 10,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_north",
+      "nombre": "Refugio del Pico",
+      "ciudad": "north",
+      "x": 0.0,
+      "z": -5313.0,
+      "radio": 42.0,
+      "lugar": "En el altiplano, bajo el menhír de nieve.",
+      "nivel_min": 12,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_mystic",
+      "nombre": "Refugio de Cristal",
+      "ciudad": "mystic",
+      "x": 0.0,
+      "z": 10011.0,
+      "radio": 42.0,
+      "lugar": "Entre los cristales, donde el aire zumba.",
+      "nivel_min": 12,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_shadow",
+      "nombre": "Refugio de las Sombras",
+      "ciudad": "shadow",
+      "x": 9966.0,
+      "z": -9921.0,
+      "radio": 42.0,
+      "lugar": "En la orilla del Velo, lo más lejos posible y lo más cerca igual.",
+      "nivel_min": 22,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_rage",
+      "nombre": "Refugio del Trueno",
+      "ciudad": "rage",
+      "x": -9966.0,
+      "z": -9921.0,
+      "radio": 42.0,
+      "lugar": "Donde el terreno retumba cuando truena.",
+      "nivel_min": 26,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_fury",
+      "nombre": "Refugio de la Furia",
+      "ciudad": "fury",
+      "x": -9966.0,
+      "z": 10011.0,
+      "radio": 42.0,
+      "lugar": "A la sombra del tótem de la ciudad de la guerra.",
+      "nivel_min": 30,
+      "piezas_max": 24
+    },
+    {
+      "id": "refugio_golden",
+      "nombre": "Refugio del Sol",
+      "ciudad": "golden",
+      "x": 9966.0,
+      "z": 10011.0,
+      "radio": 42.0,
+      "lugar": "En el disco de luz, el último refugio antes del final.",
+      "nivel_min": 36,
+      "piezas_max": 24
+    }
+  ]
+}

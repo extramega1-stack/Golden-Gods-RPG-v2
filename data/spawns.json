@@ -2779,18 +2779,18 @@
     "region": "umbral_ladon"
   },
   {
-    "arquetipo": "espectro_velo",
-    "x": 1926.208,
+    "arquetipo": "carnicoro_rio",
+    "x": -18005.792,
     "z": -8406.596,
-    "nivel": 26,
-    "region": "umbral_ladon"
+    "nivel": 30,
+    "region": "abismo_lloroso"
   },
   {
     "arquetipo": "lobo",
-    "x": 2503.326,
+    "x": -17428.674,
     "z": -9167.268,
-    "nivel": 26,
-    "region": "umbral_ladon"
+    "nivel": 30,
+    "region": "abismo_lloroso"
   },
   {
     "arquetipo": "carnicoro_rio",
@@ -4398,30 +4398,30 @@
   {
     "arquetipo": "lobo",
     "x": -14557.254,
-    "z": -9501.893,
-    "nivel": 33,
-    "region": "abismo_lloroso"
+    "z": 10430.107,
+    "nivel": 37,
+    "region": "costa_lamento"
   },
   {
-    "arquetipo": "carnicoro_rio",
+    "arquetipo": "mimo_hoja",
     "x": -5039.04,
-    "z": -6691.976,
-    "nivel": 26,
-    "region": "abismo_lloroso"
+    "z": 13240.024,
+    "nivel": 30,
+    "region": "costa_lamento"
   },
   {
-    "arquetipo": "carnicoro_rio",
+    "arquetipo": "mimo_hoja",
     "x": -11430.779,
-    "z": -12244.325,
-    "nivel": 36,
-    "region": "abismo_lloroso"
+    "z": 7687.675,
+    "nivel": 40,
+    "region": "costa_lamento"
   },
   {
-    "arquetipo": "carnicoro_rio",
+    "arquetipo": "mimo_hoja",
     "x": -9911.671,
-    "z": -3186.716,
-    "nivel": 28,
-    "region": "abismo_lloroso"
+    "z": 16745.284,
+    "nivel": 32,
+    "region": "costa_lamento"
   },
   {
     "arquetipo": "mimo_hoja",
@@ -6013,58 +6013,51 @@
     "region": "costa_lamento"
   },
   {
-    "arquetipo": "mimo_hoja",
-    "x": -9810.035,
-    "z": 7216.719,
-    "nivel": 33,
-    "region": "costa_lamento"
-  },
-  {
-    "arquetipo": "mimo_hoja",
-    "x": -15901.446,
-    "z": 8098.977,
-    "nivel": 41,
-    "region": "costa_lamento"
-  },
-  {
-    "arquetipo": "mimo_hoja",
-    "x": -11325.639,
-    "z": 17996.556,
-    "nivel": 30,
-    "region": "costa_lamento"
-  },
-  {
-    "arquetipo": "lobo",
-    "x": -14319.2,
-    "z": 14805.509,
-    "nivel": 43,
-    "region": "costa_lamento"
-  },
-  {
-    "arquetipo": "lobo",
-    "x": -13470.777,
-    "z": 14082.179,
-    "nivel": 36,
-    "region": "costa_lamento"
-  },
-  {
-    "arquetipo": "mimo_hoja",
-    "x": -15894.128,
-    "z": 8319.787,
-    "nivel": 32,
-    "region": "costa_lamento"
-  },
-  {
     "arquetipo": "centinela_oro",
-    "x": 14937.09,
-    "z": 16602.336,
-    "nivel": 40,
+    "x": 10121.965,
+    "z": 7216.719,
+    "nivel": 42,
     "region": "corona_quebrada"
   },
   {
     "arquetipo": "espectro_velo",
-    "x": 14733.35,
-    "z": 16778.122,
+    "x": 4030.554,
+    "z": 8098.977,
+    "nivel": 36,
+    "region": "corona_quebrada"
+  },
+  {
+    "arquetipo": "centinela_oro",
+    "x": 2880.356,
+    "z": 10349.234,
+    "nivel": 43,
+    "region": "corona_quebrada"
+  },
+  {
+    "arquetipo": "espectro_velo",
+    "x": 5399.239,
+    "z": 18049.141,
+    "nivel": 45,
+    "region": "corona_quebrada"
+  },
+  {
+    "arquetipo": "centinela_oro",
+    "x": 8643.397,
+    "z": 15553.566,
+    "nivel": 38,
+    "region": "corona_quebrada"
+  },
+  {
+    "arquetipo": "espectro_velo",
+    "x": 8319.787,
+    "z": 4324.469,
+    "nivel": 42,
+    "region": "corona_quebrada"
+  },
+  {
+    "arquetipo": "espectro_velo",
+    "x": 3812.114,
+    "z": 3046.347,
     "nivel": 44,
     "region": "corona_quebrada"
   },
@@ -7637,80 +7630,80 @@
     "region": "corona_quebrada"
   },
   {
-    "arquetipo": "centinela_oro",
-    "x": 6981.822,
-    "z": 17056.596,
-    "nivel": 36,
-    "region": "corona_quebrada"
+    "arquetipo": "sombra_vacia",
+    "x": -526.412,
+    "z": -9967.681,
+    "nivel": 45,
+    "region": "velo"
   },
   {
-    "arquetipo": "centinela_oro",
-    "x": 14029.452,
-    "z": 7708.114,
-    "nivel": 49,
-    "region": "corona_quebrada"
-  },
-  {
-    "arquetipo": "centinela_oro",
-    "x": 14519.854,
-    "z": 5378.987,
-    "nivel": 38,
-    "region": "corona_quebrada"
-  },
-  {
-    "arquetipo": "centinela_oro",
-    "x": 2642.61,
-    "z": 14633.569,
-    "nivel": 49,
-    "region": "corona_quebrada"
-  },
-  {
-    "arquetipo": "centinela_oro",
-    "x": 12419.038,
-    "z": 10839.619,
-    "nivel": 47,
-    "region": "corona_quebrada"
-  },
-  {
-    "arquetipo": "centinela_oro",
-    "x": 13414.51,
-    "z": 3664.119,
-    "nivel": 42,
-    "region": "corona_quebrada"
-  },
-  {
-    "arquetipo": "centinela_oro",
-    "x": 13975.255,
-    "z": 3422.814,
-    "nivel": 44,
-    "region": "corona_quebrada"
+    "arquetipo": "sombra_vacia",
+    "x": 716.797,
+    "z": -15051.983,
+    "nivel": 58,
+    "region": "velo"
   },
   {
     "arquetipo": "espectro_velo",
-    "x": 1335.516,
-    "z": -16579.954,
+    "x": 803.305,
+    "z": -16318.71,
+    "nivel": 69,
+    "region": "velo"
+  },
+  {
+    "arquetipo": "sombra_vacia",
+    "x": -1291.854,
+    "z": -11285.478,
+    "nivel": 58,
+    "region": "velo"
+  },
+  {
+    "arquetipo": "sombra_vacia",
+    "x": 432.718,
+    "z": -13348.87,
+    "nivel": 63,
+    "region": "velo"
+  },
+  {
+    "arquetipo": "espectro_velo",
+    "x": -108.227,
+    "z": -10923.998,
+    "nivel": 69,
+    "region": "velo"
+  },
+  {
+    "arquetipo": "sombra_vacia",
+    "x": 707.237,
+    "z": -17382.602,
+    "nivel": 62,
+    "region": "velo"
+  },
+  {
+    "arquetipo": "espectro_velo",
+    "x": 317.408,
+    "z": -13803.077,
     "nivel": 66,
     "region": "velo"
   },
   {
     "arquetipo": "sombra_vacia",
-    "x": 883.207,
-    "z": -13497.931,
-    "nivel": 48,
+    "x": 650.656,
+    "z": -17211.574,
+    "nivel": 49,
     "region": "velo"
   },
   {
     "arquetipo": "sombra_vacia",
-    "x": -856.913,
-    "z": -15281.447,
-    "nivel": 60,
+    "x": -1269.47,
+    "z": -13014.204,
+    "nivel": 53,
     "region": "velo"
   },
   {
-    "arquetipo": "sombra_vacia",
-    "x": -1194.109,
-    "z": -16610.215,
-    "nivel": 47,
+    "arquetipo": "espectro_velo",
+    "x": -442.767,
+    "z": -16232.379,
+    "nivel": 68,
     "region": "velo"
   },
   {
@@ -7798,55 +7791,6 @@
     "region": "velo"
   },
   {
-    "arquetipo": "sombra_vacia",
-    "x": -197.532,
-    "z": -11368.958,
-    "nivel": 51,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "sombra_vacia",
-    "x": -856.387,
-    "z": -13732.048,
-    "nivel": 64,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "sombra_vacia",
-    "x": 565.171,
-    "z": -17453.414,
-    "nivel": 63,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "sombra_vacia",
-    "x": 257.754,
-    "z": -17608.505,
-    "nivel": 70,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "sombra_vacia",
-    "x": -1174.013,
-    "z": -18417.536,
-    "nivel": 50,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "espectro_velo",
-    "x": -866.107,
-    "z": -11896.33,
-    "nivel": 60,
-    "region": "velo"
-  },
-  {
-    "arquetipo": "sombra_vacia",
-    "x": 477.787,
-    "z": -17539.177,
-    "nivel": 60,
-    "region": "velo"
-  },
-  {
     "arquetipo": "goblin",
     "x": 36.0,
     "z": -21.0,
@@ -7929,5 +7873,61 @@
     "z": -9716.0,
     "nivel": 10,
     "grupo": "jefe_fragmento"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": 9070.306,
+    "z": 316.594,
+    "nivel": 6,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": -10939.243,
+    "z": -366.603,
+    "nivel": 12,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": -552.185,
+    "z": -6343.896,
+    "nivel": 14,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": 229.746,
+    "z": 8767.828,
+    "nivel": 14,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": 10983.508,
+    "z": -10791.092,
+    "nivel": 24,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": -9016.165,
+    "z": -9948.282,
+    "nivel": 28,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": -9183.198,
+    "z": 10650.705,
+    "nivel": 32,
+    "grupo": "titan"
+  },
+  {
+    "arquetipo": "titan_acecho",
+    "x": 10137.261,
+    "z": 11082.947,
+    "nivel": 38,
+    "grupo": "titan"
   }
 ]

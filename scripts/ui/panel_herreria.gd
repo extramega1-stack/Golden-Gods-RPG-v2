@@ -11,7 +11,10 @@ const ANCHO_MIN: Vector2 = Vector2(520, 540)
 
 var _jugador: Player = null
 var _herrero_id: String = ""
-var _herrerias: Array = []
+## Fase 50.4: esto era un Array de 4 `Herreria` con la que solo se usaba
+## `_herrerias[0]`. Los otros 3 eran objetos muertos. `Herreria` no tiene
+## estado propio (es lógica pura sobre el jugador), así que una sola alcanza.
+var _herreria: Herreria = null
 
 var _titulo: Label = null
 var _oro: Label = null
@@ -28,8 +31,7 @@ func _ready() -> void:
 
 func _construir() -> void:
 	RecetasDB.cargar()
-	for i in range(4):
-		_herrerias.append(Herreria.new())
+	_herreria = Herreria.new()
 
 	var velo: ColorRect = ColorRect.new()
 	velo.name = "Velo"
@@ -198,7 +200,7 @@ func _fila_receta(receta_id: String) -> Control:
 	nombre.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	datos.add_child(nombre)
 	var mats: Label = Label.new()
-	var lista_mats: Array[Dictionary] = _herrerias[0].estado_materiales(receta_id, _jugador)
+	var lista_mats: Array[Dictionary] = _herreria.estado_materiales(receta_id, _jugador)
 	mats.text = "Materiales: %s · %d oro" % [
 		Herreria.texto_materiales(lista_mats), int(r.get("oro", 0))]
 	mats.add_theme_font_size_override("font_size", 12)
@@ -217,7 +219,7 @@ func _fila_receta(receta_id: String) -> Control:
 	datos.add_child(desc)
 	caja.add_child(datos)
 
-	var motivo: String = _herrerias[0].puede_forjar(receta_id, _jugador)
+	var motivo: String = _herreria.puede_forjar(receta_id, _jugador)
 	var btn: Button = Button.new()
 	btn.text = "Forjar" if motivo == "ok" else "Bloqueado"
 	btn.focus_mode = Control.FOCUS_NONE
@@ -250,7 +252,7 @@ func _al_forjar(receta_id: String) -> void:
 		return
 	var res: Dictionary = RecetasDB.obtener(receta_id)
 	var item_id: String = str((res.get("resultado", {}) as Dictionary).get("item_id", ""))
-	var motivo: String = _herrerias[0].forjar(receta_id, _jugador)
+	var motivo: String = _herreria.forjar(receta_id, _jugador)
 	if motivo == "ok":
 		_estado.text = "Forjaste %s" % str(ItemDB.obtener(item_id).get("nombre", item_id))
 	else:

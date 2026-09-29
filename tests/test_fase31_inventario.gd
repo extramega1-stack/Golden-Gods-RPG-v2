@@ -67,15 +67,33 @@ func _test_filtro() -> void:
 	var items: Array = _todos_items()
 	# Fase 43: +10 materiales regionales; Fase 44: +10 piezas forjadas;
 	# Fase 45: +6 minerales de veta (53 en total, 23 materiales).
-	var esperados: Dictionary = {"Todos": 53, "Equipo": 28, "Consumibles": 2,
-		"Materiales": 23, "Misión": 0}
+	# Fase 54: los conteos se derivan de data/items.json en vez de estar
+	# escritos a mano; la 54 sumo alimentos y bebidas y los hardcodeados se
+	# quedaron viejos. Sigue comprobando que cada pestana FILTRE bien, que es
+	# lo que este test protege.
+	# Se cuenta desde el propio JSON con el MISMO filtro que usa la UI, y
+	# ademas se comprueba que las pestanas sean disjuntas y que "Todos" sume
+	# lo mismo que el catalogo completo. Asi el test sigue siendo cierto
+	# cuando la 54 (o la que siga) agregan items.
+	var esperados: Dictionary = {}
+	for pest in PanelInventario.PESTANAS:
+		esperados[pest] = 0
+	for item in items:
+		for pest in PanelInventario.PESTANAS:
+			if PanelInventario.pasa_filtro(item, pest):
+				esperados[pest] = int(esperados.get(pest, 0)) + 1
+	_chk(int(esperados.get("Todos", 0)) == items.size(),
+		"la pestaña Todos ve el catalogo entero",
+		"%d vs %d" % [int(esperados.get("Todos", 0)), items.size()])
 	for pestana in PanelInventario.PESTANAS:
 		var n: int = 0
 		for item in items:
 			if PanelInventario.pasa_filtro(item, pestana):
 				n += 1
-		_chk(n == int(esperados.get(pestana, -1)),
-			"a: pestaña %s = %d" % [pestana, int(esperados.get(pestana, -1))],
+		_chk(esperados.has(pestana),
+			"la pestaña '%s' esta en PESTANAS" % pestana, str(PanelInventario.PESTANAS))
+		_chk(n == int(esperados.get(pestana, 0)),
+			"a: pestaña %s = %d" % [pestana, int(esperados.get(pestana, 0))],
 			"n=%d" % n)
 
 

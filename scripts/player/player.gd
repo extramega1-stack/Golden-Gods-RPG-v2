@@ -23,6 +23,9 @@ extends Entity
 ##   mina al llegar. Igual que el NPC, sin violencia (no es combatible).
 ## Sin referencias a UI ni a ningún otro sistema.
 
+## Fase 58: un vital bajó del umbral. La UI lo escucha para avisar.
+signal vital_bajo(cual: String)
+
 signal intencion_atacar(objetivo: Entity)
 signal oro_cambiado(oro: int)
 ## Fase 5.1: cambió la entidad seleccionada (clic simple). null = deselección.
@@ -105,10 +108,22 @@ var equipo: Equipo = null
 var skills: SkillSystem = null
 ## Fase 28 — talentos del héroe (1 punto por nivel; la UI los gasta).
 var talentos: Talentos = null
+## Fase 57: XP por habilidad. Es un SEGUNDO eje, paralelo al nivel de
+## personaje: este sigue mandando en StatBlock, combate y equipo. El XP de
+## acá abre los Talentos de Habilidad de la fase 59.
+var habilidades: Habilidades = null
+## Fase 59: Talentos de Habilidad. Se desbloquean con el XP de habilidad (la
+## 57) y transforman la recolección. Los de tipo `mod` se aplican al
+## StatBlock; los de tipo `bandera` los leen tala, veta, cocina y vitals.
+var hechos: Hechos = null
 ## Fase 30 — puntos de atributo estilo FlyFF (2 por nivel; se reparten en
 ## STR/fuerza, STA/aguante, DEX/destreza e INT/inteligencia).
 var puntos_atributo: int = 0
 ## Atributos repartibles (fuente única; fase 34: STR/STA/DEX/INT, sin agilidad).
+## Fase 51: el ataque básico no tiene datos propios más allá del power 1.0.
+## En una const para no construir un Dictionary en cada golpe.
+const SKILL_ATAQUE_BASICO: Dictionary = {"power": 1.0}
+
 const ATRIBUTOS_REPARTIBLES: Array[String] = ["fuerza", "aguante", "destreza", "inteligencia"]
 ## Etiquetas FlyFF para la UI.
 const ETIQUETA_ATRIBUTO: Dictionary = {"fuerza": "STR", "aguante": "STA",
@@ -118,6 +133,13 @@ var _rig: CameraRig = null
 var _tiene_destino: bool = false
 var _destino: Vector3 = Vector3.ZERO
 var _cd_ataque: float = 0.0
+## Fase 51: punto seguro. Es la última plaza de ciudad visitada; es donde
+## reaparece el héroe al morir. NO sale de `data/viaje_rapido.json`: esas
+## plazas traen `y = 45.0` constante y la altura real del terreno llega a
+## 220 u (ver `RespawnHeros`), así que respawnear ahí te tiraba al suelo
+## desde el aire. `RespawnHeros` lo llena con `CiudadLuna.punto_aparicion_jugador()`.
+var _ancla_posicion: Vector3 = Vector3.ZERO
+var _ancla_yaw: float = 0.0
 ## Fase 50: modelo 3D de la clase y estado de animación. El reproductor solo
 ## existe si el `.glb` viene riggeado; con un modelo estático se dibuja igual
 ## pero quieto.
@@ -167,6 +189,16 @@ func _ready() -> void:
 	# Sistemas de la fase 5 (después de lo existente: no dependen del rig).
 	inventario = Inventario.new()
 	equipo = Equipo.new()
+	# Fase 57: se crea antes que la demo para que tala/minería/cocina ya
+	# tengan dónde sumar XP.
+	habilidades = Habilidades.crear_desde_datos()
+	hechos = Hechos.crear_desde_datos()
+	hechos.fijar_habilidades(habilidades)
+	# Fase 59: cuando una habilidad cruza un tramo, los hechos se recalculan.
+	# Así el "talar en área" aparece solo, sin que nadie lo abra a mano.
+	if not habilidades.tramo_ganado.is_connected(_al_subir_tramo):
+		habilidades.tramo_ganado.connect(_al_subir_tramo)
+	hechos.aplicar(stats)
 	skills = SkillSystem.new()
 	# Fase 31: las skills de la clase empiezan en nivel 1.
 	skills.configurar_clase(clase_id)
@@ -349,6 +381,137 @@ func deseleccionar() -> void:
 	_pend_npc = null
 	_pend_veta = null
 	seleccion_cambiada.emit(null)
+
+
+## Fase 51: fija el punto seguro (la plaza de ciudad más reciente). La
+## llama `RespawnHeros`; el juego no la llama por su cuenta porque no sabe
+## dónde están las ciudades.
+func anclar_en_ciudad(pos: Vector3, yaw: float = 0.0) -> void:
+	_ancla_posicion = pos
+	_ancla_yaw = yaw
+
+
+## Punto seguro actual. Lo lee `RespawnHeros` para saber si ya hubo alguno
+## (sin ancla, el respawn cae en el origen, que es el centro del mundo).
+func ancla() -> Vector3:
+	return _ancla_posicion
+
+
+## Fase 59: una habilidad subió de tramo → recalcular los hechos.
+func _al_subir_tramo(_hab: String, _tramo: int) -> void:
+	if hechos != null:
+		hechos.aplicar(stats)
+
+
+## Fase 58: decaimiento de los vitales y sincronización con el StatBlock.
+##
+## DECISIÓN DE JUAN DIEGO: a 0 NO matan. Noriegan a 1 de vida y dejan un
+## debuff. La muerte sigue siendo de los enemigos y de los jefes. Es el tono
+## "wholesome" de Dragonwilds y no pelea con el respawn sin penalidad (fase 51).
+##
+## Todo el efecto pasa por MODS del StatBlock (`vital:energia`): la UI nunca
+## escribe stats y el cambio es reversible, como el resto de los efectos.
+func _tick_vitals(delta: float) -> void:
+	if vitals == null:
+		return
+	# La actividad multiplica el gasto: pelear, correr y recolectar gastan
+	# más que estar parado. Es lo que hace que comer importe en el camino.
+	# Fase 59: los Hechos escriben los multiplicadores de decaimiento. Viven
+	# en `Vitals` como números y no como referencia al sistema de talentos,
+	# para que `Vitals` siga siendo puro.
+	if hechos != null:
+		vitals.mult_hambre = 0.5 if hechos.tiene("hambre_ausente") else 1.0
+		vitals.mult_sed = 0.5 if hechos.tiene("sed_ausente") else 1.0
+
+	var actividad: float = 1.0
+	if objetivo_ataque != null and objetivo_ataque.esta_vivo():
+		actividad = 2.2
+	elif _tiene_destino:
+		actividad = 1.5
+	elif _moviendo_ahora:
+		actividad = 1.3
+
+	var aviso: bool = vitals.avanzar(delta, actividad)
+	_sincronizar_vitals()
+	if aviso:
+		_avisar_vital()
+
+
+## Pone o saca los mods de los vitales según dónde estén.
+func _sincronizar_vitals() -> void:
+	if vitals == null or stats == null:
+		return
+	# Energía → velocidad de ataque y de movimiento. Con energía >= 50 el
+	# multiplicador es 1.0, o sea que no hace falta el mod.
+	var mult: float = vitals.mult_ataque()
+	if mult < 0.999:
+		stats.add_mod("vital:energia", "vel_ataque",
+			StatBlock.ModKind.PORCENTUAL, mult - 1.0)
+		stats.add_mod("vital:energia_mov", "vel_mov",
+			StatBlock.ModKind.PORCENTUAL, vitals.mult_velocidad() - 1.0)
+	else:
+		if stats.has_mod("vital:energia"):
+			stats.remove_mod("vital:energia")
+		if stats.has_mod("vital:energia_mov"):
+			stats.remove_mod("vital:energia_mov")
+
+	# Hambruna/sed a 0 → SOLO un debuff de debilidad.
+	#
+	# No drena vida ni te baja a 1 HP: la decisión de Juan Diego es que a 0 no
+	# matan, y vaciarte la vida sería matarte de a poco por otro nombre. La
+	# penalidad es que pegás y resistís peor, y la de la vida la siguen
+	# aplicando los enemigos. Es el tono "wholesome" de Dragonwilds.
+	var flojo: bool = vitals.hambre <= 0.0 or vitals.sed <= 0.0
+	if flojo:
+		if not stats.has_mod("vital:debil"):
+			stats.add_mod("vital:debil", "defensa",
+				StatBlock.ModKind.PORCENTUAL, -0.5)
+			stats.add_mod("vital:debil_dano", "ataque",
+				StatBlock.ModKind.PORCENTUAL, -0.3)
+	elif stats.has_mod("vital:debil"):
+		stats.remove_mod("vital:debil")
+		stats.remove_mod("vital:debil_dano")
+
+
+## El aviso una sola vez por franja (no cada frame).
+func _avisar_vital() -> void:
+	var cual: String = vitals.mas_bajo()
+	if cual == "" or cual == _ultimo_vital_avisado:
+		return
+	_ultimo_vital_avisado = cual
+	vital_bajo.emit(cual)
+
+
+## ¿El jugador se está moviendo este frame? Lo cachea el movimiento.
+var _moviendo_ahora: bool = false
+## Para no repetir el mismo aviso cada frame.
+var _ultimo_vital_avisado: String = ""
+
+
+## Fase 51: revive al héroe en el punto seguro y deja el estado limpio.
+## Sin penalidad (decisión de Juan Diego): no se pierde XP ni oro.
+##
+## El teletransporte va pegado al terreno (`_pegar_al_terreno`) porque el
+## ancla viene de `CiudadLuna`, que sí consulta la altura real. Aun así se
+## pega por si alguien pasa un ancla a mano.
+func reaparecer() -> void:
+	revivir()                     # Entity.revivir: señales + colisión
+	global_position = _ancla_posicion
+	_pegar_al_terreno()
+	_tiene_destino = false
+	_destino = Vector3.ZERO
+	intent.tiene_destino = false
+	deseleccionar()               # suelta objetivo_ataque, selección y pendientes
+	if skills != null:
+		skills.purgar_temporales()
+		skills.purgar_cooldowns()
+	# Fase 58: morirse con el estómago vacío no puede dejarte en 0 para
+	# siempre — tenés que poder volver a pelear. Los vitals vuelven a lleno
+	# y se limpian los mods.
+	vitals = Vitals.new()
+	_sincronizar_vitals()
+	if _rig != null and is_instance_valid(_rig):
+		_rig.snap_seguimiento()   # si no, la cámara cruza el mapa interpolando
 
 
 ## Fase 5.1 — el foco de combate: la selección si es un combatible vivo;
@@ -584,6 +747,9 @@ func ordenar_mover_a(punto: Vector3) -> void:
 func _physics_process(delta: float) -> void:
 	if not esta_vivo():
 		return
+	# Fase 58: los vitales decaen con el tiempo y la actividad. Va primero
+	# para que el resto del frame ya sienta el efecto de la energía.
+	_tick_vitals(delta)
 	if skills != null:
 		skills.tick(delta)
 	_cd_ataque = maxf(_cd_ataque - delta, 0.0)
@@ -784,6 +950,8 @@ func _consumir_intent(delta: float) -> void:
 		velocity.y -= GRAVEDAD * delta
 	velocity.x = suave.x
 	velocity.z = suave.z
+	# Fase 58: la actividad que consume los vitales depende de si te movés.
+	_moviendo_ahora = Vector2(velocity.x, velocity.z).length() > 0.4
 	move_and_slide()
 	# El cuerpo mira hacia donde se mueve (con giro amortiguado).
 	var rapidez: float = Vector2(velocity.x, velocity.z).length()
@@ -824,10 +992,13 @@ func puede_atacar() -> bool:
 func ejecutar_ataque() -> void:
 	if not puede_atacar():
 		return
-	var res: Dictionary = Formulas.damage(
-		stats, objetivo_ataque.stats, {"power": 1.0},
+	# Fase 51: `damage_sin_alloc` + el dict de skill en una const evitan las
+	# dos asignaciones por golpe que tenia este path (el Dictionary que
+	# devolvia Formulas y el literal {"power": 1.0}).
+	var res: Formulas.ResultadoDano = Formulas.damage_sin_alloc(
+		stats, objetivo_ataque.stats, SKILL_ATAQUE_BASICO,
 		randf(), randf_range(-1.0, 1.0))
-	objetivo_ataque.take_damage(float(res["final"]), self, bool(res["crit"]))
+	objetivo_ataque.take_damage(float(res.final), self, res.crit)
 	_cd_ataque = 1.0 / maxf(stats.vel_ataque, 0.1)
 	# Fase 50: el tajo del jugador dura lo que el clip, no lo que el cooldown.
 	_t_swing = 0.32
