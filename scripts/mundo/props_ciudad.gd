@@ -65,6 +65,10 @@ var _locales: Array = []
 var _ids: Array[String] = []
 var _slot_de_prop: Dictionary = {}
 var _altura_max: float = 0.0
+## La capa en la que quedó cada prop, en el mismo orden que `_plano`. Es lo que
+## permite reconstruir sus piezas sin volver a correr el dado (el test lo
+## usa; el juego, nunca).
+var _slots: Array[int] = []
 
 
 # ---------------------------------------------------------------------------
@@ -149,9 +153,13 @@ func _colocar(slot: int, prop: int, x: float, z: float, wx: float, wz: float,
 	var capas_k: Array = _capas[slot]
 	if capas_k.is_empty():
 		return
-	var y: float = 0.0
+	# La Y del MUNDO, leída en el metro exacto (wx, wz) y con la prop hundida un
+	# poco: un banco que solo ROZA el suelo se ve pegado con cinta, y en la
+	# vereda en pendiente (que no es plana: la ciudad se apoya en el terreno)
+	# la pata de abajo queda en el aire. La cantidad sale del dato.
+	var y: float = -DecoracionDB.ciudad_hundir()
 	if terreno_actual != null and is_instance_valid(terreno_actual):
-		y = terreno_actual.altura_en(wx, wz)
+		y += terreno_actual.altura_en(wx, wz)
 	var lista: Array = DecoracionDB.ciudad_props()
 	var yaw: float = float((lista[prop] as Dictionary).get("yaw", 0.0)) \
 		+ DecoracionDB.entre(semilla, 3100 + prop, -0.35, 0.35)
@@ -161,8 +169,9 @@ func _colocar(slot: int, prop: int, x: float, z: float, wx: float, wz: float,
 	var locales: Array = _locales[slot]
 	for p in capas_k.size():
 		(capas_k[p] as PisoDecoracion).poner(puestos,
-			(locales[p] as Transform3D) * xf)
+			MallasDecoracion.componer(locales[p] as Transform3D, xf))
 	_plano.append(xf)
+	_slots.append(slot)
 	puestos += 1
 
 
@@ -174,6 +183,7 @@ func _construir_capas(paleta: Dictionary, capacidad: int) -> void:
 	if not _capas.is_empty():
 		return
 	_plano.clear()
+	_slots.clear()
 	var lista: Array = DecoracionDB.ciudad_props()
 	for idx in lista.size():
 		if not (lista[idx] is Dictionary):
@@ -304,3 +314,24 @@ func capas_totales() -> int:
 ## ciudades distintas dan calles distintas.
 func plano() -> Array[Transform3D]:
 	return _plano
+
+
+## LAS PIEZAS del prop `puesto` (el índice de `plano()`), ya compuestas: es lo
+## mismo que escribe `PisoDecoracion.poner` en `_colocar`, con el mismo
+## `MallasDecoracion.componer`.
+##
+## POR QUÉ HACE FALTA Y POR QUÉ NO BASTA `plano()`: el ancla de un prop se
+## calculaba bien y el error estaba en la COMPOSICIÓN, o sea en las piezas. Un
+## test que midiera el ancla daba verde con la farola entera a 169 m de altura:
+## el dato que se guardaba era el correcto y el que se dibujaba, no. Igual que
+## con el `MultiMesh`, esto no se lee del búfer (en headless
+## `get_instance_transform` devuelve identidad): es el mismo cálculo en CPU.
+func piezas_de_prop(puesto: int) -> Array[Transform3D]:
+	var salida: Array[Transform3D] = []
+	if puesto < 0 or puesto >= _plano.size() or puesto >= _slots.size():
+		return salida
+	var locales: Array = _locales[_slots[puesto]]
+	for p in locales.size():
+		salida.append(MallasDecoracion.componer(
+			locales[p] as Transform3D, _plano[puesto]))
+	return salida

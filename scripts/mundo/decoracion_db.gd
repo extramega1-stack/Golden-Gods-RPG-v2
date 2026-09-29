@@ -359,6 +359,15 @@ static func ciudad_alcance() -> float:
 	return maxf(0.0, float(_ciudad.get("alcance", 420.0)))
 
 
+## Cuánto se hunde en el suelo cada prop de calle. La misma regla que el
+## `hundir` de un vegetal y por el mismo motivo: la vereda no es plana (la ciudad
+## se apoya en el terreno) y un banco que solo roza el suelo tiene la pata de
+## abajo en el aire. Sale del dato, no del código.
+static func ciudad_hundir() -> float:
+	cargar()
+	return maxf(0.0, float(_ciudad.get("hundir", 0.16)))
+
+
 static func ciudad_props() -> Array:
 	cargar()
 	return _ciudad.get("props", [])
