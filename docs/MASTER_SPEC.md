@@ -2313,6 +2313,147 @@ sin registrarlo en la pila.
 
 ---
 
+## Bloque 70 — Que camine (y que no patine)
+
+**"Caminan horrible" no es un bug, son cuatro.** Y el cuarto tapaba a los otros
+tres, que es por qué dos intentos anteriores de arreglar la API del blend no
+cambiaron absolutamente nada. Todo lo de abajo está medido sobre el esqueleto
+de los `.glb`, y `tests/test_fase70_caminar.gd` reimprime los mismos números en
+cada corrida para que no haya que creer a nadie.
+
+### 1. El `AnimationTree` no animaba NADA
+
+`AnimationTree.root_node` viene por defecto a `".."`, y el árbol cuelga del
+`AnimationPlayer` (es su hermano), así que `".."` es **el propio reproductor**:
+ahí no existe `Rig/Skeleton3D`, que es donde apuntan todas las pistas del clip.
+Ninguna resolvía y el esqueleto se quedaba en la pose de reposo mientras el
+personaje se desplazaba. El aviso del motor es `couldn't resolve track`, que
+pasa desapercibido en un log.
+
+Medido: con `".."` el pie no se mueve ni 0,00001 u en 0,1 s de reloj del árbol;
+con `"../.."` se mueve 0,058 u. El arreglo es una línea
+(`tree.root_node = "../" + str(anim.root_node)`) y es lo que hacía que todo lo
+demás sobrara.
+
+### 2. La mezcla saturaba, así que no mezclaba
+
+La normalización era `clampf((v - UMBRAL) / UMBRAL, 0, 1)` con `UMBRAL` en
+0,45: llega a 1,0 a los **0,90 m/s**. El juego va a 6,0 (`StatBlock.vel_mov`),
+así que `blend_position` estaba clavado en 1,0 siempre que te movieras y en 0,0
+parado. Dos valores: un corte disfrazado de mezcla. Los enemigos lo tenían peor
+con su `v / 3,0` (satura a 3,0 m/s y persiguen a 6,0).
+
+Ahora es `ArbolAnimacion.mezcla_por_velocidad(v, stats.vel_mov)`: la mezcla se
+normaliza sobre el rango real de la entidad. A 1 m/s da 0,099 y a 3 m/s da
+0,459, y solo satura a los 6,0.
+
+### 3. La marcha iba al revés
+
+El ciclo de caminar del pack está **espejado**. El criterio no es "el pie va
+hacia +Z" (eso es trivial: el máximo siempre es mayor que el mínimo), sino
+físico: en un ciclo en el sitio, el pie **apoyado** se mueve hacia **atrás**
+respecto de la cadera, porque es el cuerpo el que pasa por encima de él.
+Midiendo el punto más bajo del pie:
+
+| | `dz` en el apoyo | veredicto |
+|---|---|---|
+| ciclo tal cual | **+0,4277 u** (hacia delante) | moonwalk |
+| reproducido al revés | **−0,4277 u** (hacia atrás) | bien |
+
+La malla sí miraba al sitio correcto (`Cuerpo.GIRO_MODELO`); lo que venía al
+revés era la **marcha**, que es otra cosa. Por eso el arreglo va en
+`AnimationNodeAnimation.play_mode` y no en la vuelta del modelo.
+
+### 4. El pie patinaba 492 cm por ciclo
+
+El clip viaja **1,4264 u/s** por su cuenta y el juego va a 6,0 m/s. A
+`speed_scale` 1 —que era como estaba— el pie patinaba 4,2 veces: **492 cm por
+ciclo**, más de lo que camina. Un blend no arregla un pie que patina; lo
+arregla el **ritmo** del clip.
+
+El número sale de medir la zancada (0,7430 u) y la duración (1,0417 s), y aquí
+hay una trampa de la que hay que acordarse: **un ciclo de marcha son DOS
+zancadas, no una**. El apoyo de `Foot.L` cae en t=0,543 y el de `Foot.R` en
+t=0,000 — media ciclada de diferencia. Contando una zancada por ciclo la
+velocidad sale a la mitad (0,713) y el multiplicador necesario se duplica
+(8,42 en vez de 4,21), que es un trote a 8 ciclos por segundo y no una
+caminata.
+
+**Cómo se arregla, y por qué así.** En Godot 4.7 no hay forma de multiplicar el
+tiempo de un clip dentro del árbol: `AnimationNodeTimeScale` existe pero ya no
+tiene la propiedad `scale` (es de 4.3), `AnimationMixer` no tiene ninguna
+propiedad de velocidad, y `sync_mode`/`cyclic_length` del `BlendSpace1D`
+resamplean el clip y **destrozan la zancada** (0,7395 → 0,3830 → 0,1914, medido
+con el árbol ya conectado). Reescribir el `Animation` a mano tampoco: en 4.7
+`track_get_key_count` no coincide con el vector interno de datos (la pista de
+posición de `Hips` declara 30 claves y tiene 26) y sale
+`Index p_key_idx = 26 is out of bounds`.
+
+Lo que sí funciona: `AnimationMixer.callback_mode_process =
+ANIMATION_CALLBACK_MODE_PROCESS_MANUAL` saca al árbol del bucle principal, y
+`ArbolAnimacion.avanzar(anim, delta, velocidad, escala)` lo mueve
+`delta * ritmo`. El `.glb` no se toca ni un byte, y **el test mide con la misma
+llamada que el juego**, que es la condición para que el número signifique algo.
+
+El multiplicador se cuantiza a pasos de 0,25 (error máximo 3% del ritmo a
+6 m/s) para no tener clips distintos por frame, y lleva la `modelo_escala` del
+modelo (0,9 en las clases), que es lo que convierte la zancada del esqueleto en
+zancada en el mundo.
+
+### 5. De paso: el tajo no se veía
+
+Con el árbol activo es **él** el que escribe las pistas del esqueleto, así que
+el `play()` del `attack` lo pisaba la mezcla al locomoción al frame siguiente.
+`ArbolAnimacion.soltar()` devuelve el reproductor al control directo mientras
+dura el tajo o la muerte, y la mezcla vuelve a mandar al volver a caminar.
+
+### Números después
+
+```
+patinaje por ciclo          492,1 cm  ->  -1,0 cm
+pie en contacto (m)         +0,416    ->  -0,384   (el negativo es lo correcto)
+blend_position a 1 m/s         --     ->   0,099
+blend_position a 3 m/s       1,000    ->   0,459
+blend se satura desde        0,90 m/s ->  6,00 m/s
+```
+
+### La lección, que es la de siempre y otra vez
+
+**El `test_fase50` CELEBRABA el bug 2.** Afirmaba que a 4 m/s la mezcla iba a
+`blend_position ~ 1`, y pasaba — porque la mezcla estaba saturada y a 4 m/s
+valía exactamente 1,0. Comprobaba "la mezcla no mezcla". Y `test_fase49`
+comprobaba la mezcla con dos `_chk(true, ...)`, que no comprueban nada.
+
+Un test que solo mira los EXTREMOS no puede distinguir "mezclo" de "cambio de
+clip". El test nuevo mide la mezcla en valores intermedios, mide el hueso del
+pie **con el reloj del árbol** (no con `seek`, que no ve el `play_mode` ni el
+`root_node`), y comprueba que el árbol esté conectado — que es la comprobación
+que faltaba y la que hacía que todo lo demás pasara en verde.
+
+**Verificación:** `110/110` en verde (el nuevo `test_fase70_caminar` con 58
+comprobaciones, y el `test_fase50` reescrito para exigir mezcla intermedia en
+vez de saturación). `check-only` sin errores y **cero errores de script en la
+partida completa** (`tools/jugar.sh`), que es donde se nota el árbol ahora que
+por fin mueve algo.
+
+### Lo que NO se arregla aquí, y hay que saber
+
+- **Al ritmo 4,75 el paso se ve rápido.** El clip es una caminata de 1,43 u/s
+  con zancada de 0,66 m, y para cubrir 6,0 m/s sin patinazo hay que apurarlo
+  4,75 veces: 8,1 pisadas por segundo. Se ve como una marcha rápida, no como una
+  caminata. Arreglarlo de verdad pide un clip de carrera a 6 m/s (o bajar la
+  velocidad de locomoción), y eso es un asset nuevo, no código.
+- **El pie no llega al suelo.** En el clip el hueso del pie baja a 0,086 u sobre
+  un modelo cuyo origen está a los pies, así que el personaje flota unos
+  centímetros. Es del `rig` (los pesos y el suelo están en el asset) y sin
+  Blender en esta máquina no se puede re-hornear; queda medido para cuando se
+  pueda.
+- La partida completa tiene 4 pasos rojos (`hablar`, `paneles ESC`, `ESC`,
+  `PanelInventario`). **Son previos**: se comprobó con `git stash` sobre la base
+  y fallan igual sin estos cambios. No son de esta fase.
+
+---
+
 ## Lo que sigue abierta
 
 Lo que queda, en el orden en que más pesa. Actualizado después de las tres olas

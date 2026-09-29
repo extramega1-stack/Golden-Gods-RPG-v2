@@ -290,14 +290,34 @@ func _actualizar_mezcla() -> void:
 			or _estado == Estado.PREPARANDO:
 		return
 	var v: float = Vector3(velocity.x, 0.0, velocity.z).length()
-	var n: float = clampf(v / 3.0, 0.0, 1.0)
-	ArbolAnimacion.mezclar(_anim, "idle", "walk", n)
+	# El reloj del árbol va al ritmo de la velocidad real, para que el pie no
+	# patine (los mobs tienen la misma zancada que el jugador).
+	ArbolAnimacion.avanzar(_anim, get_physics_process_delta_time(), v, escala_modelo())
+	# El rango de la mezcla es el de ESTE bicho (`stats.vel_mov`), no un 3,0 de
+	# adivinza: con el 3,0 la mezcla saturaba a walk puro a los 3 m/s y los
+	# enemigos persiguen a 6, así que tampoco mezclaban nunca. Y el ritmo del
+	# clip se hornea contra la velocidad real, que es lo que evita que patinen.
+	ArbolAnimacion.mezclar(_anim, "idle", "walk",
+		ArbolAnimacion.mezcla_por_velocidad(v, stats.vel_mov), v,
+		escala_modelo())
 
 
 ## Bloque 67: QUIETO y PERSEGUIR se MEZCLAN por velocidad en vez de cortarse
 ## (el mismo cross-fade que el jugador). Los estados de combate (attack, die,
 ## PREPARANDO) siguen siendo un corte entero: son poses, no locomoción, y
 ## mezclarlas con el walk los deformaría.
+##
+## Por eso el árbol se suelta antes del `play()`: mientras está activo es él
+## el que escribe las pistas del esqueleto, y el clip entero que se pone aquí
+## lo pisaba la mezcla al frame siguiente (el tajo no se veía).
+## Escala del modelo colgado: la zancada del clip se mide en el esqueleto y en
+## el mundo vale zancada * escala (el único enemigo con modelo va a 0,62).
+func escala_modelo() -> float:
+	if _modelo == null or not is_instance_valid(_modelo):
+		return 1.0
+	return maxf(absf(_modelo.scale.x), 0.01)
+
+
 func _reproducir_estado(v: Estado) -> void:
 	if _anim == null or not is_instance_valid(_anim):
 		return
@@ -307,6 +327,7 @@ func _reproducir_estado(v: Estado) -> void:
 	var clip: String = str(CLIP_POR_ESTADO.get(v, ""))
 	# Sin parametros: el 3er argumento de play() es la VELOCIDAD, y con -1.0
 	# reproducia del reves. El bucle va en el recurso (ver _preparar_clips).
+	ArbolAnimacion.soltar(_anim)
 	_anim.play(clip)
 
 
