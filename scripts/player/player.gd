@@ -126,6 +126,12 @@ var talentos: Talentos = null
 ## personaje: este sigue mandando en StatBlock, combate y equipo. El XP de
 ## acá abre los Talentos de Habilidad de la fase 59.
 var habilidades: Habilidades = null
+## Bloque 66: pisadas (acumulado de distancia + caché del material del suelo).
+var _paso_acumulado: float = 0.0
+var _piso_cache: String = ""
+var _piso_cache_frame: int = -1
+## La DB de regiones, para saber bajo qué material pisas. La asigna la demo.
+var _region_db: RegionDB = null
 ## Fase 59: Talentos de Habilidad. Se desbloquean con el XP de habilidad (la
 ## 57) y transforman la recolección. Los de tipo `mod` se aplican al
 ## StatBlock; los de tipo `bandera` los leen tala, veta, cocina y vitals.
@@ -855,6 +861,48 @@ func _physics_process(delta: float) -> void:
 	_actualizar_animacion(delta)
 	# Fase 12: el héroe camina pegado al terreno del mundo abierto.
 	_pegar_al_terreno()
+	# Bloque 66: pisadas. Van por DISTANCIA recorrida, no por tiempo: correr
+	# tiene que sonar a más pasos que caminar, y el pie tiene que seguir el
+	# ritmo real del movimiento, no un reloj fijo.
+	_tick_pisadas(delta)
+
+
+# --- bloque 66: pisadas -----------------------------------------------
+
+## Distancia entre pisadas con el jugador caminando normal. A 4,2 m/s (la
+## velocidad base) da ~2,4 pasos por segundo, que es un paso humano.
+const PASO_DISTANCIA: float = 1.75
+## Por debajo de esta velocidad no hay pisada: uno quieto no suena.
+const UMBRAL_MOVIMIENTO: float = 0.6
+
+func _tick_pisadas(delta: float) -> void:
+	var plano := Vector2(velocity.x, velocity.z)
+	var v: float = plano.length()
+	if v < UMBRAL_MOVIMIENTO:
+		_paso_acumulado = 0.0
+		return
+	_paso_acumulado += v * delta
+	if _paso_acumulado < PASO_DISTANCIA:
+		return
+	_paso_acumulado = 0.0
+	# El sonido es del jugador: 2D, no posicional (el que escucha es él).
+	AudioJuego.reproducir(_sonido_piso(), -1)
+
+
+## El material del suelo según la región. Se cachea porque `region_en` es un
+## barrido de rectángulos y esto corre en `_physics_process`.
+func _sonido_piso() -> String:
+	if _piso_cache == "" or _piso_cache_frame != Engine.get_process_frames():
+		_piso_cache_frame = Engine.get_process_frames()
+		_piso_cache = _piso_segun_region()
+	return _piso_cache
+
+
+func _piso_segun_region() -> String:
+	if _region_db == null:
+		return "paso_tierra"
+	var r: Dictionary = _region_db.region_en(global_position.x, global_position.z)
+	return AudioJuego.paso_de_region(str(r.get("id", "")))
 
 
 ## Paso 1: input → Intent (datos). Sin mover nada todavía.

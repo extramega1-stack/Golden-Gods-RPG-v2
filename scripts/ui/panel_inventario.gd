@@ -271,8 +271,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## ESC cierra (corre antes que el _unhandled_input del Player).
 func _input(event: InputEvent) -> void:
+	# Bloque 66: el sonido de "cerrar" se dispara al cerrar, no al pulsar ESC.
+	# Se hace visible=false primero (el estado), y el sonido va con la acción.
 	if visible and PilaUI.es_cima(self) \
 			and event.is_action_pressed("cancelar_seleccion"):
+		SonidoUI.cerrar_panel()
 		visible = false
 		PilaUI.cerrar(self)
 		get_viewport().set_input_as_handled()

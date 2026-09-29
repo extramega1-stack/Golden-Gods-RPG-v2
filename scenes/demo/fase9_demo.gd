@@ -34,6 +34,9 @@ const NPC_ESCENA: String = "res://scenes/npc/npc.tscn"
 @onready var _panel_misiones: PanelMisiones = $PanelMisiones
 
 var _guardado: SaveSystem = null
+## Bloque 66: el director de música adaptativa.
+var _musica: Musica = null
+var _director: DirectorMusica = null
 var _arquetipos: Dictionary = {}
 ## Fase 7: la tienda viva de la demo (se guarda/carga con el SaveSystem).
 var _tienda: Tienda = null
@@ -99,6 +102,19 @@ func _ready() -> void:
 	var audio := AudioJuego.new()
 	audio.name = "AudioJuego"
 	add_child(audio)
+	# Bloque 66: la música adaptativa. Se genera sola al arrancar (un bucle por
+	# capa) y cambia sola segun el estado del juego.
+	var musica := Musica.new()
+	musica.name = "Musica"
+	add_child(musica)
+	_musica = musica
+	# El director decide la escena musical segun el estado real (jefe cerca,
+	# enemigos, si esta en una plaza). Es lo que hace que la musica sea
+	# adaptativa y no un loop fijo.
+	_director = DirectorMusica.new()
+	_director.name = "DirectorMusica"
+	add_child(_director)
+	_director.configurar(musica, _jugador, _lista_enemigos)
 	# Fase 31: panel de habilidades (solo la escena principal lo trae).
 	_panel_habilidades = get_node_or_null("PanelHabilidades") as PanelHabilidades
 	if _panel_habilidades != null:

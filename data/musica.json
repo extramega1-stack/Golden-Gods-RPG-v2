@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "nota": "Bloque 66. 'capas' = qué capas de audio suenan en este tema (0=base siempre, 1=exploracion, 2=combate, 3=jefe). 'capa_padre' permite que varias capas compartan un stream. Las capas se GENERAN (no son archivos): bucle de N compases con pad armónico + fundamental que recorre 'raiz' + percusión.",
+  "temas": {
+    "base": {
+      "compases": 4, "bpm": 76, "tonalidad": 196.0,
+      "escala": [0, 3, 5, 7, 10],
+      "raiz": [0, 3, 7, 10, 7, 3],
+      "percusion": "suave", "tipo": "pad"
+    },
+    "exploracion": {
+      "compases": 4, "bpm": 84, "tonalidad": 220.0,
+      "escala": [0, 2, 4, 7, 9],
+      "raiz": [0, 4, 7, 12, 9, 4],
+      "percusion": "suave", "tipo": "arpa"
+    },
+    "combate": {
+      "compases": 4, "bpm": 132, "tonalidad": 233.0,
+      "escala": [0, 2, 3, 7, 8],
+      "raiz": [0, 3, 7, 10, 8, 3],
+      "percusion": "fuerte", "tipo": "pad"
+    },
+    "jefe": {
+      "compases": 4, "bpm": 148, "tonalidad": 185.0,
+      "escala": [0, 1, 5, 8, 10],
+      "raiz": [0, 6, 11, 12, 11, 6],
+      "percusion": "fuerte", "tipo": "coro"
+    },
+    "pueblo": {
+      "compases": 4, "bpm": 96, "tonalidad": 262.0,
+      "escala": [0, 2, 4, 7, 9, 11],
+      "raiz": [0, 5, 7, 12, 7, 5],
+      "percusion": "suave", "tipo": "melodia"
+    }
+  },
+  "estados": {
+    "pueblo": {"capas": [1]},
+    "exploracion": {"capas": [1]},
+    "combate": {"capas": [1, 2]},
+    "jefe": {"capas": [1, 3]}
+  }
+}

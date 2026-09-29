@@ -52,6 +52,9 @@ func _ready() -> void:
 		push_warning("[Fase12] no se pudo cargar data/regiones.json")
 	var vigia: VigiaRegion = $VigiaRegion as VigiaRegion
 	vigia.region_db = _region_db
+	# Bloque 66: el jugador necesita la RegionDB para saber bajo qué material
+	# pisa (la pisada cambia de timbre por bioma).
+	_jugador._region_db = _region_db
 	vigia.jugador = _jugador
 	vigia.descubierta.connect(_al_descubrir_region)
 	# Antorchas de la aldea: luz cálida que crece de noche.

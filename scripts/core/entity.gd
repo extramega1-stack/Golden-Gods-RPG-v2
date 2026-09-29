@@ -110,7 +110,11 @@ func take_damage(cantidad: float, fuente: Entity, es_critico: bool = false) -> v
 	flash_tiempo = FLASH_DURACION
 	daniado.emit(dano, fuente)
 	GameFeel.al_recibir_danio(self, dano, fuente, es_critico)
-	AudioJuego.al_impacto(es_critico)
+	# Bloque 66: posicional. Un golpe a 40 m tiene que sonar a 40 m.
+	if self is Node3D:
+		AudioJuego.reproducir_en(self as Node3D, "critico" if es_critico else "golpe")
+	else:
+		AudioJuego.al_impacto(es_critico)
 	vida_cambiada.emit(vida_actual, stats.vida_max)
 	if vida_actual <= 0.0:
 		die(fuente)
