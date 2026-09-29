@@ -108,6 +108,20 @@
       "metalicidad": 0.0,
       "moteado": [{"color": "#8f9a5e", "umbral": 0.66, "suavizado": 0.20, "frecuencia": 0.60}]
     },
+    "hoja": {
+      "escala_uv": 0.55,
+      "frecuencia": 0.320,
+      "octavas": 3,
+      "ganancia": 0.85,
+      "granulometria": 0.95,
+      "patron": {"tipo": "fibras", "frecuencia": 9.0, "amplitud": 0.50, "junta": 0.0},
+      "normal_fuerza": 0.9,
+      "rugosidad": 0.88,
+      "rugosidad_var": 0.06,
+      "metalicidad": 0.0,
+      "moteado": [{"color": "#c8d89a", "umbral": 0.60, "suavizado": 0.26, "frecuencia": 0.30},
+                  {"color": "#2c4020", "umbral": 0.72, "suavizado": 0.22, "frecuencia": 0.75}]
+    },
     "metal": {
       "escala_uv": 1.8,
       "frecuencia": 0.100,

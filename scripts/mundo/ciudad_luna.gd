@@ -78,6 +78,12 @@ var edificios: Array[Node3D] = []
 var puntos_npc: Dictionary = {}
 ## nombre de estructura -> altura total en u (para verificar ALTURA_MAX).
 var alturas: Dictionary = {}
+## Fase 70: cuántos zócalos y cuántas torres se construyeron. No es
+## decoración del contador: es la forma de que el test pueda preguntar "¿esta
+## ciudad tiene zócalo en TODAS sus casas?" sin tener que adivinarlo mirando
+## AABBs, que es como se lo sospechaba antes y daba falsos verdes.
+var zocalos: int = 0
+var torres: int = 0
 
 var _datos: Dictionary = {}
 var _construida: bool = false
@@ -90,6 +96,11 @@ var _pal: Dictionary = {}
 ## los edificios varian: la muralla, la plaza y las antorchas van siempre en
 ## variante 0.
 var _semilla: int = 0
+## Fase 70: la ESCALA del edificio que se está construyendo. El constructor
+## la necesita para no pasarse de `ALTURA_MAX`: la escala vive en el nodo raíz y
+## se aplica DESPUÉS de construir, así que el zócalo, la silueta y la torre
+## tienen que descontarla ellos o el edificio pasa los 28 u reales.
+var _escala: float = 1.0
 var _caja_mesh: BoxMesh = null
 ## Fase 15: antorchas reales (Antorcha) o falsas (FalsaAntorcha).
 var _luces: Array[Node3D] = []
@@ -181,6 +192,7 @@ func construir() -> void:
 		idx = _colocar_edificio(e as Dictionary, idx)
 	_construir_antorchas()
 	_construir_banderas_puertas()
+	_construir_props()
 	_cargar_npcs()
 	# Sin monumentos animados no hace falta _process (caso Moon Town).
 	set_process(not _rotadores.is_empty())
@@ -202,8 +214,10 @@ func _colocar_edificio(d: Dictionary, idx: int) -> int:
 	# contador. Es lo que garantiza que un barrio de 20 casas no sea 20 copias
 	# y que un save reconstruya el mundo con el mismo grano.
 	_semilla = BibliotecaMateriales.semilla_de(wx, wz)
+	_escala = escala
 	var raiz: Node3D = _construir_edificio(tipo, variante)
 	_semilla = 0
+	_escala = 1.0
 	if raiz == null:
 		push_warning("[CiudadLuna] tipo desconocido: %s" % tipo)
 		return idx
@@ -236,6 +250,7 @@ func _iniciar_cola() -> void:
 		idx += 1
 	_cola_pasos.append(_construir_antorchas)
 	_cola_pasos.append(_construir_banderas_puertas)
+	_cola_pasos.append(_construir_props)
 	_cola_pasos.append(_cargar_npcs)
 	_pasos_hechos = 0
 	_pasos_total = _cola_pasos.size()
@@ -353,6 +368,155 @@ func cajas_colision() -> Array:
 						mx.z = maxf(mx.z, p.z)
 			cajas.append(AABB(mn, mx - mn).abs())
 	return cajas
+
+
+# ---------------------------------------------------------------------------
+# LA FORMA (fase 70): siluetas, zócalo y props de calle
+# ---------------------------------------------------------------------------
+#
+# La fase 69 le puso color y textura al mundo y dejó la FORMA primitiva: nueve
+# ciudades de cajas. Estas tres funciones son el techo que faltaba.
+# - `_silueta` + `_torre`: dos o tres siluetas por tipo de edificio y un jitter
+#   de medidas, todo derivado de la posición.
+# - `_zocalo`: que nada termine en un plano contra el suelo.
+# - `_construir_props`: la calle llena (farolas, bancos, cajas, barriles).
+
+## LA SILUETA. Tres formas por tipo (del dato) más un jitter, y las dos cosas
+## salen de la MISMA semilla que da el grano del muro: un barrio de 20 casas
+## no es 20 copias, y un save reconstruye el barrio igual.
+##
+## EL TOPE LOCAL (28 u menos la ESCALA del JSON) SE DESCUENTA EN ESTE ORDEN,
+## que es lo importante: primero la `reserva` del tipo (el remate que se apoya
+## en el muro: tejado, cornisa, variante regional) y despues el jitter de la
+## silueta. Al reves el muro crece, el remate sube con el, y el edificio pasa
+## los 28 u reales: es lo que pasaba con el salon del Umbral de Ladon (33 u)
+## cuando la silueta todavia no descontaba la reserva.
+func _silueta(tipo: String, w: float, d: float, h: float) -> Dictionary:
+	var s: Dictionary = {}
+	var lista: Array = DecoracionDB.siluetas(tipo)
+	if not lista.is_empty():
+		var e: Variant = lista[DecoracionDB.eleccion(_semilla, 41, lista.size())]
+		if e is Dictionary:
+			s = e
+	var paso: float = maxf(0.25, float(DecoracionDB.silueta_jitter().get("paso", 0.5)))
+	var fw: float = float(s.get("ancho", 1.0)) \
+		+ DecoracionDB.entre(_semilla, 42,
+			-DecoracionDB.jitter_de("ancho", 0.10),
+			DecoracionDB.jitter_de("ancho", 0.10))
+	var fd: float = float(s.get("largo", 1.0)) \
+		+ DecoracionDB.entre(_semilla, 43,
+			-DecoracionDB.jitter_de("largo", 0.10),
+			DecoracionDB.jitter_de("largo", 0.10))
+	var fh: float = clampf(float(s.get("alto", 1.0)) \
+		+ DecoracionDB.entre(_semilla, 44,
+			-DecoracionDB.jitter_de("alto", 0.10),
+			DecoracionDB.jitter_de("alto", 0.10)), 0.55, 1.35)
+	# El alto tiene TRES topes: el jitter de la silueta, la reserva del remate
+	# y la escala del JSON. Un salon de 22 u con escala 1.1 no puede dar 26.4
+	# aunque su silueta diga "alta".
+	var h_max: float = maxf(4.0, _alto_local() - DecoracionDB.reserva(tipo))
+	var nh: float = minf(_redondear(h * fh, paso), h_max)
+	var torre_alto: float = float(s.get("torre_alto", 0.0))
+	# La torre es un volumen ENTERO, no un remate: su tope es el de la ciudad
+	# menos su propia tapa, y no le descuenta la reserva del tipo.
+	var con_torre: bool = float(s.get("torre", 0.0)) > 0.0 and torre_alto > 0.0 \
+		and torre_alto <= _alto_local() - 1.5
+	return {
+		"w": _redondear(w * fw, paso),
+		"d": _redondear(d * fd, paso),
+		"h": nh,
+		"torre": con_torre,
+		"torre_x": float(s.get("torre_x", 0.0)),
+		"torre_z": float(s.get("torre_z", 0.0)),
+		"torre_tam": float(s.get("torre_tam", 0.0)),
+		"torre_alto": torre_alto,
+	}
+
+
+## El segundo VOLUMEN de la silueta: una torre pegada al costado, medida desde
+## el suelo. Es lo que hace que dos edificios del mismo tipo con la misma altura
+## de muro no se parezcan: uno es una caja con tejado y el otro tiene una torre.
+## Sin modelado, es una caja con un remate.
+func _torre(raiz: Node3D, sil: Dictionary, mat_muro: String,
+		mat_capu: String) -> float:
+	if not bool(sil.get("torre", false)):
+		return 0.0
+	var tam: float = float(sil.get("torre_tam", 0.0))
+	var alto: float = float(sil.get("torre_alto", 0.0))
+	if tam <= 0.0 or alto <= 0.0:
+		return 0.0
+	var px: float = float(sil.get("torre_x", 0.0)) * float(sil.get("w", 0.0))
+	var pz: float = float(sil.get("torre_z", 0.0)) * float(sil.get("d", 0.0))
+	# Se apoya en el zócalo, no en el suelo: si no, la torre asoma por debajo
+	# del escalón más bajo.
+	var y0: float = float(DecoracionDB.zocalo().get("alto", 1.25))
+	_caja(Vector3(tam, alto, tam), _mat(mat_muro), Vector3(px, y0 + alto * 0.5, pz), raiz)
+	_caja(Vector3(tam + 0.9, 0.9, tam + 0.9), _mat(mat_capu),
+		Vector3(px, y0 + alto + 0.45, pz), raiz)
+	torres += 1
+	return alto
+
+
+## EL BORDE contra el suelo. Antes cada casa empezaba con una caja de piedra de
+## 1.2 u y el salón, la forja y el cuartel no tenían nada: contra un terreno
+## que es una superficie curva, un edificio que entra en el suelo en un plano
+## se ve como un recorte pegado. El zócalo son dos escalones que se achican,
+## con la hilada inferior medio metro enterrada. La sombra de contacto la
+## aporta el escalón de abajo: ni un `Decal`, ni una textura, ni un nodo.
+func _zocalo(raiz: Node3D, w: float, d: float) -> float:
+	var z: Dictionary = DecoracionDB.zocalo()
+	if z.is_empty():
+		return 0.0
+	var escalones: int = maxi(1, int(z.get("escalones", 2)))
+	var h_paso: float = maxf(0.2, float(z.get("alto", 1.25)) / float(escalones))
+	var margen: float = maxf(0.0, float(z.get("margen", 1.2)))
+	var hundir: float = float(z.get("hundir", 0.42))
+	var mat: StandardMaterial3D = _mat(str(z.get("tinte", "piedra")))
+	var y: float = -hundir
+	var alto_total: float = 0.0
+	for i in escalones:
+		# El de abajo es el más ANCHO: sobresale de la pared y es el que separa
+		# la silueta del suelo. El margen va en METROS y no en fracción, para
+		# que un zócalo de 1.2 m se lea igual en una casa de 20 m y en un
+		# salón de 84 m.
+		var m: float = margen * float(escalones - i)
+		var h_i: float = h_paso + (hundir if i == 0 else 0.0)
+		_caja(Vector3(w + m * 2.0, h_i, d + m * 2.0), mat,
+			Vector3(0.0, y + h_i * 0.5, 0.0), raiz)
+		y += h_i
+		alto_total = y
+	zocalos += 1
+	return alto_total
+
+
+## Redondea a un múltiplo del paso del dato. Sin esto, el jitter deja medidas
+## como 23.74 u y el zócalo de dos edificios de la misma calle no cuadra con
+## el píxel.
+func _redondear(v: float, paso: float) -> float:
+	if paso <= 0.0:
+		return v
+	return roundf(v / paso) * paso
+
+
+## EL TOPE LOCAL: `ALTURA_MAX` descontando la escala del JSON. Lo usan la
+## silueta, el zócalo y la torre; es la regla que impide que la forma nueva
+## rompa el techo de 28 u de la cámara L2/MU.
+func _alto_local() -> float:
+	return ALTURA_MAX / maxf(_escala, 0.05)
+
+
+## La calle llena. `PropsCiudad` reparte farolas, bancos, cajas, barriles,
+## toldos, postes y carritos sobre las cuatro calles radiales, con la semilla de
+## la posición de cada celda de vereda. Las candelas de la calle ya están
+## (`_construir_antorchas`); esto es el resto del mobiliario.
+func _construir_props() -> void:
+	var props := PropsCiudad.new()
+	props.name = "PropsCalle"
+	props.terreno_actual = terreno
+	add_child(props)
+	props.construir(centro, float(_datos.get("radio_muralla", 700.0)),
+		float(_datos.get("plaza_radio", 60.0)), _pal, cajas_colision())
+	alturas["Props"] = props.altura_max()
 
 
 # ---------------------------------------------------------------------------
@@ -705,7 +869,13 @@ func _casa_tematica(variante: String, tam: String) -> Node3D:
 		rh = 7.0
 	var m_muro: String = _mx("muro", "muro_a")
 	var m_techo: String = _mx("techo", "tejado_pizarra")
-	_caja(Vector3(w + 0.6, 1.2, d + 0.6), _mat("piedra"), Vector3(0, 0.6, 0), raiz)
+	# Fase 70: la silueta va ANTES de la paleta, porque las piezas que la
+	# silueta agrega (la torre y su remate) usan el acento de la ciudad.
+	var sil: Dictionary = _silueta("casa", w, d, mh)
+	w = float(sil["w"])
+	d = float(sil["d"])
+	mh = float(sil["h"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, mh, d), _mat(m_muro), Vector3(0, mh * 0.5, 0), raiz)
 	_tejado(w, rh, d, _mat(m_techo), mh, raiz)
 	_caja(Vector3(4.0, 6.5, 0.6), _mat("puerta_madera"),
@@ -781,8 +951,16 @@ func _casa_tematica(variante: String, tam: String) -> Node3D:
 			for sx in [-1.0, 1.0]:
 				_caja(Vector3(1.2, mh, 1.2), _mat("oro"),
 					Vector3(sx * (w * 0.5 - 0.6), mh * 0.5, d * 0.5 - 0.6), raiz)
+	# Fase 70: la torre de la silueta va arriba de todo lo demás del `match`,
+	# para que la chimenea y las esquinas doradas no queden colgando al lado
+	# de un volumen que no estaba cuando se las puso.
+	var h_torre: float = _torre(raiz, sil, m_muro, _mx("acento", "oro"))
 	_colision(raiz, Vector3(w, mh, d), Vector3(0, mh * 0.5, 0))
-	raiz.set_meta("altura", mh + rh + 2.0)
+	if h_torre > 0.0:
+		_colision(raiz, Vector3(float(sil["torre_tam"]), h_torre,
+			float(sil["torre_tam"])), Vector3(float(sil["torre_x"]) * w,
+			h_torre * 0.5, float(sil["torre_z"]) * d))
+	raiz.set_meta("altura", maxf(mh + rh + 2.0, h_torre + 1.5))
 	return raiz
 
 
@@ -810,7 +988,13 @@ func _casa_clasica(variante: String) -> Node3D:
 			rh = 5.0
 			muro = _mat("muro_c")
 			tej = _mat("tejado_madera")
-	_caja(Vector3(w + 0.6, 1.2, d + 0.6), _mat("piedra"), Vector3(0, 0.6, 0), raiz)
+	# Fase 70: silueta + zócalo + torre. La chimney del "a"/"b" se queda solo
+	# si la silueta no trae torre, para no llenar el tejado de cañones.
+	var sil: Dictionary = _silueta("casa", w, d, mh)
+	w = float(sil["w"])
+	d = float(sil["d"])
+	mh = float(sil["h"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, mh, d), muro, Vector3(0, mh * 0.5, 0), raiz)
 	_tejado(w, rh, d, tej, mh, raiz)
 	_caja(Vector3(4.0, 6.5, 0.6), _mat("puerta_madera"),
@@ -821,11 +1005,17 @@ func _casa_clasica(variante: String) -> Node3D:
 	_caja(Vector3(3.0, 3.0, 0.5), vm, Vector3(w * 0.28, 5.5, d * 0.5 + 0.05), raiz)
 	_caja(Vector3(0.5, 3.0, 3.0), vm, Vector3(w * 0.5 + 0.05, 5.5, 0), raiz)
 	_caja(Vector3(0.5, 3.0, 3.0), vm, Vector3(-w * 0.5 - 0.05, 5.5, 0), raiz)
-	if variante != "c":
+	if variante != "c" and not bool(sil.get("torre", false)):
 		_caja(Vector3(2.5, 7.0, 2.5), _mat("piedra"),
 			Vector3(w * 0.28, mh + 2.0, -d * 0.22), raiz)
+	var h_torre: float = _torre(raiz, sil, _mx("muro", "muro_a"),
+		_mx("acento", "oro"))
 	_colision(raiz, Vector3(w, mh, d), Vector3(0, mh * 0.5, 0))
-	raiz.set_meta("altura", mh + rh)
+	if h_torre > 0.0:
+		_colision(raiz, Vector3(float(sil["torre_tam"]), h_torre,
+			float(sil["torre_tam"])), Vector3(float(sil["torre_x"]) * w,
+			h_torre * 0.5, float(sil["torre_z"]) * d))
+	raiz.set_meta("altura", maxf(mh + rh, h_torre + 1.5))
 	return raiz
 
 
@@ -840,6 +1030,11 @@ func _salon(variante: String) -> Node3D:
 	var m_muro: String = _mx("muro", "piedra_clara")
 	var m_piedra: String = _mx("detalle", "piedra")
 	var m_oro: String = _mx("acento", "oro")
+	var sil: Dictionary = _silueta("salon_clases", w, h, d)
+	w = float(sil["w"])
+	h = float(sil["h"])
+	d = float(sil["d"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, h, d), _mat(m_muro), Vector3(0, h * 0.5, 0), raiz)
 	for i in range(4):
 		var cx: float = -30.0 + float(i) * 20.0
@@ -886,9 +1081,14 @@ func _salon(variante: String) -> Node3D:
 			_caja(Vector3(w + 3.0, 1.0, d + 3.0), _mat("nieve"),
 				Vector3(0, h + 1.7, 0), raiz)
 			h_extra = 2.2
+	var h_torre: float = _torre(raiz, sil, m_muro, m_oro)
 	_colision(raiz, Vector3(w, h, d), Vector3(0, h * 0.5, 0))
 	_colision(raiz, Vector3(w * 0.9, 18.0, 12.0), Vector3(0, 9.0, d * 0.5 + 6.0))
-	raiz.set_meta("altura", h + 1.5 + h_extra)
+	if h_torre > 0.0:
+		_colision(raiz, Vector3(float(sil["torre_tam"]), h_torre,
+			float(sil["torre_tam"])), Vector3(float(sil["torre_x"]) * w,
+			h_torre * 0.5, float(sil["torre_z"]) * d))
+	raiz.set_meta("altura", maxf(h + 1.5 + h_extra, h_torre + 1.5))
 	return raiz
 
 
@@ -903,13 +1103,22 @@ func _forja(variante: String) -> Node3D:
 	var m_muro: String = _mx("muro", "muro_b")
 	var m_techo: String = _mx("techo", "tejado_madera")
 	var m_piedra: String = _mx("detalle", "piedra")
+	# Fase 70: la chimenea es la TORRE de la forja, y su silueta es lo que la
+	# hace alta o baja. Se mide antes de construirla, como antes.
+	var sil: Dictionary = _silueta("forja", w, h, d)
+	w = float(sil["w"])
+	h = float(sil["h"])
+	d = float(sil["d"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, h, d), _mat(m_muro), Vector3(0, h * 0.5, 0), raiz)
 	_tejado(w, 7.0, d, _mat(m_techo), h, raiz)
 	# Fase 15: la forja volcanica (escala 1.15 en su JSON) usa chimenea
-	# corta para no superar las 28 u reales.
-	var chim_h: float = 14.0
+	# corta para no superar las 28 u reales. Fase 70: la silueta le pasa la
+	# altura, y `chim_h` se recorta contra el topo local por si la silueta
+	# "alta" lo pasara.
+	var chim_h: float = clampf(float(sil.get("torre_alto", 14.0)), 6.0, _alto_local() - h)
 	if variante == "volcanica":
-		chim_h = 9.0
+		chim_h = minf(chim_h, 9.0)
 	_caja(Vector3(5.0, chim_h, 5.0), _mat(m_piedra),
 		Vector3(w * 0.3, h + chim_h * 0.5 - 2.0, -d * 0.25), raiz)
 	_caja(Vector3(6.5, 1.5, 6.5), _mat(m_piedra),
@@ -1017,6 +1226,11 @@ func _tienda(variante: String) -> Node3D:
 	var m_muro: String = _mx("muro", "muro_a")
 	var m_techo: String = _mx("techo", "tejado_rojo")
 	var m_toldo: String = _mx("extra", "tela_roja")
+	var sil: Dictionary = _silueta("tienda", w, h, d)
+	w = float(sil["w"])
+	h = float(sil["h"])
+	d = float(sil["d"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, h, d), _mat(m_muro), Vector3(0, h * 0.5, 0), raiz)
 	_tejado(w, 6.0, d, _mat(m_techo), h, raiz)
 	# Toldo inclinado sobre el frente.
@@ -1098,8 +1312,13 @@ func _tienda(variante: String) -> Node3D:
 			# Cartel dorado grande.
 			_caja(Vector3(10.0, 4.0, 0.6), _mat("oro"), Vector3(0, 9.5, d * 0.5 + 8.0), raiz)
 			h_extra = 3.5
+	var h_torre: float = _torre(raiz, sil, m_muro, m_techo)
 	_colision(raiz, Vector3(w, h, d), Vector3(0, h * 0.5, 0))
-	raiz.set_meta("altura", h + 6.0 + h_extra)
+	if h_torre > 0.0:
+		_colision(raiz, Vector3(float(sil["torre_tam"]), h_torre,
+			float(sil["torre_tam"])), Vector3(float(sil["torre_x"]) * w,
+			h_torre * 0.5, float(sil["torre_z"]) * d))
+	raiz.set_meta("altura", maxf(h + 6.0 + h_extra, h_torre + 1.5))
 	return raiz
 
 
@@ -1128,6 +1347,16 @@ func _cuartel(variante: String) -> Node3D:
 	if variante == "sombrio":
 		trim_grosor = 1.0
 		trim_y = 24.5
+	# Fase 70: el cuartel ya tenía sus dos torres, así que su silueta JUEGA
+	# con la planta y con la altura de las torres, no con un volumen nuevo.
+	var sil: Dictionary = _silueta("cuartel", w, h, d)
+	w = float(sil["w"])
+	h = float(sil["h"])
+	d = float(sil["d"])
+	torre_h = minf(torre_h, _alto_local() - DecoracionDB.reserva("cuartel")
+		- trim_grosor)
+	trim_y = torre_h + trim_grosor * 0.5
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, h, d), _mat(m_muro), Vector3(0, h * 0.5, 0), raiz)
 	_caja(Vector3(w + 2.0, 1.5, d + 2.0), _mat(m_cubierta), Vector3(0, h + 0.75, 0), raiz)
 	for sx in [-1.0, 1.0]:
@@ -1209,7 +1438,14 @@ func _templo(variante: String) -> Node3D:
 	var m_muro: String = _mx("muro", "piedra_clara")
 	var m_piedra: String = _mx("detalle", "piedra")
 	var m_cupula: String = _mx("acento", "bronce")
-	_caja(Vector3(w + 4.0, 2.0, d + 4.0), _mat(m_piedra), Vector3(0, 1.0, 0), raiz)
+	# Fase 70: la silueta del templo puede traer la AGUJA lateral, que sube por
+	# encima de la cúpula: es lo que separa el templo "con aguja" de los otros
+	# dos sin cambiar ni el material ni el constructor.
+	var sil: Dictionary = _silueta("templo", w, h, d)
+	w = float(sil["w"])
+	h = float(sil["h"])
+	d = float(sil["d"])
+	_zocalo(raiz, w, d)
 	_caja(Vector3(w, h, d), _mat(m_muro), Vector3(0, h * 0.5 + 1.0, 0), raiz)
 	for i in range(4):
 		var cx: float = -10.5 + float(i) * 7.0
@@ -1310,8 +1546,13 @@ func _templo(variante: String) -> Node3D:
 			remi.position = Vector3(0, h + 7.0, 0)
 			raiz.add_child(remi)
 			h_extra = 1.5
+	var h_torre: float = _torre(raiz, sil, m_muro, m_piedra)
 	_colision(raiz, Vector3(w, h + 1.0, d), Vector3(0, (h + 1.0) * 0.5, 0))
-	raiz.set_meta("altura", h + 1.0 + 6.0 + h_extra)
+	if h_torre > 0.0:
+		_colision(raiz, Vector3(float(sil["torre_tam"]), h_torre,
+			float(sil["torre_tam"])), Vector3(float(sil["torre_x"]) * w,
+			h_torre * 0.5, float(sil["torre_z"]) * d))
+	raiz.set_meta("altura", maxf(h + 1.0 + 6.0 + h_extra, h_torre + 1.5))
 	return raiz
 
 
