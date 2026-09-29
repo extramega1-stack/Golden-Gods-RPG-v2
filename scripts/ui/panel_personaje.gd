@@ -25,6 +25,7 @@ func _init() -> void:
 	visible = false
 
 
+
 func _construir_cromo() -> void:
 	_fondo = PanelContainer.new()
 	_fondo.set_anchors_preset(Control.PRESET_CENTER)
@@ -155,6 +156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## ESC cierra (corre antes que el _unhandled_input del Player).
 func _input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("cancelar_seleccion"):
+	if visible and PilaUI.es_cima(self) \
+			and event.is_action_pressed("cancelar_seleccion"):
 		visible = false
+		PilaUI.cerrar(self)
 		get_viewport().set_input_as_handled()

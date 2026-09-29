@@ -76,6 +76,15 @@ func _test_guardar() -> void:
 
 ## (c) El invariante que faltaba: ninguna tecla compartida por dos acciones
 ## del juego.
+##
+## EXCEPCIÓN DECLARADA (bloque 65): `Escape` está en `cancelar_seleccion`,
+## `cerrar_menu` y `abrir_pausa`, y eso es INTENCIONAL. Son tres lecturas del
+## mismo gesto: deseleccionar, cerrar el panel de la cima, o pausar. Las
+## consume, por orden, la pila de paneles (`PilaUI`) y el menú de pausa
+## (`MenuPausa`) — nunca se ejecutan dos a la vez porque la pila se vacía de
+## abajo arriba. Una tecla de juego de verdad (C, V, R…) sigue prohibida en
+## dos acciones, que es lo que este test protege.
+const TECLAS_PERMITIDAS_DUPES: Array[String] = ["Escape"]
 func _test_invariante() -> void:
 	var por_tecla: Dictionary = {}
 	for a in InputMap.get_actions():
@@ -89,10 +98,21 @@ func _test_invariante() -> void:
 			if t == "":
 				continue
 			if por_tecla.has(t):
-				_chk(false, "c: " + t + " está en dos acciones",
-					"%s y %s" % [str(por_tecla[t]), accion])
+				if not TECLAS_PERMITIDAS_DUPES.has(t):
+					_chk(false, "c: " + t + " está en dos acciones",
+						"%s y %s" % [str(por_tecla[t]), accion])
 			else:
 				por_tecla[t] = accion
+	# La excepción es real: si alguien abre otra acción con Escape que NO sea
+	# de pausa, el invariante debe volver a romper.
+	for t in TECLAS_PERMITIDAS_DUPES:
+		var cuenta: int = 0
+		for a2 in InputMap.get_actions():
+			for e2 in InputMap.action_get_events(a2):
+				if (e2 is InputEventKey) and OS.get_keycode_string((e2 as InputEventKey).physical_keycode) == t:
+					cuenta += 1
+		_chk(cuenta <= 4, "c: Escape está en " + str(cuenta) + " acciones (máx 4, pausa + cierre + deselección)",
+			"si crece, alguien colgó un atajo nuevo")
 	_chk(por_tecla.size() >= 27, "c: el juego tiene al menos 27 teclas",
 		str(por_tecla.size()))
 

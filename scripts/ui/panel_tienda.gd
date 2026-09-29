@@ -33,6 +33,7 @@ func _ready() -> void:
 	_construir()
 	# Lección 11: oculto desde el arranque.
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -161,12 +162,14 @@ func mostrar(tienda: Tienda, npc: NPC) -> void:
 	_titulo.text = str(TiendaDB.obtener(tid).get("nombre", "Tienda"))
 	_reconstruir()
 	visible = true
+	PilaUI.abrir(self)
 
 
 func cerrar_panel() -> void:
 	if not esta_abierta():
 		return
 	visible = false
+	PilaUI.cerrar(self)
 	tienda_cerrada.emit()
 
 
@@ -328,6 +331,6 @@ func _informar(codigo: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not esta_abierta():
 		return
-	if event.is_action_pressed("cancelar_seleccion"):
+	if PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()

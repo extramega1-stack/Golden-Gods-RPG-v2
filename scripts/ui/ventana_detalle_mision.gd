@@ -27,6 +27,7 @@ func _ready() -> void:
 	_construir()
 	# Lección 11: oculta desde el arranque.
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -134,10 +135,12 @@ func mostrar(quest_id: String, log: QuestLog) -> void:
 	_lbl_objetivos.text = prog if prog != "" else "(sin objetivos)"
 	_lbl_recompensas.text = _texto_recompensas(datos)
 	visible = true
+	PilaUI.abrir(self)
 
 
 func cerrar_detalle() -> void:
 	visible = false
+	PilaUI.cerrar(self)
 	_mision_actual = ""
 
 
@@ -189,6 +192,6 @@ func _al_clic_velo(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not esta_abierta():
 		return
-	if event.is_action_pressed("cancelar_seleccion"):
+	if PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_detalle()
 		get_viewport().set_input_as_handled()

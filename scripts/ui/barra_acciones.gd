@@ -330,6 +330,9 @@ func _clase_jugador() -> String:
 func _unhandled_input(event: InputEvent) -> void:
 	_asegurar_acciones_slot()
 	# Fase 38: captura del rebind (ESC = acción cancelar_seleccion: aborta).
+	# El rebind es un MODO, no un panel: la barra no vive en la pila, así que
+	# aquí no se pregunta por la cima (daría false siempre y el ESC no abortaría
+	# nunca, que es justo el bug de la fase 38).
 	if _escuchando >= 0 and _escuchando < NUM_SLOTS:
 		if event.is_action_pressed("cancelar_seleccion"):
 			cancelar_escucha()

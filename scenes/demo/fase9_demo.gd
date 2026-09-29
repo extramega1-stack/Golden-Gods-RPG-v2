@@ -157,6 +157,11 @@ func _ready() -> void:
 	_guardado.barra_acciones = _barra
 	# Fase 39: el estado del tutorial se guarda/carga con el SaveSystem.
 	_guardado.tutorial = _tutorial
+	# Bloque 65: el guardado atómico + el autosave necesitan saber cuándo hay cambios.
+	_guardado.vigilar_cambios()
+	# Bloque 65: el estado del mundo (árboles talados, refugios) también se
+	# guarda. `GestorArboles` y los refugios se asignan más abajo, en la
+	# cadena de demos; se conectan cuando existen.
 	# Pickups de prueba junto al spawn (el jugador arranca en el origen).
 	_colocar_pickup("espada_corta", Vector3(2.0, 0.0, 2.0))
 	_colocar_pickup("pocion_vida", Vector3(-2.0, 0.0, 2.0))

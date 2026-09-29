@@ -27,6 +27,7 @@ func _ready() -> void:
 	layer = UiLayers.PANEL_HERRERIA
 	_construir()
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -119,12 +120,14 @@ func mostrar(npc_id: String) -> void:
 	_herrero_id = npc_id
 	_titulo.text = "Herrería de %s" % str(NpcDB.obtener(npc_id).get("nombre", npc_id))
 	visible = true
+	PilaUI.abrir(self)
 	_reconstruir()
 	_pintar_oro()
 
 
 func cerrar_panel() -> void:
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func esta_abierta() -> bool:
@@ -264,6 +267,6 @@ func _al_forjar(receta_id: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed("cancelar_seleccion"):
+	if PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()

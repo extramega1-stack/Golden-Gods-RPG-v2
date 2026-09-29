@@ -225,8 +225,8 @@ func _al_confirmar() -> void:
 	if err != "":
 		return
 	DatosSesion.nueva_partida(nombre_limpio, _clase_id)
-	get_tree().change_scene_to_file(Escenas.JUEGO)
+	Transicion.ir_a(Escenas.JUEGO)
 
 
 func _al_atras() -> void:
-	get_tree().change_scene_to_file(Escenas.TITULO)
+	Transicion.ir_a(Escenas.TITULO)

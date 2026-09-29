@@ -232,12 +232,12 @@ func _estilo_boton(fondo: Color, borde: Color) -> StyleBoxFlat:
 ## Nueva partida: va a la creación SIN presuponer nada (la creación valida
 ## el nombre y escribe DatosSesion.nueva_partida).
 func _al_nueva_partida() -> void:
-	get_tree().change_scene_to_file(Escenas.CREACION)
+	Transicion.ir_a(Escenas.CREACION)
 
 
 func _al_continuar() -> void:
 	DatosSesion.pedir_continuar()
-	get_tree().change_scene_to_file(Escenas.JUEGO)
+	Transicion.ir_a(Escenas.JUEGO)
 
 
 func _al_salir() -> void:

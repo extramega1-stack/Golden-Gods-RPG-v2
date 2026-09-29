@@ -36,6 +36,7 @@ func _init() -> void:
 	visible = false
 
 
+
 func _construir() -> void:
 	var fondo := PanelContainer.new()
 	fondo.set_anchors_preset(Control.PRESET_CENTER)
@@ -93,12 +94,14 @@ func abrir(j: Player, f: Fogata) -> bool:
 	_jugador = j
 	_fogata = f
 	visible = true
+	PilaUI.abrir(self)
 	_reconstruir()
 	return true
 
 
 func cerrar_panel() -> void:
 	visible = false
+	PilaUI.cerrar(self)
 	_jugador = null
 	_fogata = null
 
@@ -215,6 +218,7 @@ func _al_cocinar(ingrediente: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("cancelar_seleccion"):
+	if visible and PilaUI.es_cima(self) \
+			and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()

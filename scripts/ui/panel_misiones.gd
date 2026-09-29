@@ -50,6 +50,7 @@ func _ready() -> void:
 	add_child(_detalle)
 	# Lección 11: oculto desde el arranque.
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -252,12 +253,14 @@ func alternar() -> void:
 	else:
 		_reconstruir()
 		visible = true
+	PilaUI.abrir(self)
 
 
 func cerrar_panel() -> void:
 	if _detalle != null:
 		_detalle.cerrar_detalle()
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func esta_abierta() -> bool:
@@ -421,6 +424,6 @@ func _input(event: InputEvent) -> void:
 		return
 	if _detalle != null and _detalle.esta_abierta():
 		return
-	if event.is_action_pressed("cancelar_seleccion"):
+	if PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()

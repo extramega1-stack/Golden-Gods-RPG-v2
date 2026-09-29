@@ -35,6 +35,18 @@ const VITALES: int = 17
 ## Fase 64: el prompt contextual ("E — Prender fogata"). Vive en la 18 para
 ## que se dibuje por encima de los vitales y no se pise con ellos.
 const PROMPT: int = 18
+## Bloque 65: el fundido a negro entre escenas. Va en 98, por debajo de los
+## modales críticos (90–99) para que un "cargando" pueda taparlo, y con
+## `process_mode = ALWAYS` porque tiene que correr con el árbol pausado.
+const TRANSICION: int = 98
+## Bloque 65: menú de pausa y panel de opciones. Es un modal: va arriba de
+## todo, en 96 y 95 (dos capas distintas para que las opciones puedan quedar
+## ENCIMA de la pausa, como settings dentro de un menú).
+const MENU_PAUSA: int = 96
+const PANEL_OPCIONES: int = 97
+## Bloque 65: cinemática a pantalla completa. Por debajo de la transición (98)
+## y por encima de todo lo demás.
+const CINEMATICA: int = 99
 ## Fase 64: catálogo de construcción del refugio. Panel de sistema, así que
 ## rango 20–69, justo detrás de PANEL_AYUDA (32).
 const PANEL_CONSTRUCCION: int = 33

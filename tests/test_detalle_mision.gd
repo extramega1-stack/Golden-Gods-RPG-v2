@@ -156,6 +156,8 @@ func _t_esc_y_velo() -> void:
 	var q: QuestLog = _log()
 	q.aceptar("goblins_fuera")
 	v.mostrar("goblins_fuera", q)
+	# Bloque 65: la ventana también tiene que ser la cima para su ESC.
+	PilaUI.abrir(v)
 	# ESC cierra el detalle.
 	v._input(_esc())
 	_check(not v.esta_abierta(), "detalle: ESC cierra")
@@ -231,7 +233,10 @@ func _t_orden_esc() -> void:
 	pm._detalle._input(_esc())
 	_check(not pm._detalle.esta_abierta(), "orden: ESC cierra el detalle")
 	_check(pm.esta_abierta(), "orden: el panel sigue abierto tras cerrar el detalle")
-	# Ahora ESC sí cierra el panel.
+	# Ahora ESC sí cierra el panel. Bloque 65: el panel tiene que ser la CIMA
+	# de la pila para reaccionar, así que se registra como hace la demo. Sin
+	# esto `es_cima` es false y el ESC ya no cerraría nada.
+	PilaUI.abrir(pm)
 	pm._input(_esc())
 	_check(not pm.esta_abierta(), "orden: ESC cierra el panel sin detalle")
 	# Cerrar el panel cierra también el detalle (no queda colgado).

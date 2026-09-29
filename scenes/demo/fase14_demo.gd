@@ -42,6 +42,9 @@ var _prompt: PromptInteraccion = null
 var _cocina: PanelCocina = null
 ## Fase 64: el modo construcción (capa 33).
 var _construccion: PanelConstruccion = null
+## Bloque 65: pausa y opciones.
+var _pausa: MenuPausa = null
+var _opciones: PanelOpciones = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
 ## Fase 56: las fogatas de las ciudades (estación de cocina).
@@ -214,6 +217,22 @@ func _al_reclamar_refugio(_refugio_id: String, r: Refugio) -> void:
 
 
 func _instalar_fase63_64_ui() -> void:
+	# Bloque 65: el menú de pausa y el panel de opciones. Se instalan AL FINAL
+	# y por encima de todo, y son los únicos que registran el árbol como
+	# pausado. La pausa es dueña de la pila de paneles.
+	_pausa = MenuPausa.new()
+	_pausa.name = "MenuPausa"
+	add_child(_pausa)
+	_sistemas.registrar(_pausa, &"menu_pausa")
+	_opciones = PanelOpciones.new()
+	_opciones.name = "PanelOpciones"
+	add_child(_opciones)
+	_sistemas.registrar(_opciones, &"panel_opciones")
+	# Las opciones se aplican al arrancar: si el jugador guardó un volumen
+	# bajo, el juego arranca bajo, no a full hasta que abra el menú.
+	Opciones.cargar()
+	Opciones.aplicar()
+
 	# Fase 63: los tres vitales en pantalla. `vigilar` se suscribe a las
 	# señales de `Vitals`; la UI no lee nada por frame.
 	_vitales = IndicadorVitales.new()
@@ -347,6 +366,12 @@ func _al_mundo_listo() -> void:
 	# cocina; las piezas que el jugador coloca llegan en la fase 61.
 	_colocar_fogatas()
 	_colocar_refugios()
+	# Bloque 65: el estado del mundo se guarda (árboles talados, refugios con
+	# sus piezas). Va AQUÍ, después de que los refugios existan: antes, cargar
+	# una partida devolvía los árboles al estado inicial y vaciaba los refugios.
+	if _guardado != null:
+		_guardado.arboles = _arboles
+		_guardado.refugios = _refugios
 	add_child(_mineria)
 	_mineria.configurar_desde_datos()
 	_mineria.fijar_terreno($Terreno as Terreno)

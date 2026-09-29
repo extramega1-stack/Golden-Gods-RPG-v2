@@ -48,6 +48,7 @@ func _init() -> void:
 	visible = false
 
 
+
 func _construir() -> void:
 	var fondo := PanelContainer.new()
 	fondo.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -111,6 +112,7 @@ func abrir(j: Player, r: Refugio) -> bool:
 	_jugador = j
 	_refugio = r
 	visible = true
+	PilaUI.abrir(self)
 	_tipo = ""
 	_rot = 0.0
 	_reconstruir_visuales()
@@ -120,6 +122,7 @@ func abrir(j: Player, r: Refugio) -> bool:
 
 func cerrar_panel() -> void:
 	visible = false
+	PilaUI.cerrar(self)
 	_tipo = ""
 	_jugador = null
 	_refugio = null
@@ -346,3 +349,40 @@ func _reconstruir_visuales() -> void:
 		var pd: Dictionary = p
 		_instanciar(str(pd.get("tipo", "")), pd.get("pos", Vector3.ZERO) as Vector3,
 			float(pd.get("rot", 0.0)), false)
+
+
+# --- entrada (bloque 65: este panel los promise y no los tenia) ---
+
+## El panel de construcción se abría y no respondía a NADA. La ayuda de abajo
+## prometía "R rota · clic coloca · Supr quita" y no había ni un `_input` en el
+## archivo: solo los tests lo llamaban. Con estas tres teclas, por fin es un
+## panel jugable.
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible:
+		return
+	# ESC lo lleva la PILA (MenuPausa), no este panel: así el orden de cierre
+	# entre paneles apilados es correcto.
+	if event.is_action_pressed("cancelar_seleccion"):
+		return
+	if event.is_action_pressed("rotar_pieza"):
+		rotar()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("limpiar_slot"):
+		quitar_ultima()
+		get_viewport().set_input_as_handled()
+		return
+	# Clic izquierdo: coloca la pieza seleccionada en donde mira el jugador.
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			var motivo: String = colocar_en(_pos_actual())
+			if motivo != "ok" and _feed() != null:
+				_feed().aviso(Constructor.texto_motivo(motivo))
+			get_viewport().set_input_as_handled()
+
+
+func _feed() -> FeedAvisos:
+	if Systems.actual == null:
+		return null
+	return Systems.actual.obtener(&"feed_avisos") as FeedAvisos

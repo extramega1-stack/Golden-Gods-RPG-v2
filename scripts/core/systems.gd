@@ -67,6 +67,17 @@ func desregistrar(id: StringName) -> void:
 ## El sistema con esa id, o null. Con `solo_vivo` (default) descarta los que
 ## están en la cola de liberación: leer uno y que se libere en el frame
 ## siguiente es la forma más fácil de tener un crash elusive.
+## Bloque 65: la instancia viva, para los sistemas que no la tienen a mano (el
+## menú de pausa y el panel de opciones son `CanvasLayer`, cuelgan de la escena
+## y no ven el `Systems` de la demo). Es estático a propósito: el problema que
+## este contenedor resolvió en la 51.1 era justo no tener una ruta única.
+static var actual: Systems = null
+
+
+func _init() -> void:
+	actual = self
+
+
 func obtener(id: StringName, solo_vivo: bool = true) -> Object:
 	if not _registrados.has(id):
 		return null

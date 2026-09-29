@@ -58,12 +58,14 @@ func _ajustar_al_viewport() -> void:
 ## Abre el manual (idempotente: lo deja como estaba si ya estaba abierto).
 func mostrar_manual() -> void:
 	visible = true
+	PilaUI.abrir(self)
 	_rellenar_controles()
 	_rellenar_mecanicas()
 
 
 func cerrar_panel() -> void:
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func esta_abierta() -> bool:
@@ -143,7 +145,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		alternar()
 		get_viewport().set_input_as_handled()
 		return
-	if visible and event.is_action_pressed("cancelar_seleccion"):
+	if visible and PilaUI.es_cima(self) \
+			and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()
 

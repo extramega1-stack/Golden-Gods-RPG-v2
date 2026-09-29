@@ -12,7 +12,12 @@ extends Node3D
 ## Sin referencias a UI ni a ningún otro sistema.
 
 ## --- Game feel: todos los tunables en un solo sitio ---
-const SENSIBILIDAD: float = 0.0042 ## Radianes por píxel de drag.
+## OJO (bloque 65): estas constantes son los VALORES POR DEFECTO y la
+## referencia de diseño, pero ya no mandan. Lo que manda es `Opciones`
+## (`user://opciones.json`): la sensibilidad, la distancia de cámara, el FOV y
+## el invertir-Y son ajustables por el jugador. Se leen por getters, no por
+## estas constantes, para que cambiar un ajuste se oiga y se vea al instante.
+const SENSIBILIDAD: float = 0.0042 ## Radianes por píxel de drag (default).
 const K_ROT: float = 12.0          ## Qué tan rápido persigue yaw/pitch.
 const K_POS: float = 9.0           ## Qué tan rápido sigue al jugador.
 const K_ZOOM: float = 10.0         ## Qué tan rápido responde el zoom.
@@ -52,10 +57,12 @@ func _ready() -> void:
 		_objetivo = get_node_or_null(ruta_objetivo) as Node3D
 	_yaw_obj = rotation.y
 	_pitch_obj = PITCH_INICIAL
-	_dist_obj = DIST_INICIAL
+	# Bloque 65: la distancia de arranque sale de la opción del jugador.
+	_dist_obj = DIST_INICIAL * Opciones.escala_camara()
 	_pitch.position.y = ALTURA
 	_pitch.rotation.x = PITCH_INICIAL
-	_brazo.spring_length = DIST_INICIAL
+	_brazo.spring_length = _dist_obj
+	_aplicar_fov()
 	if _objetivo != null:
 		global_position = _objetivo.global_position
 
@@ -114,13 +121,44 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			_arrastrando = mb.pressed
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_dist_obj = clampf(_dist_obj - PASO_ZOOM, DIST_MIN, DIST_MAX)
+			_zoom(-PASO_ZOOM)
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_dist_obj = clampf(_dist_obj + PASO_ZOOM, DIST_MIN, DIST_MAX)
+			_zoom(PASO_ZOOM)
 	elif event is InputEventMouseMotion:
 		if _arrastrando:
 			var mm: InputEventMouseMotion = event
-			_yaw_obj -= mm.relative.x * SENSIBILIDAD
+			var sens: float = _sensibilidad()
+			_yaw_obj -= mm.relative.x * sens
+			# El invertir-Y va en la escritura del pitch, no en el clamp: así el
+			# rango del ángulo es el mismo en las dos direcciones y no hay que
+			# tocar PITCH_MIN/PITCH_MAX.
+			var dp: float = mm.relative.y * sens
 			_pitch_obj = clampf(
-				_pitch_obj - mm.relative.y * SENSIBILIDAD, PITCH_MIN, PITCH_MAX
+				_pitch_obj + (dp if Opciones.booleano("invertir_y") else -dp),
+				PITCH_MIN, PITCH_MAX
 			)
+
+
+## Bloque 65: el zoom usa el rango del jugador, escalado por su factor de
+## distancia. Con `escala_camara = 0.7` el rango entero se acerca un 30 %.
+func _zoom(delta: float) -> void:
+	var e: float = Opciones.escala_camara()
+	_dist_obj = clampf(_dist_obj + delta * e, DIST_MIN * e, DIST_MAX * e)
+
+
+func _sensibilidad() -> float:
+	var s: float = Opciones.flotante("sensibilidad", SENSIBILIDAD)
+	return maxf(s, 0.0001)
+
+
+## Bloque 65: FOV ajustable. Se aplica al arrancar y cuando el panel de
+## opciones cambia el valor.
+func _aplicar_fov() -> void:
+	if _camara != null and is_instance_valid(_camara):
+		_camara.fov = Opciones.flotante("fov", 65.0)
+
+
+## El panel de opciones llama a esto para que el cambio se vea sin reabrir.
+func reponer_opciones() -> void:
+	_aplicar_fov()
+	_zoom(0.0)

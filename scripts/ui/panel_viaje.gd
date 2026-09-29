@@ -37,6 +37,7 @@ func _ready() -> void:
 	_construir()
 	# Lección 11: oculto desde el arranque.
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -154,12 +155,14 @@ func mostrar(origen_id: String, jugador: Player) -> void:
 	_info_actual = info_filas(_origen_id, _jugador)
 	_reconstruir()
 	visible = true
+	PilaUI.abrir(self)
 
 
 func cerrar_panel() -> void:
 	if not esta_abierta():
 		return
 	visible = false
+	PilaUI.cerrar(self)
 	viaje_cerrado.emit()
 
 
@@ -262,6 +265,6 @@ func fijar_viaje(v: ViajeRapido) -> void:
 func _input(event: InputEvent) -> void:
 	if not esta_abierta():
 		return
-	if event.is_action_pressed("cancelar_seleccion"):
+	if PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar_panel()
 		get_viewport().set_input_as_handled()

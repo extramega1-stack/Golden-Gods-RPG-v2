@@ -23,7 +23,12 @@ const EN: GDScript = preload("res://scripts/enemy/enemy.gd")
 const RUTA_ENEMIGOS: String = "res://data/enemies.json"
 
 ## La 45.1 cambió la escena principal para que F5 entre directo al mundo.
-const ESCENA_PRINCIPAL_ESPERADA: String = "res://scenes/demo/fase14_demo.tscn"
+## Bloque 65: el juego entra por la PANTALLA DE TÍTULO, no por el mundo. Antes
+## arrancaba directo en `fase14_demo` (fase 45.1, para que F5 fuera rápido al
+## mundo) y eso dejaba la creación de personaje y el nombre del héroe muertos
+## en el flujo real. Ahora: título → crear personaje → mundo. F5 en el editor
+## sigue yendo al mundo por `Escenas.JUEGO`.
+const ESCENA_PRINCIPAL_ESPERADA: String = "res://scenes/titulo/pantalla_titulo.tscn"
 
 var _ok: int = 0
 var _fallos: int = 0
@@ -186,7 +191,7 @@ func _test_enemigos_sin_agilidad() -> void:
 func _test_escena_principal() -> void:
 	var escena: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
 	_chk(escena == ESCENA_PRINCIPAL_ESPERADA,
-		"run/main_scene es la escena del mundo (fase 45.1)",
+		"run/main_scene es la pantalla de título (bloque 65)",
 		"actual=%s esperado=%s" % [escena, ESCENA_PRINCIPAL_ESPERADA])
 	_chk(ResourceLoader.exists(ESCENA_PRINCIPAL_ESPERADA),
 		"la escena principal existe en disco", ESCENA_PRINCIPAL_ESPERADA)

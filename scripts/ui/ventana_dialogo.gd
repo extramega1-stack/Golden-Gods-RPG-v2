@@ -63,6 +63,7 @@ func _ready() -> void:
 	# Lección 11: oculto desde el arranque; el velo no existe como obstáculo
 	# mientras no hay diálogo abierto.
 	visible = false
+	PilaUI.cerrar(self)
 
 
 func _construir() -> void:
@@ -215,6 +216,7 @@ func mostrar(npc: NPC) -> void:
 	_desc_mision.visible = false
 	_pintar()
 	visible = true
+	PilaUI.abrir(self)
 
 
 ## Avanza a la siguiente línea; al pasar la última cierra el diálogo.
@@ -232,6 +234,7 @@ func cerrar() -> void:
 	if not esta_abierta():
 		return
 	visible = false
+	PilaUI.cerrar(self)
 	_npc = null
 	_lineas.clear()
 	_indice = 0
@@ -388,6 +391,6 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("interactuar"):
 		avanzar()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("cancelar_seleccion"):
+	elif PilaUI.es_cima(self) and event.is_action_pressed("cancelar_seleccion"):
 		cerrar()
 		get_viewport().set_input_as_handled()

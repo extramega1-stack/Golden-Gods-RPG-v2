@@ -11,6 +11,13 @@ extends RefCounted
 
 const SAVE_VERSION: int = 13
 const RUTA: String = "user://partida.json"
+## Bloque 65: cada cuánto se guarda solo. 5 minutos es un término medio: ni tan
+## seguido como para tocar el disco en cada morte, ni tan espaciado como para
+## perder dos horas de juego.
+const INTERVALO_AUTOSAVE: float = 300.0
+## El autosave no guarda en la pantalla de título ni en el menú de pausa (el
+## juego está parado: no hay nada nuevo que guardar y solo se pisa el guardado
+## manual del jugador con el mismo estado).
 
 ## Se asignan desde fuera (la escena demo). Sin referencias a UI.
 ## Fase 51.1 (§9.1): identidad del sistema para el contenedor `Systems`.
@@ -18,6 +25,18 @@ const RUTA: String = "user://partida.json"
 ## hardcodeadas que usaba la demo para encontrarlo.
 var system_id: StringName = &"save_system"
 var jugador: Player = null
+## Bloque 65: el estado del MUNDO, que hasta acá solo cubría las vetas.
+## Un `RefCounted` o un `Node`: se asigna desde la demo.
+var arboles: Object = null
+var refugios: Array = []
+## Bloque 65: si hubo cambios sin guardar. Lo consulta el menú de pausa para
+## no perder la partida al salir, y el autosave para no gastar escrituras.
+var _dirty: bool = false
+var _reloj_autosave: float = 0.0
+## Desactiva el autosave mientras la partida está parada (menú de pausa) o
+## mientras se está cargando (un guardado a medio de cargar escribiría encima
+## del estado que se está restaurando).
+var _autosave_activo: bool = true
 var enemigos: Array = []
 ## Fase 6: NPCs en escena (id + posición; los NPCs no mueren, así que no se
 ## guarda vida: el estado básico es su posición).
@@ -81,23 +100,123 @@ func guardar() -> bool:
 		"arena": arena.to_dict() if arena != null else {"version": Arena.SAVE_VERSION_ARENA, "mejor_oleada": 0, "victorias": 0},
 		# Fase 45: bloque "mineria" — usos y respawn de cada veta.
 		"mineria": mineria.estado_para_guardar() if mineria != null else {},
+		# Bloque 65: el estado del mundo. Los árboles talados y los refugios
+		# (con sus piezas) son del jugador, no del mundo: si no se guardan, se
+		# pierden al cargar.
+		"arboles": _arboles_para_guardar(),
+		"refugios": _refugios_para_guardar(),
 	}
-	var f: FileAccess = FileAccess.open(RUTA, FileAccess.WRITE)
+	# Bloque 65: escritura ATÓMICA. Antes se escribía directamente sobre
+	# `partida.json`: un corte de luz (o un crash, o cerrar la laptop) a mitad
+	# de escritura dejaba un JSON truncado, y como no había backup, la partida
+	# se perdía entera. Es la peor clase de bug: no se ve hasta que ya es
+	# tarde, y no tiene arreglo.
+	#
+	# El patrón es escribir a un temporal, cerrarlo, y RENOMBRAR encima, que en
+	# el mismo sistema de archivos es atómico. Si el temporal se quedó a medias,
+	# el `partida.json` viejo sigue intacto.
+	var temporal: String = RUTA + ".tmp"
+	var f: FileAccess = FileAccess.open(temporal, FileAccess.WRITE)
 	if f == null:
-		push_warning("[SaveSystem] no se pudo abrir %s para escribir" % RUTA)
+		push_warning("[SaveSystem] no se pudo abrir %s para escribir" % temporal)
 		return false
 	f.store_string(JSON.stringify(datos))
+	# `flush()` antes de cerrar: sin él, el SO puede tener los bytes en su
+	# buffer y el rename Puede beat-ear un power loss justo aquí.
+	f.flush()
 	f.close()
+	# Backup ANTES del rename: si el rename deja algo raro, todavía hay una
+	# copia buena del estado anterior.
+	if FileAccess.file_exists(RUTA):
+		var b: FileAccess = FileAccess.open(RUTA + ".bak", FileAccess.WRITE)
+		if b != null:
+			b.store_string(FileAccess.get_file_as_string(RUTA))
+			b.close()
+	var err: int = DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(temporal), ProjectSettings.globalize_path(RUTA))
+	if err != OK:
+		push_warning("[SaveSystem] no se pudo renombrar el temporal (err %d)" % err)
+		return false
+	_dirty = false
 	return true
+
+
+## Bloque 65: si el `partida.json` está corrupto (o no existe), se intenta el
+## `.bak`, que es el estado bueno anterior. Perder la última partida por un
+## guardado a medias es la peor forma de perderla.
+func _leer_con_respaldo() -> String:
+	if FileAccess.file_exists(RUTA):
+		var t: String = FileAccess.get_file_as_string(RUTA)
+		if _json_valido(t):
+			return t
+		push_warning("[SaveSystem] partida.json ilegible; se intenta el respaldo")
+	if FileAccess.file_exists(RUTA + ".bak"):
+		var tb: String = FileAccess.get_file_as_string(RUTA + ".bak")
+		if _json_valido(tb):
+			return tb
+	return ""
+
+
+static func _json_valido(texto: String) -> bool:
+	if texto == "":
+		return false
+	return JSON.parse_string(texto) is Dictionary
+
+
+## Bloque 65: ¿hay cambios sin guardar? Lo consulta el menú de pausa antes de
+## volver al título o salir. Con el guardado atómico y el backup, perder la
+## partida es casi imposible; perder lo de los ÚLTIMOS 5 minutos, no.
+func hay_cambios() -> bool:
+	return _dirty
+
+
+## Bloque 65: se marca "hay cambios" con las SEÑALES que ya existen, no
+## comparando el estado (que sería un diff de un diccionario entero cada
+## frame). Conectar a las señales es gratis: el dirty ya está pasando por ahí.
+func vigilar_cambios() -> void:
+	if jugador == null or not is_instance_valid(jugador):
+		return
+	_conectar(jugador.subio_nivel, _marcar)
+	_conectar(jugador.oro_cambiado, _marcar_oro)
+	_conectar(jugador.murio, _marcar)
+	if jugador.inventario != null:
+		_conectar(jugador.inventario.cambiado, _marcar)
+	if jugador.misiones != null:
+		_conectar(jugador.misiones.cambiada, _marcar)
+	if jugador.talentos != null:
+		_conectar(jugador.talentos.cambiada, _marcar)
+	if jugador.skills != null:
+		_conectar(jugador.skills.cambiada, _marcar)
+	if jugador.habilidades != null:
+		_conectar(jugador.habilidades.tramo_ganado, _marcar)
+
+
+func _conectar(sen: Signal, destino: Callable) -> void:
+	if not sen.is_connected(destino):
+		sen.connect(destino)
+
+
+func _marcar(_a = null, _b = null) -> void:
+	_dirty = true
+
+
+## El oro se cambia mucho (cada venta, cada recompensa), pero `oro_cambiado`
+## emite con el valor: no hace falta Comparing.
+func _marcar_oro(_oro: int) -> void:
+	_dirty = true
 
 
 func cargar() -> bool:
 	if jugador == null:
 		push_warning("[SaveSystem] sin jugador asignado; no se carga")
 		return false
-	if not FileAccess.file_exists(RUTA):
+	# Durante la carga el autosave calla: escribir mientras se restaura
+	# sobreescribiría el estado bueno con uno a medias.
+	_autosave_activo = false
+	_dirty = false
+	var texto: String = _leer_con_respaldo()
+	if texto == "":
 		return false
-	var texto: String = FileAccess.get_file_as_string(RUTA)
 	var crudo: Variant = JSON.parse_string(texto)
 	if not (crudo is Dictionary):
 		push_warning("[SaveSystem] partida corrupta: JSON inválido")
@@ -115,6 +234,9 @@ func cargar() -> bool:
 	_cargar_tutorial(datos.get("tutorial", {}), version)
 	_cargar_arena(datos.get("arena", {}))
 	_cargar_mineria(datos.get("mineria", {}))
+	_cargar_arboles(datos.get("arboles", {}))
+	_cargar_refugios(datos.get("refugios", {}))
+	_autosave_activo = true
 	return true
 
 
@@ -383,3 +505,72 @@ func _cargar_npcs(lista: Array) -> void:
 		var pos: Array = dd.get("pos", [])
 		if pos.size() >= 3:
 			npc.global_position = Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+
+
+# --- bloque 65: autosave -------------------------------------------
+
+## Bloque 65: el reloj del autosave. Un `RefCounted` no tiene `_process`
+## (no vive en el árbol), así que el tiempo lo aporta quien SÍ está en el árbol:
+## `MenuPausa` y la demo llaman a `avanzar_autosave(delta)` cada frame.
+func avanzar_autosave(delta: float) -> void:
+	if not _autosave_activo:
+		return
+	_reloj_autosave += delta
+	if _reloj_autosave < INTERVALO_AUTOSAVE:
+		return
+	_reloj_autosave = 0.0
+	if not _dirty:
+		return
+	guardar()
+
+
+## Lo llama `MenuPausa`: con el juego parado no hay nada nuevo que guardar.
+func fijar_autosave(activo: bool) -> void:
+	_autosave_activo = activo
+	if not activo:
+		# Al reanudar, el reloj se pone a cero: el jugador no quiere un
+		# guardado a los 3 segundos de volver al juego.
+		_reloj_autosave = 0.0
+
+
+# --- bloque 65: el estado del mundo ---------------------------------
+
+func _arboles_para_guardar() -> Dictionary:
+	if arboles == null or not is_instance_valid(arboles):
+		return {}
+	if not arboles.has_method("estado_para_guardar"):
+		return {}
+	return arboles.call("estado_para_guardar")
+
+
+func _cargar_arboles(bloque: Dictionary) -> void:
+	if arboles == null or not is_instance_valid(arboles):
+		return
+	if not arboles.has_method("cargar_estado"):
+		return
+	if bloque.is_empty():
+		return
+	arboles.call("cargar_estado", bloque)
+
+
+func _refugios_para_guardar() -> Dictionary:
+	var out: Dictionary = {}
+	for r in refugios:
+		if r == null or not is_instance_valid(r):
+			continue
+		if r.has_method("to_dict"):
+			out[str(r.get("refugio_id"))] = r.call("to_dict")
+	return out
+
+
+func _cargar_refugios(bloque: Dictionary) -> void:
+	if bloque.is_empty():
+		return
+	for r in refugios:
+		if r == null or not is_instance_valid(r):
+			continue
+		var rid: String = str(r.get("refugio_id"))
+		if not bloque.has(rid):
+			continue
+		if r.has_method("cargar_estado"):
+			r.call("cargar_estado", bloque[rid])

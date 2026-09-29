@@ -129,3 +129,57 @@ func _retirar(aid: String) -> void:
 ## Cuántos hay colocados ahora mismo (tests).
 func vivos() -> int:
 	return _instanciados.size()
+
+
+# --- bloque 65: el estado del mundo se guarda -------------------------
+
+## Bloque 65: qué árboles están gastados. Antes el `SaveSystem` guardaba las
+## VETAS y `Refugio` tenía su `to_dict()`, pero `GestorArboles` no: los árboles
+## talados reaparecían al cargar y el refugio perdía sus piezas. Guardar el
+## estado del mundo A MEDIAS es peor que no guardarlo, porque el jugador ve que
+## "funciona" y no se da cuenta de que pierde lo suyo.
+##
+## Solo se guardan los árboles que están gastados: uno con sus usos enteros es
+## el estado natural y no tiene por qué ocupar espacio en el save.
+func estado_para_guardar() -> Dictionary:
+	var gastados: Dictionary = {}
+	for d in arboles():
+		var ad: Dictionary = d
+		var aid: String = str(ad.get("id", ""))
+		if aid == "":
+			continue
+		if int(ad.get("usos", 0)) < _usos_max_de(ad):
+			gastados[aid] = {"usos": int(ad.get("usos", 0))}
+	return {"version": 1, "arboles": gastados}
+
+
+## Restaura el estado. Los que NO están en el bloque vuelven a su estado
+## natural: un save viejo no debe dejar un árbol sin usar para siempre.
+func cargar_estado(bloque: Dictionary) -> void:
+	if bloque.is_empty():
+		return
+	var gastados: Dictionary = bloque.get("arboles", {})
+	for d in arboles():
+		var ad: Dictionary = d
+		var aid: String = str(ad.get("id", ""))
+		if aid == "":
+			continue
+		# El dato de la VETA va en la copia de `_datos`, que es la lista.
+		ad["usos"] = int(gastados[aid].get("usos", ad.get("usos", 0))) \
+			if gastados.has(aid) else int(ad.get("usos", 0))
+		# Si el árbol ya está en el mundo, se le aplica; si no, cuando se
+		# coloque, porque `_colocar` lee el dato.
+		var n: Veta = _instanciados.get(aid) as Veta
+		if n != null and is_instance_valid(n):
+			n.usos = int(ad["usos"])
+
+
+## Un árbol recién colocado tiene que herdar los usos guardados, no arrancar
+## siempre cheio: si no, se recargan al hacer streaming.
+func _usos_de_dato(d: Dictionary) -> int:
+	var n: Veta = _instanciados.get(str(d.get("id", ""))) as Veta
+	return n.usos if n != null and is_instance_valid(n) else int(d.get("usos", 0))
+
+
+func _usos_max_de(d: Dictionary) -> int:
+	return maxi(1, int(d.get("usos_max", 3)))
