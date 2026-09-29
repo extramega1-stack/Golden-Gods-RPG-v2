@@ -163,10 +163,15 @@ func _colocar_fogatas() -> void:
 	for i in range(plazas.size()):
 		var f := Fogata.new()
 		f.name = "Fogata_%d" % i
+		# `add_child` ANTES de tocar `global_position`: en un nodo que todavia no
+		# esta en el arbol, pedir la transformada global tira nueve
+		# "Condition !is_inside_tree() is true" por arranque. Son nueve lineas de
+		# ruido que tapan errores de verdad en el log, y el maestro de hoy es
+		# justamente ese: hay que poder ver el log limpio para saber si algo roto.
+		add_child(f)
 		f.global_position = plazas[i]
 		if _terreno != null:
 			f.position.y = _terreno.altura_en(f.position.x, f.position.z)
-		add_child(f)
 		_fogatas.append(f)
 		f.add_to_group(&"fogatas")
 		# Fase 64: prender una fogata se anuncia, y el panel se abre con un
