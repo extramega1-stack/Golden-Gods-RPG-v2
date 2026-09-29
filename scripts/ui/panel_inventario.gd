@@ -221,7 +221,11 @@ func _celda(entrada: Dictionary, item: Dictionary) -> Button:
 		badge.position = Vector2(-34.0, -20.0)
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		btn.add_child(badge)
-	btn.tooltip_text = "%s x%d" % [str(item.get("nombre", iid)), cant]
+	# Ola 1: el tooltip pasa por `DetalleItem`, que arma el texto del item Y sus
+	# afijos. Antes era un `"%s x%d"` con el nombre a pelo, así que el afijo se
+	# sorteaba y se guardaba pero el jugador no lo veía nunca. `DetalleItem` es un
+	# presentador puro: arma texto, no escribe en el inventario.
+	btn.tooltip_text = DetalleItem.tooltip_de(entrada, item)
 	btn.pressed.connect(_al_celda.bind(iid))
 	return btn
 
@@ -244,7 +248,11 @@ func _actualizar_barra() -> void:
 		return
 	var item: Dictionary = ItemDB.obtener(_sel_id)
 	_sel_nombre.text = item.get("nombre", _sel_id)
-	_sel_desc.text = item.get("descripcion", "")
+	# Ola 1: la descripción del item seleccionado pasa por `DetalleItem`, que le
+	# agrega las líneas de los afijos. Antes solo salía la descripción del dato,
+	# o sea que el afijo tampoco se veía en el detalle.
+	_sel_desc.text = DetalleItem.detalle_de(
+		{"id": _sel_id, "cantidad": 1}, item)
 	_btn_usar.disabled = str(item.get("tipo", "")) != "consumible"
 	_btn_equipar.disabled = not Equipo.es_equipable(_sel_id)
 

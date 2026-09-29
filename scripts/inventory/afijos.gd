@@ -116,11 +116,20 @@ static func texto_de(afijo: Dictionary) -> String:
 	if afijo.is_empty():
 		return ""
 	var r: int = clampi(int(afijo.get("rareza", 1)) - 1, 0, RAREZAS.size() - 1)
-	return "%s +%.1f (%s)" % [
+	# El NOMBRE primero cuando existe. "Fuerza +3.2 (Poco comun)" dice cuanto sube
+	# el stat, pero no dice que objeto es: en un ARPG el nombre del afijo es lo que
+	# hace que un item sea memorable y lo que el jugador compara de un vistazo
+	# ("el de Filo sangrante" y no "el que da +3.2 de fuerza"). El efecto sigue
+	# estando, que es lo que hace falta para decidir.
+	var efecto := "%s +%.1f (%s)" % [
 		str(afijo.get("stat", "?")).capitalize(),
 		float(afijo.get("valor", 0.0)),
 		RAREZAS[r],
 	]
+	var nombre: String = str(afijo.get("nombre", "")).strip_edges()
+	if nombre == "":
+		return efecto
+	return "%s \u2014 %s" % [nombre, efecto]
 
 
 ## Compara dos afijos para el tooltip de comparación (▲ mejor, ▼ peor). Lo

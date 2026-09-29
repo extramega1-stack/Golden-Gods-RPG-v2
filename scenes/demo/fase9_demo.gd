@@ -513,8 +513,13 @@ func _al_recoger_botin(drop: Dictionary) -> void:
 	if str(drop.get("tipo", "")) == "oro":
 		_jugador.ganar_oro(int(drop.get("cantidad", 0)))
 	else:
+		# El tercer argumento son los afijos que `DropTable.roll_drops` ya
+		# adjuntó al drop con la semilla del mob. Sin esto el afijo se sortea y se
+		# guarda en la BD pero el item entra al inventario pelado: es exactamente
+		# el modo de falla de la fase 9, donde la UI se escribia pero no se leia.
 		_jugador.inventario.agregar(
-			str(drop.get("item_id", "")), maxi(1, int(drop.get("cantidad", 1))))
+			str(drop.get("item_id", "")), maxi(1, int(drop.get("cantidad", 1))),
+			drop.get("afijos", []))
 	# Fase 8: recoger mueve el inventario → se sincronizan los objetivos
 	# "recolectar".
 	_misiones.sincronizar_recoleccion(_jugador.inventario)
