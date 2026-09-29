@@ -150,6 +150,29 @@ static func local_de(parte: Dictionary) -> Transform3D:
 	return Transform3D(Basis.from_euler(rot).scaled(escala), p)
 
 
+## LA COMPOSICIÓN DE UNA PIEZA CON EL MUNDO. `local` coloca una parte DENTRO de
+## la pieza (escala, giro y desplazamiento sobre la primitiva unidad) y `mundo`
+## pone la pieza entera en el mundo (posición sobre el terreno, giro y escala
+## de la especie). El resultado es `mundo * local`.
+##
+## POR QUÉ ESTA EN UN SOLO LUGAR Y NO EN CADA `if`: el orden de `*` es la
+## trampa. En Godot `A * B` significa "B primero, A después": el de la izquierda
+## es el padre. Escribirlo al revés (`local * mundo`) NO da un error ni un
+## warning: Godot compone las matrices igual y devuelve UN TRANSFORM VÁLIDO. Lo
+## que hace es pasar la posición en MUNDOS (cientos de metros) por la base
+## diminuta de una parte (escala ~0.5, giro de décimas) y, en vez de pegar la
+## planta al suelo, la manda al cielo: en el centro del mundo, donde X y Z valen
+## cero, el error es de centímetros y no se ve; a 10.000 m del origen son cientos
+## de metros de altura. La calle quedaba igual de rota: una farola a 9.966 m
+## salía a 169 m en vez de 38.
+##
+## La función está para que el orden sea una decisión documentada y no dos
+## líneas repetidas a mano, y para que el test pueda probarla sola: componer una
+## pieza a 30 km del origen tiene que dar lo mismo que a 30 m.
+static func componer(local: Transform3D, mundo: Transform3D) -> Transform3D:
+	return mundo * local
+
+
 ## Vacía las cachés (los tests lo llaman; el juego, nunca).
 static func limpiar() -> void:
 	_primitivas.clear()

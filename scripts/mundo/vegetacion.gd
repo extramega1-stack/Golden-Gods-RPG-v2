@@ -193,48 +193,51 @@ func _drenar(max_celdas: int) -> void:
 ## transform degenerado. Que sea TODAS y no solo las que tocaban es lo que
 ## hace que el anillo viejo desaparezca sin un `vaciar()` de 5.000 escrituras:
 ## cada celda pisa su slot en cada capa, y al terminar el drenaje no queda nada.
+##
+## NO HAY CÁLCULO ACÁ: solo se reparte lo que devuelve `_grupos_de_celda`. La
+## decisión (zona segura, LOD, dado), el transform de la pieza y la composición
+## con las partes viven en esa función, que es la misma que mide el test. Cuando
+## `_sembrar` tenía su propia copia de la decisión, un test verde no probaba
+## nada: las dos copias se podían desincronizar calladitas.
 func _sembrar(celda: Vector2i, slot: int) -> void:
+	var grupos: Array = _grupos_de_celda(celda)
+	for k in grupos.size():
+		var partes: Array = (grupos[k] as Dictionary)["partes"]
+		var capas_k: Array = _capas[k]
+		for p in capas_k.size():
+			if p < partes.size():
+				(capas_k[p] as PisoDecoracion).poner(slot,
+					partes[p] as Transform3D)
+			else:
+				(capas_k[p] as PisoDecoracion).borrar(slot)
+
+
+## Lo que hay en UNA celda, especie por especie y en el orden de `_especies`.
+## Cada elemento es `{especie, ancla, partes}`:
+## - `ancla` es el transform de la pieza ENTERA (dónde cae, con qué giro y a qué
+##   escala). Su `origin.y` es el suelo menos el `hundir` de la especie.
+## - `partes` son los transform de cada parte de su forma, ya compuestos con
+##   `MallasDecoracion.componer`. Es lo que se escribe en el `MultiMesh`.
+## Un grupo con `partes` vacío es una especie que no cabe ahí (zona segura, LOD
+## o el dado), y la celda escribe el degenerado en sus capas.
+func _grupos_de_celda(celda: Vector2i) -> Array:
+	var grupos: Array = []
 	var paso: float = DecoracionDB.paso()
 	var centro: Vector2 = RejillaDecoracion.centro_de(celda, paso)
 	var semilla: int = DecoracionDB.semilla(centro.x, centro.y)
 	var zona: Dictionary = DecoracionDB.zona_resuelta(centro.x, centro.y)
-	var px: float = jugador.global_position.x
-	var pz: float = jugador.global_position.z
-	var en_plaza: bool = centro.length_squared() \
-		< DecoracionDB.radio_zona_segura() * DecoracionDB.radio_zona_segura()
-	var cerca2: float = DecoracionDB.radio_cerca() * DecoracionDB.radio_cerca()
 	for k in _especies.size():
 		var tipo: String = _especies[k]
-		var v: Dictionary = DecoracionDB.vegetal(tipo)
-		var capas_k: Array = _capas[k]
-		var xf: Transform3D = PisoDecoracion.nulo()
-		var hay: bool = not v.is_empty()
-		if hay:
-			# La zona segura: nada ALTO dentro de los 40 m de la aldea inicial.
-			# Es la misma regla que ya vigilan los tests de spawns y de terreno, y
-			# el motivo es el mismo: el punto de aparición tiene que estar
-			# despejado. La hierba y las flores sí pueden estar.
-			if en_plaza and DecoracionDB.es_tipo_alto(tipo):
-				hay = false
-			# LOD: lo "cerca" (hierba, flores, juncos) no existe en el borde del
-			# anillo. A 140 m un plantón de medio metro son dos píxeles: se ve
-			# como ruido, no como vegetación, y ocupa los mismos slots que un
-			# árbol que sí se lee.
-			elif str(v.get("alcance", "cerca")) == "cerca":
-				var dx: float = centro.x - px
-				var dz: float = centro.y - pz
-				hay = dx * dx + dz * dz <= cerca2
-			if hay:
-				hay = _pasa_el_dado(semilla, k, zona, tipo, v)
-		if hay:
-			xf = _transform_de(centro, semilla, k, v, paso)
-			var locales: Array = _locales[k]
-			for p in capas_k.size():
-				(capas_k[p] as PisoDecoracion).poner(slot,
-					(locales[p] as Transform3D) * xf)
-		else:
-			for p2 in capas_k.size():
-				(capas_k[p2] as PisoDecoracion).borrar(slot)
+		var partes: Array = []
+		var ancla := Transform3D.IDENTITY
+		if _cabe_aqui(tipo, k, centro, zona, semilla):
+			ancla = _transform_de(centro, semilla, k, DecoracionDB.vegetal(tipo),
+				paso)
+			for local in (_locales[k] as Array):
+				partes.append(MallasDecoracion.componer(
+					local as Transform3D, ancla))
+		grupos.append({"especie": tipo, "ancla": ancla, "partes": partes})
+	return grupos
 
 
 ## El dado de la celda. La probabilidad sale del dato: `peso / uno_cada`, con
@@ -258,13 +261,22 @@ func _pasa_el_dado(semilla: int, k: int, zona: Dictionary, tipo: String,
 ## El transform de la pieza: dónde cae (jitter DENTRO de la celda, no en la
 ## grilla entera — por eso dos matas vecinas no salen en el mismo punto), cómo
 ## gira y a qué escala.
+##
+## LA Y SON DOS COSAS SUMADAS y las dos importan:
+## - `terreno.altura_en(x, z)`: la altura DEL SUELO en el metro exacto donde cae
+##   la planta (con su jitter ya aplicado). Es la Y del mundo, la misma que
+##   pisa el jugador, la que leen `Arbol` y `Veta`.
+## - `-hundir`: cuánto se hunde la base. NO es decorativo: una planta cuya base
+##   solo ROZA el suelo se ve pegada con cinta, y en una pendiente la esquina
+##   que da al declive queda en el aire. Sale del dato (`hundir` de la especie),
+##   nunca de un número escrito acá.
 func _transform_de(centro: Vector2, semilla: int, k: int, v: Dictionary,
 		paso: float) -> Transform3D:
 	var i: int = 2000 + k * 8
 	var margen: float = paso * 0.40
 	var x: float = centro.x + DecoracionDB.entre(semilla, i + 1, -margen, margen)
 	var z: float = centro.y + DecoracionDB.entre(semilla, i + 2, -margen, margen)
-	var y: float = -float(v.get("hundir", 0.15))
+	var y: float = -_hundir_de(v)
 	if terreno != null and is_instance_valid(terreno):
 		y += terreno.altura_en(x, z)
 	# Un poco de inclinación: pasto y ramas que salen perfectamente verticales
@@ -281,6 +293,18 @@ func _transform_de(centro: Vector2, semilla: int, k: int, v: Dictionary,
 		float(esc[1]) if esc.size() > 1 else 1.4)
 	return Transform3D(Basis.from_euler(euler).scaled(Vector3.ONE * s),
 		Vector3(x, y, z))
+
+
+## Cuánto se hunde la base de una especie. Sale del dato, con un piso de
+## `HUNDIR_MINIMO` para que ninguna planta nueva pueda declararse flotante por
+## olvido: escribir `"hundir": 0` es el error, y el error de este archivo es
+## invisible en el juego (una flor a 6 cm del suelo parece bien) y evidente en
+## el test.
+const HUNDIR_MINIMO: float = 0.12
+
+
+func _hundir_de(v: Dictionary) -> float:
+	return maxf(HUNDIR_MINIMO, float(v.get("hundir", 0.0)))
 
 
 # ---------------------------------------------------------------------------
@@ -404,6 +428,20 @@ func piezas_puestas() -> int:
 ## nunca se llega; está para que el test lo compare con el presupuesto.
 func triangulos_peor_caso() -> int:
 	return _triangulos_peor_caso
+
+
+## LO QUE HAY EN UNA CELDA, tal como se escribe en el búfer: un
+## `{especie, ancla, partes}` por especie, con las partes ya compuestas. Es el
+## MISMO `_grupos_de_celda` que usa `_sembrar`, no una copia: el test no puede
+## dar verde midiendo una fórmula que el juego no usa.
+##
+## POR QUÉ NO SE LEE EL `MultiMesh`: el búfer vive en el RenderingServer, y en
+## headless (rasterizador dummy) `get_instance_transform` devuelve identidad
+## para todo. Un test que lo leyera daría verde con la vegetación entera flotando
+## en el cielo. Esto es el mismo cálculo en CPU, así que mide la geometría que el
+## rasterizador recibe.
+func grupos_de_celda(celda: Vector2i) -> Array:
+	return _grupos_de_celda(celda)
 
 
 ## Qué especie caería en una celda del mundo por el SOLO dado, sin el LOD ni la
