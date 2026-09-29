@@ -47,7 +47,18 @@ static func centrar(panel: Control, ancho_rel: float = 0.0, alto_rel: float = 0.
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.custom_minimum_size = Vector2(w, h)
 	panel.size = Vector2(w, h)
-	panel.position = Vector2((vp.x - w) * 0.5, (vp.y - h) * 0.5)
+	# OFFSETS, NUNCA `position`. BUG REAL (encontrado jugando, no leyendo):
+	# los paneles llaman a `centrar()` ANTES de `add_child()`, y `position` en un
+	# nodo FUERA del arbol se resuelve contra un padre de tamaño CERO. El
+	# resultado al añadirlo era un panel en la esquina: en una ventana de
+	# 1280x1401 caia en (998, 991) y se veia la punta. Los offsets son
+	# relativos al ancla y no dependen del padre, asi que dan igual dentro o
+	# fuera del arbol. Los 99 tests no lo cazaron porque median en un viewport
+	# cuadrado de 1280x1280 calling con el orden invertido.
+	panel.offset_left = -w * 0.5
+	panel.offset_top = -h * 0.5
+	panel.offset_right = w * 0.5
+	panel.offset_bottom = h * 0.5
 	return panel.size
 
 
@@ -78,9 +89,34 @@ static func anclar(panel: Control, preset: int, margen: float = 24.0) -> void:
 		_:
 			return
 	# El tamaño se respeta, pero no puede empujar el panel fuera del viewport.
+	# El suelo es bajo a proposito: antes era 200x150 y una barra de estado de
+	# 90 px salia de 150 (el suelo le ganaba al llamador). Solo un minimo
+	# util para que un panel nunca sea un punto invisible.
 	var w: float = minf(panel.custom_minimum_size.x, vp.x - margen * 2.0)
 	var h: float = minf(panel.custom_minimum_size.y, vp.y - margen * 2.0)
-	panel.custom_minimum_size = Vector2(maxf(w, 200.0), maxf(h, 150.0))
+	w = maxf(w, 24.0)
+	h = maxf(h, 24.0)
+	panel.custom_minimum_size = Vector2(w, h)
+	# BUG LATENTE (encontrado al revisar este mismo fallo): se fijaba
+	# `custom_minimum_size` pero NO el tamaño. Con anclas en una esquina, el lado
+	# "opuesto" (offset_left en esquina inferior derecha) se queda en su valor
+	# anterior, asi que el panel se estiraba desde donde estuviera hasta el
+	# borde: una barra de estado podia salir con 900 px de alto. El tamaño se
+	# fija con los offsets del lado lejano, igual que en `centrar()`.
+	match preset:
+		Control.PRESET_TOP_LEFT:
+			panel.offset_right = margen + w
+			panel.offset_bottom = margen + h
+		Control.PRESET_TOP_RIGHT:
+			panel.offset_left = -margen - w
+			panel.offset_bottom = margen + h
+		Control.PRESET_BOTTOM_LEFT:
+			panel.offset_right = margen + w
+			panel.offset_top = -margen - h
+		Control.PRESET_BOTTOM_RIGHT:
+			panel.offset_left = -margen - w
+			panel.offset_top = -margen - h
+	panel.size = Vector2(w, h)
 
 
 ## El tamaño del viewport en pixeles de UI. Con `canvas_items` + `expand` es

@@ -49,7 +49,10 @@ static func asegurar() -> Transicion:
 	var arbol: SceneTree = Engine.get_main_loop() as SceneTree
 	if arbol == null or arbol.root == null:
 		return t
-	arbol.root.call_deferred("add_child", t)
+	# INMEDIATO, no diferido: `asegurar()` se llama desde un boton (no desde
+	# un `_ready` que este montando la escena), y diferido dejaba el nodo fuera
+	# del arbol mientras `_fundir` ya estaba creando el tween.
+	arbol.root.add_child(t)
 	_instancia = t
 	return t
 
@@ -75,18 +78,30 @@ func _ready() -> void:
 	add_child(_panel)
 
 
+## BUG (bloque 65, encontrado jugando): esta funcion usaba `get_tree()` DESPUES
+## del `await`. Al liberar la escena anterior, este nodo se iba con ella (cuelga
+## del arbol, no del root, si la escena lo libera) y `get_tree()` devolvia
+## null: "Invalid assignment of property 'paused' on a null instance".
+## El arreglo es NO depender de `self` tras el await: se captura el arbol antes
+## y se usa esa referencia, que sigue valiendo aunque el nodo muera.
 func _ir_a(ruta: String) -> void:
 	if _cargando:
+		return
+	var arbol: SceneTree = Engine.get_main_loop() as SceneTree
+	if arbol == null:
+		# Sin arbol no hay fundido: se cambia de escena directo ( degrade, no
+		# romper la partida por un efecto).
+		_cargando = false
 		return
 	_cargando = true
 	await _fundir(1.0)
 	if ruta != "":
-		get_tree().paused = false
-		get_tree().change_scene_to_file(ruta)
+		arbol.paused = false
+		arbol.change_scene_to_file(ruta)
 		# Un frame entero con la pantalla tapada: si se destapa en el mismo
 		# frame del cambio, se ve el frame en blanco de la escena nueva.
-		await get_tree().process_frame
-		await get_tree().process_frame
+		await arbol.process_frame
+		await arbol.process_frame
 	await _fundir(0.0)
 	_cargando = false
 
