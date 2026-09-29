@@ -434,6 +434,13 @@ func _al_mundo_listo() -> void:
 	if _guardado != null:
 		_guardado.arboles = _arboles
 		_guardado.refugios = _refugios
+		# BUG REAL (playtest de la ola 3): `cargar()` corrió en el `_ready`, cuando
+		# estos arrays todavía estaban vacíos, así que el estado del mundo del
+		# guardado se aplicó contra listas vacías. Peor: el próximo guardado pisaba
+		# lo guardado con lo recién construido y la reclamación del refugio se
+		# perdía PARA SIEMPRE. Se reaplica recién acá, cuando ya existen.
+		if _guardado.has_method("aplicar_estado_mundo"):
+			_guardado.aplicar_estado_mundo()
 	add_child(_mineria)
 	_mineria.configurar_desde_datos()
 	_mineria.fijar_terreno($Terreno as Terreno)

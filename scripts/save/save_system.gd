@@ -11,6 +11,21 @@ extends RefCounted
 
 const SAVE_VERSION: int = 13
 const RUTA: String = "user://partida.json"
+## Ruta efectiva del guardado. Vacío = usar `_ruta()`.
+##
+## POR QUÉ EXISTE: con `_ruta()` como const, un test no puede apuntar a un archivo
+## propio y tocaría la partida real del jugador. Con esto, los tests usan
+## `user://_test_*.json` y no pisan nada. También sirve para partidas en un
+## directorio de saves, que es lo que pediría un jugador con varias partidas.
+static var ruta: String = ""
+
+
+## La ruta a la que se lee y escribe de verdad. Estática porque
+## `_escribir_atomico()` también la necesita y es estática: el juego tiene un
+## solo sistema de guardado, así que no se pierde nada por que el override sea
+## global.
+static func _ruta() -> String:
+	return ruta if ruta != "" else RUTA
 ## Bloque 65: cada cuánto se guarda solo. 5 minutos es un término medio: ni tan
 ## seguido como para tocar el disco en cada morte, ni tan espaciado como para
 ## perder dos horas de juego.
@@ -70,7 +85,7 @@ var ngplus: EstadoNgPlus = EstadoNgPlus.new()
 
 
 func hay_partida() -> bool:
-	return FileAccess.file_exists(RUTA)
+	return FileAccess.file_exists(_ruta())
 
 
 func guardar() -> bool:
@@ -142,7 +157,7 @@ func guardar() -> bool:
 ## temporal + backup + rename, el peor caso es que la vuelta no empiece y el
 ## jugador siga en la anterior, con su prestigio intacto.
 static func _escribir_atomico(datos: Dictionary) -> bool:
-	var temporal: String = RUTA + ".tmp"
+	var temporal: String = _ruta() + ".tmp"
 	var f: FileAccess = FileAccess.open(temporal, FileAccess.WRITE)
 	if f == null:
 		push_warning("[SaveSystem] no se pudo abrir %s para escribir" % temporal)
@@ -154,13 +169,13 @@ static func _escribir_atomico(datos: Dictionary) -> bool:
 	f.close()
 	# Backup ANTES del rename: si el rename deja algo raro, todavía hay una
 	# copia buena del estado anterior.
-	if FileAccess.file_exists(RUTA):
-		var b: FileAccess = FileAccess.open(RUTA + ".bak", FileAccess.WRITE)
+	if FileAccess.file_exists(_ruta()):
+		var b: FileAccess = FileAccess.open(_ruta() + ".bak", FileAccess.WRITE)
 		if b != null:
-			b.store_string(FileAccess.get_file_as_string(RUTA))
+			b.store_string(FileAccess.get_file_as_string(_ruta()))
 			b.close()
 	var err: int = DirAccess.rename_absolute(
-		ProjectSettings.globalize_path(temporal), ProjectSettings.globalize_path(RUTA))
+		ProjectSettings.globalize_path(temporal), ProjectSettings.globalize_path(_ruta()))
 	if err != OK:
 		push_warning("[SaveSystem] no se pudo renombrar el temporal (err %d)" % err)
 		return false
@@ -175,13 +190,13 @@ static func _escribir_atomico(datos: Dictionary) -> bool:
 ## título, que NO tiene instancia de `SaveSystem` —la crea la escena de juego—
 ## y necesita poder preguntar por el NG+ guardado antes de que exista el mundo.
 static func _leer_con_respaldo() -> String:
-	if FileAccess.file_exists(RUTA):
-		var t: String = FileAccess.get_file_as_string(RUTA)
+	if FileAccess.file_exists(_ruta()):
+		var t: String = FileAccess.get_file_as_string(_ruta())
 		if _json_valido(t):
 			return t
 		push_warning("[SaveSystem] partida.json ilegible; se intenta el respaldo")
-	if FileAccess.file_exists(RUTA + ".bak"):
-		var tb: String = FileAccess.get_file_as_string(RUTA + ".bak")
+	if FileAccess.file_exists(_ruta() + ".bak"):
+		var tb: String = FileAccess.get_file_as_string(_ruta() + ".bak")
 		if _json_valido(tb):
 			return tb
 	return ""
@@ -290,6 +305,16 @@ func cargar() -> bool:
 	_cargar_mineria(datos.get("mineria", {}))
 	_cargar_arboles(datos.get("arboles", {}))
 	_cargar_refugios(datos.get("refugios", {}))
+	# BUG REAL (lo encontró el playtest de la ola 3): `cargar()` corre en el
+	# `_ready` de la demo, y los refugios se crean DESPUÉS, en `_al_mundo_listo`.
+	# O sea que `_cargar_arboles` y `_cargar_refugios` iteran listas vacías y no
+	# restauran nada. Peor: el siguiente guardado pisa lo que está en disco con lo
+	# recién construido, así que la reclamación se pierde PARA SIEMPRE. Se guarda
+	# el bloque para reaplicarlo cuando el mundo ya exista.
+	_estado_mundo_cache = {
+		"arboles": datos.get("arboles", {}),
+		"refugios": datos.get("refugios", {}),
+	}
 	# Bloque 68: el NG+ va AL FINAL, y no por desorden. `restaurar()` de la
 	# entidad reemplaza `jugador.stats` por un StatBlock NUEVO, y equipo y
 	# talentos añaden sus mods después: si el NG+ se aplicara antes, el stat
@@ -612,6 +637,36 @@ func _arboles_para_guardar() -> Dictionary:
 	return arboles.call("estado_para_guardar")
 
 
+## El estado del mundo (árboles talados y refugios) tal como estaba en el disco
+## la última vez que se cargó. Lo usa `aplicar_estado_mundo()`.
+var _estado_mundo_cache: Dictionary = {}
+
+
+## Reaplica el estado del mundo DESPUÉS de que los árboles y los refugios
+## existan en la escena.
+##
+## POR QUÉ HACE FALTA (bug real, lo encontró el playtest de la ola 3): la escena
+## se construye por fases. `cargar()` se dispara en el `_ready` de la demo,
+## cuando el mundo todavía no está; los refugios se crean más tarde, en
+## `_al_mundo_listo()`. Así que el guardado del mundo se aplica contra listas
+## vacías y no restaura nada. Peor todavía: al guardar después, el estado recién
+## construido pisa al del disco, y el jugador pierde la reclamación del refugio
+## de forma PERMANENTE, no solo al cargar.
+##
+## Es idempotente: llamarlo dos veces aplica lo mismo dos veces.
+func aplicar_estado_mundo() -> void:
+	if _estado_mundo_cache.is_empty():
+		return
+	_cargar_arboles(_estado_mundo_cache.get("arboles", {}))
+	_cargar_refugios(_estado_mundo_cache.get("refugios", {}))
+
+
+## Vacía la cache del mundo. Para tests y para arrancar una partida nueva: si no,
+## una partida nueva heredaría el estado del mundo de la anterior.
+func olvidar_estado_mundo() -> void:
+	_estado_mundo_cache = {}
+
+
 func _cargar_arboles(bloque: Dictionary) -> void:
 	if arboles == null or not is_instance_valid(arboles):
 		return
@@ -671,7 +726,7 @@ static func nivel_guardado() -> int:
 ## ganar nada, que es la forma más rápida de hacer que un jugador borre su
 ## progreso por accidente.
 static func puede_nuevo_game_plus() -> bool:
-	if not FileAccess.file_exists(RUTA):
+	if not FileAccess.file_exists(_ruta()):
 		return false
 	return nivel_guardado() >= NuevoJuegoPlus.tope_nivel()
 
