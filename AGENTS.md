@@ -85,6 +85,15 @@ cualquier skill de marketing/crypto/trading.
 
 ## Workflow por entrega
 
+0. **Si agregaste un `class_name` nuevo, corré `--import` antes de los tests.**
+   Un `class_name` se registra en el caché global de clases de Godot, no en el
+   repo. En un worktree donde el proyecto ya se importó, el tipo existe; en otro
+   checkout da `Could not find type "X" in the current scope` y tumba media
+   suite. Pasó al integrar el panel de Códice: 98/102 en rojo por eso, no por el
+   código.
+   ```sh
+   godot --headless --path . --import
+   ```
 1. Spec cerrada (actualizar `docs/MASTER_SPEC.md` con la fase).
 2. Implementar un sistema a la vez (§11).
 3. `godot --headless --path . --check-only --script <cada script nuevo>` → 0 fallos.
