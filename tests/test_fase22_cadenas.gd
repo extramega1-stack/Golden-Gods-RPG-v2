@@ -82,7 +82,15 @@ func _completar_matar(q: QuestLog, qid: String, arq: String, n: int) -> void:
 func _test_catalogo() -> void:
 	# Fase 23: 29 + Fase 24: 32 (este test es de fase 22, solo verifica
 	# su parte + el total actualizado).
-	_chk(QD.ids().size() == 41, "a: 41 misiones", str(QD.ids().size()))
+	# El catálogo ESCRITO, sin la rotación de runtime. `ids()` mezcla las
+	# dos cosas porque es lo que necesita el juego (el panel tiene que listar
+	# también las diarias), y por eso su total depende de qué día es: 60 hoy,
+	# 61 mañana. Un número así no puede ser lo que este test quiere afirmar.
+	# Lo que se afirma es que el catálogo escrito no se encogió: 41 del juego
+	# base + 15 de NG+.
+	_chk(QD.ids_de_archivo().size() == 56,
+		"a: 56 misiones escritas (41 base + 15 NG+)",
+		str(QD.ids_de_archivo().size()))
 	_chk(QD.requiere("q_oasis_agua") == "", "a: q1 sin prerrequisito")
 	_chk(QD.requiere("q_oasis_secreto") == "q_oasis_agua", "a: q2 requiere q1")
 	_chk(QD.requiere("q_oasis_devorador") == "q_oasis_secreto", "a: q3 requiere q2")

@@ -23,6 +23,7 @@ const PL: GDScript = preload("res://scripts/player/player.gd")
 const NP: GDScript = preload("res://scripts/npc/npc.gd")
 const NDB: GDScript = preload("res://scripts/npc/npc_db.gd")
 const QDB: GDScript = preload("res://scripts/quests/quest_db.gd")
+const RDR: GDScript = preload("res://scripts/progresion/rotacion_diaria.gd")
 const QL: GDScript = preload("res://scripts/quests/quest_log.gd")
 const INV: GDScript = preload("res://scripts/inventory/inventory.gd")
 const SV: GDScript = preload("res://scripts/save/save_system.gd")
@@ -129,7 +130,17 @@ func _t_db() -> void:
 	var ids: Array[String] = QDB.ids()
 	# Fase 22: 25 = 3 de Moon Town + 22 de las cadenas por ciudad.
 	# Fase 23: 29 = 25 + 4 del Acto I. Fase 24: 32 = 29 + 3 del Acto II.
-	_check(ids.size() == 41, "db: 41 misiones (38 + 3 acto V)", str(ids.size()))
+	# El catálogo ESCRITO, sin la rotación de runtime: `ids()` mezcla las dos
+	# cosas porque es lo que necesita el juego, y su total depende de qué día
+	# es (60 hoy, 61 mañana). Lo que se afirma acá es que el catálogo escrito
+	# no se encogió: 41 del juego base + 15 de NG+.
+	_check(QDB.ids_de_archivo().size() == 56,
+		"db: 56 misiones escritas (41 base + 15 NG+)",
+		str(QDB.ids_de_archivo().size()))
+	_check(ids.size() == QDB.ids_de_archivo().size()
+			+ RDR.dias_por_dia() + RDR.semanas_por_semana(),
+		"db: y el total con la rotación de hoy son esas + los encargos de hoy",
+		str(ids.size()))
 	var g: Dictionary = QDB.obtener("goblins_fuera")
 	_check(str(g.get("nombre", "")) == "Goblins fuera",
 		"db: nombre Goblins fuera")

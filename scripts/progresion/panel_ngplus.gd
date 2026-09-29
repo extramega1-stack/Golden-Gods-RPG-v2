@@ -32,6 +32,10 @@ var _ciclo: Label = null
 var _prestigio: Label = null
 var _multiplicadores: VBoxContainer = null
 var _aviso: Label = null
+## Contenido de esta vuelta: los encargos de la rotación de hoy y los
+## trofeos. Nace VACÍO: se rellena al abrir, con lo que el sistema dice.
+var _contenido: VBoxContainer = null
+var _trofeos: VBoxContainer = null
 
 
 func _init() -> void:
@@ -85,6 +89,12 @@ func _construir() -> void:
 	_multiplicadores.add_theme_constant_override("separation", 4)
 	caja.add_child(_multiplicadores)
 
+	# El contenido de la vuelta. SIN ESTO el NG+ sube el número y no hay
+	# nada nuevo que hacer, que es exactamente el problema que vino a
+	# resolver esta fase: el prestige sin juego.
+	_contenido = _seccion("Encargos de hoy", caja)
+	_trofeos = _seccion("Trofeos", caja)
+
 	_aviso = Label.new()
 	_aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_aviso.add_theme_font_size_override("font_size", 13)
@@ -96,6 +106,21 @@ func _construir() -> void:
 	cerrar.text = "Cerrar (ESC)"
 	cerrar.pressed.connect(cerrar_panel)
 	caja.add_child(cerrar)
+
+
+## Un encabezado de sección más su VBox de filas,devueltos para poder
+## rellenar la lista. Devolver el contenedor y no solo crearlo evita que
+## `_construir` tenga que guardarlo en tres variables más.
+func _seccion(titulo: String, padre: VBoxContainer) -> VBoxContainer:
+	var sep: Label = Label.new()
+	sep.text = titulo
+	sep.add_theme_font_size_override("font_size", 15)
+	sep.add_theme_color_override("font_color", Color(0.85, 0.68, 0.25))
+	padre.add_child(sep)
+	var lista: VBoxContainer = VBoxContainer.new()
+	lista.add_theme_constant_override("separation", 3)
+	padre.add_child(lista)
+	return lista
 
 
 ## Una fila "etiqueta: valor" con el valor en un Label propio, para poder
@@ -167,12 +192,21 @@ func _al_cambiar() -> void:
 	_refrescar()
 
 
+## Repinta a pedido. Lo usan el test y quien cambie el contenido SIN que
+## cambie el estado del NG+ (que es el caso de la rotación: los encargos
+## cambian al cruzar la medianoche, y el ciclo sigue siendo el mismo).
+func al_cambiar_estado() -> void:
+	_refrescar()
+
+
 func _refrescar() -> void:
 	if _estado == null or not is_instance_valid(_estado):
 		return
 	_ciclo.text = "Ciclo %d" % _estado.ciclo
 	_prestigio.text = "%d puntos" % _estado.prestigio
 	_pintar_multiplicadores()
+	_pintar_contenido()
+	_pintar_trofeos()
 	_aviso.text = "" if SaveSystem.puede_nuevo_game_plus() else _motivo_bloqueo()
 
 
@@ -182,15 +216,7 @@ func _refrescar() -> void:
 ## reconstruir el panel por frame — y el precio son 8 nodos, una vez cada
 ## varias horas de juego.
 func _pintar_multiplicadores() -> void:
-	for n in _multiplicadores.get_children():
-		var fila: Node = n as Node
-		if fila == null or not is_instance_valid(fila):
-			continue
-		# `remove_child` ANTES de `queue_free`: un nodo solo liberado sigue
-		# colgando del árbol hasta el final del frame, y como este panel se
-		# repinta entero, se leería dos veces (la vieja y la nueva).
-		_multiplicadores.remove_child(fila)
-		fila.queue_free()
+	_vaciar(_multiplicadores)
 	_agregar_fila("XP", "x%.2f" % _estado.multiplicador_xp())
 	_agregar_fila("Enemigos", "x%.2f" % _estado.multiplicador_enemigo())
 	_agregar_fila("Afijos extra por item", "+%d" % _estado.afijos_extra())
@@ -206,6 +232,89 @@ func _pintar_multiplicadores() -> void:
 
 func _agregar_fila(etiqueta: String, valor: String) -> void:
 	_nueva_linea(etiqueta, _multiplicadores).text = valor
+
+
+## Vacía un VBox para repintarlo. `remove_child` ANTES de `queue_free`: un
+## nodo solo liberado sigue colgando del árbol hasta el final del frame, y
+## como la lista se repinta entera, se leería dos veces (la vieja y la nueva).
+func _vaciar(lista: VBoxContainer) -> void:
+	for n in lista.get_children():
+		var fila: Node = n as Node
+		if fila == null or not is_instance_valid(fila):
+			continue
+		lista.remove_child(fila)
+		fila.queue_free()
+
+
+## Los ENCARGOS DE HOY: las 3 diarias y la semanal que la rotación tiene
+## vivas ahora mismo, con el NPC al que hay que ir.
+##
+## Solo LEE (§7.11): pregunta al catálogo y a la rotación, no decide nada. Y
+## se pinta al ABRIR, no por frame: la rotación cambia al cruzar la medianoche
+## o al prestigiar, y las dos cosas se hacen fuera de este panel.
+func _pintar_contenido() -> void:
+	_vaciar(_contenido)
+	var hoy: Array[Dictionary] = RotacionDiaria.misiones_vigentes(_estado.ciclo)
+	if hoy.is_empty():
+		_contenido.add_child(_texto("(sin encargos hoy)", 14, Color(0.6, 0.58, 0.55)))
+		return
+	for m in hoy:
+		if not QuestDB.vigente(str(m.get("id", ""))):
+			continue
+		var npc: String = str(m.get("npc_origen", ""))
+		var quien: String = _nombre_npc(npc)
+		_contenido.add_child(_texto("· %s — %s" % [str(m.get("nombre", "")), quien],
+			14, Color(0.90, 0.88, 0.80)))
+
+
+## Los TROFEOS ganados y los que faltan. La lista completa cambia solo al
+## cerrar un ciclo, así que se repinta con la señal del estado, igual que los
+## multiplicadores.
+func _pintar_trofeos() -> void:
+	_vaciar(_trofeos)
+	var t: Trofeos = Trofeos.instancia()
+	# `evaluar` con el contexto real de la partida: el trofeo se guarda
+	# (ganado) y el panel solo lo muestra. La UI no escribe estado.
+	# El `SaveSystem` se busca por el registro de sistemas (§9.1) y puede NO
+	# estar (el panel se abre también desde la pantalla de título, que no
+	# tiene mundo). En ese caso se usa el contexto del estado que YA tiene el
+	# panel, que es lo único que se sabe de la partida: la lista se ve igual y
+	# no se inventa nada.
+	var misiones: QuestLog = null
+	if Systems.actual != null:
+		var save = Systems.actual.obtener(&"save_system")
+		if save is SaveSystem and save.misiones != null:
+			misiones = save.misiones
+	if misiones != null:
+		t.evaluar(t.contexto_actual(misiones))
+	else:
+		t.evaluar({
+			Trofeos.CTX_CICLO: _estado.ciclo,
+			Trofeos.CTX_PRESTIGIO: _estado.prestigio,
+		})
+	for id in t.ids():
+		var linea: String = "· " + t.nombre_de(id)
+		if not t.tiene(id):
+			linea = "○ " + t.nombre_de(id)
+		_trofeos.add_child(_texto(linea, 14,
+			Color(0.95, 0.90, 0.70) if t.tiene(id) else Color(0.55, 0.53, 0.50)))
+
+
+func _texto(t: String, tam: int, color: Color) -> Label:
+	var l: Label = Label.new()
+	l.text = t
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_font_size_override("font_size", tam)
+	l.add_theme_color_override("font_color", color)
+	return l
+
+
+## El nombre legible del NPC, o el id si el catálogo no lo tiene. Nunca
+## inventa: si el NPC no existe, el id es la verdad.
+func _nombre_npc(npc_id: String) -> String:
+	if npc_id == "":
+		return "?"
+	return str(NpcDB.obtener(npc_id).get("nombre", npc_id))
 
 
 func _porcentaje(bon: Dictionary, stat: String) -> int:

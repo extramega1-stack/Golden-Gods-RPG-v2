@@ -36,6 +36,34 @@ var prestigio: int = 0
 ## equipo, talentos ni hechos.
 const PREFIJO_MOD: String = "ngplus:"
 
+## El ciclo que el JUEGO está jugando ahora, para los sistemas que lo
+## consultan sin tener una instancia a mano (el catálogo de misiones, sobre
+## todo: `QuestDB` es estático y le pregunta "¿esta misión es de la vuelta
+## que estoy jugando?").
+##
+## POR QUÉ UN ESTÁTICO Y NO `SaveSystem.estado_ngplus()` EN CADA CONSULTA:
+## esestaticmethod LEE EL DISCO, y el catálogo se consulta desde el bucle de
+## la UI, desde `oferta_para_npc` y desde `estado()`. Leer un archivo por
+## frame es justo lo que §9.5 prohíbe.
+##
+## POR QUÉ SE ACTUALIZA EN `desde_dict()` Y EN `prestigiar()` Y NO EN OTRO
+## SITIO: son los DOS únicos momentos en los que el NG+ entra al juego. Todo
+## el que lee el NG+ de la partida pasa por `SaveSystem._cargar_ngplus` o por
+## `SaveSystem.reiniciar_para_ngplus`, y los dos llaman a uno de estos dos.
+## Ponerlo en un tercer sitio sería ponerlo en el sitio equivocado.
+static var _ciclo_en_juego: int = 0
+
+## El ciclo de la vuelta en juego. 0 = la primera partida (sin NG+ todavía).
+static func ciclo_en_juego() -> int:
+	return _ciclo_en_juego
+
+
+## Fija el ciclo en juego. Lo usan `desde_dict` y `prestigiar`; el test lo usa
+## para simular una vuelta sin escribir una partida.
+static func fijar_ciclo_en_juego(ciclo: int) -> void:
+	_ciclo_en_juego = maxi(0, ciclo)
+
+
 ## ¿Le toca prestigiar a este personaje? El tope del mundo y no un umbral
 ## inventado: hasta llegar al final del contenido no se ofrece la espiral.
 func puede_prestigiar(nivel: int) -> bool:
@@ -53,6 +81,11 @@ func prestigiar(nivel: int) -> int:
 	var ganado: int = NuevoJuegoPlus.prestigio_ganado(ciclo)
 	ciclo += 1
 	prestigio += ganado
+	# El ciclo nuevo es el que se está jugando: se publica antes de la señal,
+	# para que quien escuche `cambiado` ya vea el catálogo de misiones con la
+	# vuelta nueva. Al revés, un panel que se repintara con la señal leería el
+	# contenido de la vuelta anterior.
+	fijar_ciclo_en_juego(ciclo)
 	cambiado.emit()
 	return ganado
 
@@ -129,4 +162,8 @@ static func desde_dict(d: Dictionary) -> EstadoNgPlus:
 	# importa y sale del prestigio, no del contador.
 	if e.ciclo == 0 and e.prestigio > 0:
 		e.ciclo = 1
+	# Publicar el ciclo: TODO el NG+ que entra al juego pasa por aquí, así que
+	# este es el punto donde `QuestDB` se entera de en qué vuelta está el
+	# jugador. Ver `ciclo_en_juego()`.
+	fijar_ciclo_en_juego(e.ciclo)
 	return e
