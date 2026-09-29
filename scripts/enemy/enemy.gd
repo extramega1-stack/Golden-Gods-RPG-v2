@@ -276,6 +276,8 @@ func _reproducir_estado(v: Estado) -> void:
 ## Aplica un arquetipo de datos (data/enemies.json): stats, IA, loot y color.
 ## Fase 33: resetea el estado élite (el pool reutiliza nodos).
 func configurar(arquetipo: Dictionary) -> void:
+	# Bloque 68: qué partícula escupe este arquetipo.
+	tipo_sangre = str(arquetipo.get("tipo_sangre", "sangre"))
 	es_elite = false
 	scale = Vector3.ONE
 	nombre_mostrado = str(arquetipo.get("nombre", "Enemigo"))
@@ -369,6 +371,10 @@ func aplicar_escala(escala: Dictionary) -> void:
 
 ## Valor BASE del arquetipo (sin escala) para un stat. Lo guarda configurar()
 ## para que aplicar_escala sea idempotente.
+## Bloque 68: el tipo de particula que escupe este bicho (sangre, hueso,
+## polvo, hielo). Lo lee el pool de impacto; si el dato no lo dice, sangre.
+var tipo_sangre: String = "sangre"
+
 func arquetipo_base(stat: String) -> float:
 	return float(_base_arquetipo.get(stat, 0.0))
 
@@ -567,6 +573,11 @@ func _actuar(delta: float) -> void:
 		velocity.y -= GRAVEDAD * delta
 	velocity.x = suave.x
 	velocity.z = suave.z
+	# Bloque 68: el empujón del golpe va ENCIMA de la IA. Si se sumara antes,
+	# `_actuar` lo borraría (la IA reescribe `velocity` cada frame) y el golpe
+	# no se sentiría: es exactamente lo que pasaba.
+	var emp := empuje_actual(delta)
+	velocity += emp
 	move_and_slide()
 
 

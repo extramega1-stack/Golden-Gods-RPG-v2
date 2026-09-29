@@ -287,6 +287,21 @@ func lanzar(skill_id: String, lanzador: Entity, objetivo: Entity, candidatos: Ar
 				_aplicar_debuff(skill_id, objetivo, efecto)
 		_:
 			push_warning("[SkillSystem] tipo de efecto desconocido: '%s' en %s" % [tipo, skill_id])
+	# Bloque 68: el proyectil VISUAL. Las skills de daño siguen siendo hitscan
+	# (el daño no cambia: es una decisión de balance, no de efecto), pero ahora
+	# se VE la flecha/lo que salga del arquero y del mago. Sin esto, atacar a
+	# distancia se siente como pulsar un botón: falta el "va de camino".
+	if (tipo == "dano" or tipo == "aoe") and lanzador is Node3D \
+			and is_instance_valid(lanzador):
+		var _escena: Node = (lanzador as Node3D).get_tree().current_scene
+		var pv := ProyectilVisual.asegurar(_escena)
+		if pv != null:
+			# Que lleve proyectil lo decide el DATO ("proyectil": true), no
+			# un umbral de alcance en el codigo: poner una flecha encima de un
+			# enemigo cuerpo a cuerpo es un error visual, y eso lo sabe el
+			# dato, no el sistema.
+			if bool(skill.get("proyectil", false)):
+				pv.disparar(lanzador, objetivo as Node3D, tipo == "aoe")
 	# Fase 20: SFX del skill lanzado (un sonido por tipo de efecto).
 	AudioJuego.al_skill(tipo)
 	skill_usada.emit(skill_id)

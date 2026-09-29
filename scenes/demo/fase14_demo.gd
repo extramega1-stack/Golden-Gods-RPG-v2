@@ -44,6 +44,8 @@ var _cocina: PanelCocina = null
 var _construccion: PanelConstruccion = null
 ## Bloque 65: pausa y opciones.
 var _pausa: MenuPausa = null
+## Bloque 68: los efectos que hacen que un golpe se sienta.
+var _pool_impacto: PoolImpacto = null
 var _opciones: PanelOpciones = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
@@ -217,6 +219,15 @@ func _al_reclamar_refugio(_refugio_id: String, r: Refugio) -> void:
 
 
 func _instalar_fase63_64_ui() -> void:
+	# Bloque 68: el pool de impactos y el gestor de proyectiles. Se crean al
+	# PRINCIPIO de la escena (antes que el jugador) para que el primer golpe
+	# ya tenga efectos: crearlos en el primer impacto es una alloc en el frame
+	# que no puede Jump.
+	_pool_impacto = PoolImpacto.new()
+	_pool_impacto.name = "PoolImpacto"
+	add_child(_pool_impacto)
+	_sistemas.registrar(_pool_impacto, &"pool_impacto")
+
 	# Bloque 65: el menú de pausa y el panel de opciones. Se instalan AL FINAL
 	# y por encima de todo, y son los únicos que registran el árbol como
 	# pausado. La pausa es dueña de la pila de paneles.

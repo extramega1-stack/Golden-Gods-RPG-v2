@@ -72,6 +72,13 @@ func _al_recibir_danio(dueno: Entity, dano: float, fuente: Entity, es_critico: b
 	elif dueno is Player:
 		color = COLOR_JUGADOR
 	_mostrar_numero(pos, dano, color, es_critico)
+	# Bloque 68: el kick direccional, SOLO si el que recibe es el jugador. Un
+	# golpe a un mob cercano no debe mover la cámara: el jugador tiene que
+	# poder seguir jugando mientras pega, no saltar con cada impacto.
+	if dueno is Player and fuente != null and fuente is Node3D \
+			and fuente != dueno and (fuente as Node3D).is_inside_tree():
+		var dir: Vector3 = dueno.global_position - (fuente as Node3D).global_position
+		_kick(dir, 0.10 if not es_critico else 0.20)
 	var murio: bool = dueno.vida_actual <= 0.0
 	if murio:
 		_hit_stop(0.09, 0.05)
@@ -149,6 +156,16 @@ func _hit_stop(duracion: float, escala: float) -> void:
 func _restaurar_tiempo() -> void:
 	Engine.time_scale = 1.0
 	_congelado = false
+
+
+## Bloque 68: el kick de cámara, DIRECCIONAL. `direccion` es hacia dónde
+## vino el golpe. Se dispara solo cuando el que recibe es el jugador: el
+## jugador no "siente" el peso de los golpes que pega, siente los que le pegan.
+func _kick(direccion: Vector3, fuerza: float) -> void:
+	if _rig == null:
+		_rig = get_tree().get_first_node_in_group("camera_rig") as CameraRig
+	if _rig != null:
+		_rig.agregar_kick(direccion, fuerza)
 
 
 func _sacudir(cantidad: float) -> void:

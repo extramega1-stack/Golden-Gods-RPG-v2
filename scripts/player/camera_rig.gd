@@ -37,6 +37,14 @@ const SHAKE_MAX: float = 0.35         ## Offset máximo de cámara a trauma 1.
 ## `agregar_trauma()` y decae solo; el offset usa trauma².
 var trauma: float = 0.0
 
+## Bloque 68: el KICK direccional. El shake de la fase 19 mueve la cámara en
+## DOS ejes al azar (h/v), sin dirección: se siente como un temblor, no como un
+## golpe. El kick empuja la cámara HACIA donde vino el impacto, que es lo que
+## comunica peso ("me pegaron desde ahí"), y se amortigua rápido.
+var _kick: Vector3 = Vector3.ZERO
+## Umbral por debajo del cual el kick se considera agotado (para no divisions).
+const KICK_MIN: float = 0.01
+
 ## Ruta al nodo que sigue (el Player; se asigna en el .tscn).
 @export var ruta_objetivo: NodePath
 
@@ -89,6 +97,20 @@ func _process(delta: float) -> void:
 
 
 ## Suma trauma de screen shake (0..1). La llama GameFeel.
+## Bloque 68: empuje direccional de cámara. `direccion` es la DIRECCIÓN DEL
+## GOLPE (hacia dónde vino el impacto, no hacia dónde se fue). La cámara se
+## mueve un poco en esa dirección y vuelve: eso es lo que un ojo lee como
+## "el golpe tiene peso".
+func agregar_kick(direccion: Vector3, fuerza: float = 0.12) -> void:
+	var d: Vector3 = direccion
+	d.y = 0.0
+	if d.length() < KICK_MIN:
+		return
+	# La cámara empuja en la dirección opuesta al golpe recibido: si te pegan
+	# desde la izquierda, la cámara se va a la derecha.
+	_kick = -d.normalized() * fuerza
+
+
 func agregar_trauma(cantidad: float) -> void:
 	trauma = minf(trauma + cantidad, 1.0)
 

@@ -100,6 +100,73 @@ func esta_vivo() -> bool:
 ## por defecto es false para no romper llamados viejos.
 ## REGLA DURA (fase 5.1): una entidad no combatible (NPC) ignora el daño
 ## por completo: sin vida perdida, sin señales, sin flash.
+## Bloque 68: el EMPUJE. Un golpe que solo quita vida no se siente: el enemigo
+## se queda clavado como un blanco. Con un empujón corto, el impacto transmite
+## la fuerza y se lee como físico en vez de como un número que baja.
+##
+## Es un IMPULSO que se aplica encima del movimiento, no velocidad: se guarda
+## aparte y se suma en el frame, para que la IA (que reescribe `velocity` cada
+## frame en el enemigo) no lo borre. `empuje_actual()` es lo que la IA suma.
+var _empuje: Vector3 = Vector3.ZERO
+## Cuánto dura el empujón (el decaimiento lo hace desvanecerse).
+var _empuje_t: float = 0.0
+## Fuerza base del empuje por punto de daño. 0.12 m por punto: un golpe de 20
+## empuja 2,4 m, que se nota sin lanzar al bicho lejos.
+const EMPUJE_POR_DANO: float = 0.12
+## Tope del empuje, para que un crítico no lance a un mob a otro bioma.
+const EMPUJE_MAX: float = 4.0
+## Segundos que dura el empujón.
+const EMPUJE_TIEMPO: float = 0.22
+
+
+## Aplica un empujón desde `origen` (quien golpea). La dirección es la
+## opuesta a la que viene el golpe: si me pegas desde la izquierda, me
+## empujo a la derecha.
+func aplicar_empuje(origen: Node3D, dano: float, factor: float = 1.0) -> void:
+	if origen == null or not is_instance_valid(origen):
+		return
+	var d: Vector3 = global_position - (origen as Node3D).global_position
+	d.y = 0.0
+	if d.length() < 0.001:
+		# Origen encima: un empujón aleatorio en vez de nada (un mob no puede
+		# ser impujecible solo por estar alineado).
+		d = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1))
+	d = d.normalized()
+	var fuerza: float = minf(dano * EMPUJE_POR_DANO * factor, EMPUJE_MAX)
+	_empuje = d * fuerza
+	_empuje_t = EMPUJE_TIEMPO
+
+
+## El empujón actual, ya desvanecido. Lo suma quien mueve la entidad.
+func empuje_actual(delta: float) -> Vector3:
+	if _empuje_t <= 0.0:
+		_empuje = Vector3.ZERO
+		return Vector3.ZERO
+	_empuje_t -= delta
+	# Decae: el empujón no es un empujón constante, es un golpe.
+	_empuje = _empuje.lerp(Vector3.ZERO, clampf(delta / EMPUJE_TIEMPO, 0.0, 1.0))
+	return _empuje
+
+
+## Qué partículas pegar según de quién es el cuerpo. Es la puerta que usa
+## el pool: la decide el arquetipo (un esqueleto escupe hueso, no sangre).
+func _tipo_sangre() -> String:
+	if self is Enemy:
+		var e: Enemy = self as Enemy
+		if e.es_jefe:
+			return "chispa"
+		# El arquetipo lleva su propio tipo de sangre en los datos; si no lo
+		# dice, es sangre. Es la puerta que el pool usa para elegir particula.
+		var n: String = str(e.tipo_sangre)
+		return n if n != "" else "sangre"
+	return "chispa"
+
+
+## ¿Está siendo empujado ahora? Para la UI y los tests.
+func siendo_empujado() -> bool:
+	return _empuje_t > 0.0
+
+
 func take_damage(cantidad: float, fuente: Entity, es_critico: bool = false) -> void:
 	if not combatible:
 		return
@@ -107,6 +174,20 @@ func take_damage(cantidad: float, fuente: Entity, es_critico: bool = false) -> v
 		return
 	var dano: float = maxf(cantidad, 0.0)
 	vida_actual = maxf(vida_actual - dano, 0.0)
+	# Bloque 68: el golpe empuja. Un crítico empuja más (1.6x).
+	if fuente != null and fuente != self and esta_vivo():
+		aplicar_empuje(fuente, dano, 1.6 if es_critico else 1.0)
+		# Bloque 68: la chispa. Va en el impacto, no en el atacante: el efecto
+		# tiene que estar EN QUIEN RECIBIO el golpe.
+		#
+		# Defensivo: `is_inside_tree()` porque un test (o un preload) puede
+		# pegar a una entidad que todavia no esta colgada, y `global_position`
+		# reventaria. Sin arbol no hay chispa, que es el comportamiento de
+		# antes del bloque.
+		if is_inside_tree():
+			var pool := PoolImpacto.de(get_tree().current_scene)
+			if pool != null:
+				pool.golpear(global_position + Vector3(0, 0.9, 0), _tipo_sangre())
 	flash_tiempo = FLASH_DURACION
 	daniado.emit(dano, fuente)
 	GameFeel.al_recibir_danio(self, dano, fuente, es_critico)

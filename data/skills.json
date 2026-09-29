@@ -1,5 +1,5 @@
 {
- "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo|daguero; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}. Fase 31: max_nivel/power_nivel/mana_nivel (power_nivel = extra por nivel en unidades del efecto principal).",
+ "nota": "Skills de la fase 18. Data-driven: un skill nuevo = agregar un objeto a esta lista (el orden es el orden del libro de habilidades). Campos: id, nombre, descripcion, clase (guerrero|mago|arquero|clerigo|daguero; '' = todas), mana, cooldown (s), rango (m, 0 = sin chequeo), power (multiplicador de Formulas.damage), magica, bonus_crit, varianza, efecto {tipo: dano|curar|aoe|buff|debuff, cantidad, duracion (buff/debuff), radio (aoe), stat (buff/debuff: ataque|defensa|crit|velocidad)}. Fase 31: max_nivel/power_nivel/mana_nivel (power_nivel = extra por nivel en unidades del efecto principal). | 'alcance' (b68): >6 = lleva proyectil visual. 'proyectil': true solo en las de flecha/bola. El daño sigue siendo hitscan: el proyectil es SOLO visual.",
  "version": 3,
  "skills": [
   {
@@ -20,7 +20,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.12,
-   "mana_nivel": 0.6
+   "mana_nivel": 0.6,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "tajo_veloz",
@@ -40,7 +42,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.07,
-   "mana_nivel": 0.4
+   "mana_nivel": 0.4,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "embate",
@@ -60,7 +64,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.11,
-   "mana_nivel": 0.7
+   "mana_nivel": 0.7,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "grito_guerra",
@@ -82,7 +88,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "torbellino",
@@ -103,7 +111,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.1,
-   "mana_nivel": 1.0
+   "mana_nivel": 1.0,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "muro_escudo",
@@ -125,7 +135,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.01,
-   "mana_nivel": 0.9
+   "mana_nivel": 0.9,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "ejecucion",
@@ -145,7 +157,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.17,
-   "mana_nivel": 1.2
+   "mana_nivel": 1.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "ira_titan",
@@ -167,7 +181,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.012,
-   "mana_nivel": 1.8
+   "mana_nivel": 1.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "descarga_arcana",
@@ -187,7 +203,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.08,
-   "mana_nivel": 0.5
+   "mana_nivel": 0.5,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "bola_fuego",
@@ -207,7 +225,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.16,
-   "mana_nivel": 0.9
+   "mana_nivel": 0.9,
+   "alcance": 18.0,
+   "proyectil": true
   },
   {
    "id": "prision_hielo",
@@ -229,7 +249,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.7
+   "mana_nivel": 0.7,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "escudo_mana",
@@ -251,7 +273,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.01,
-   "mana_nivel": 1.0
+   "mana_nivel": 1.0,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "rayo_encadenado",
@@ -272,7 +296,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.11,
-   "mana_nivel": 1.2
+   "mana_nivel": 1.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "nova_escarcha",
@@ -293,7 +319,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.1,
-   "mana_nivel": 1.1
+   "mana_nivel": 1.1,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "explosion_mental",
@@ -313,7 +341,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.19,
-   "mana_nivel": 1.4
+   "mana_nivel": 1.4,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "lluvia_meteoros",
@@ -334,7 +364,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.2,
-   "mana_nivel": 2.0
+   "mana_nivel": 2.0,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "disparo_certero",
@@ -354,7 +386,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.12,
-   "mana_nivel": 0.5
+   "mana_nivel": 0.5,
+   "alcance": 18.0,
+   "proyectil": true
   },
   {
    "id": "disparo_doble",
@@ -374,7 +408,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.09,
-   "mana_nivel": 0.6
+   "mana_nivel": 0.6,
+   "alcance": 18.0,
+   "proyectil": true
   },
   {
    "id": "tiro_rodilla",
@@ -396,7 +432,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.6
+   "mana_nivel": 0.6,
+   "alcance": 18.0,
+   "proyectil": true
   },
   {
    "id": "flecha_venenosa",
@@ -418,7 +456,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.006,
-   "mana_nivel": 0.7
+   "mana_nivel": 0.7,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "ojo_halcon",
@@ -440,7 +480,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "disparo_explosivo",
@@ -461,7 +503,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.14,
-   "mana_nivel": 1.0
+   "mana_nivel": 1.0,
+   "alcance": 18.0,
+   "proyectil": true
   },
   {
    "id": "lluvia_flechas",
@@ -482,7 +526,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.11,
-   "mana_nivel": 1.2
+   "mana_nivel": 1.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "danza_flechas",
@@ -503,7 +549,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.17,
-   "mana_nivel": 1.8
+   "mana_nivel": 1.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "curacion_menor",
@@ -523,7 +571,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 6.0,
-   "mana_nivel": 1.0
+   "mana_nivel": 1.0,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "castigo_divino",
@@ -543,7 +593,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.14,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "bendicion",
@@ -565,7 +617,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.9
+   "mana_nivel": 0.9,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "juicio",
@@ -587,7 +641,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.006,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "escudo_sagrado",
@@ -609,7 +665,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.012,
-   "mana_nivel": 1.2
+   "mana_nivel": 1.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "luz_sanadora",
@@ -629,7 +687,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 12.0,
-   "mana_nivel": 1.6
+   "mana_nivel": 1.6,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "nova_sagrada",
@@ -650,7 +710,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.12,
-   "mana_nivel": 1.3
+   "mana_nivel": 1.3,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "juicio_final",
@@ -671,7 +733,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.19,
-   "mana_nivel": 2.2
+   "mana_nivel": 2.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "punalada",
@@ -691,7 +755,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.13,
-   "mana_nivel": 0.6
+   "mana_nivel": 0.6,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "golpe_bajo",
@@ -713,7 +779,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.7
+   "mana_nivel": 0.7,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "filo_venenoso",
@@ -735,7 +803,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.006,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "danza_dagas",
@@ -756,7 +826,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.15,
-   "mana_nivel": 1.2
+   "mana_nivel": 1.2,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "evasion_sombra",
@@ -778,7 +850,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.01,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "instinto_asesino",
@@ -800,7 +874,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.008,
-   "mana_nivel": 0.8
+   "mana_nivel": 0.8,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "golpe_gracia",
@@ -820,7 +896,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.19,
-   "mana_nivel": 1.6
+   "mana_nivel": 1.6,
+   "alcance": 3.0,
+   "proyectil": false
   },
   {
    "id": "paso_sombra",
@@ -842,7 +920,9 @@
    },
    "max_nivel": 20,
    "power_nivel": 0.01,
-   "mana_nivel": 0.7
+   "mana_nivel": 0.7,
+   "alcance": 3.0,
+   "proyectil": false
   }
  ]
 }

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "nota": "Bloque 68. 'base' = valor del afijo a rareza 1; el valor real escala con la rareza (VALOR_POR_RAREZA) y el nivel. Solo los 4 stats base: vida/mana se DERIVAN de ellos (fase 34), así que un afijo de 'vida' seria un atajo que rompe la derivacion.",
+  "afijos": {
+    "fuerza":     {"base": 2.0, "nombre": "Feroz",      "desc": "Más daño cuerpo a cuerpo y poder."},
+    "aguante":    {"base": 2.4, "nombre": "Resistente", "desc": "Más vida y defensa."},
+    "destreza":   {"base": 1.8, "nombre": "Ágil",       "desc": "Más velocidad de ataque y de movimiento."},
+    "inteligencia": {"base": 2.0, "nombre": "Sagaz",     "desc": "Más maná y poder de skill."}
+  }
+}
