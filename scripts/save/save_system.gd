@@ -179,16 +179,40 @@ func vigilar_cambios() -> void:
 	_conectar(jugador.subio_nivel, _marcar)
 	_conectar(jugador.oro_cambiado, _marcar_oro)
 	_conectar(jugador.murio, _marcar)
-	if jugador.inventario != null:
-		_conectar(jugador.inventario.cambiado, _marcar)
-	if jugador.misiones != null:
-		_conectar(jugador.misiones.cambiada, _marcar)
-	if jugador.talentos != null:
-		_conectar(jugador.talentos.cambiada, _marcar)
-	if jugador.skills != null:
-		_conectar(jugador.skills.cambiada, _marcar)
-	if jugador.habilidades != null:
-		_conectar(jugador.habilidades.tramo_ganado, _marcar)
+	# BUG REAL (encontrado jugando): se accedía a `jugador.misiones`, y el
+	# `Player` NO TIENE esa propiedad — las misiones viven en la DB y en el
+	# Hechos, no en el jugador. En Godot 4 eso no es "null" sino un
+	# "Invalid access to property or key 'misiones'", cada vez que se montaba
+	# una demo. Se lee por `get()` sobre un nombre que se comprueba antes, que
+	# sí devuelve null en silencio. Los tests pasaban porque montaban al jugador
+	# con un stub que sí tenía la propiedad.
+	_conectar_senales(_subsistema(jugador, "inventario"), "cambiado", _marcar)
+	_conectar_senales(_subsistema(jugador, "misiones"), "cambiada", _marcar)
+	_conectar_senales(_subsistema(jugador, "talentos"), "cambiada", _marcar)
+	_conectar_senales(_subsistema(jugador, "skills"), "cambiada", _marcar)
+	_conectar_senales(_subsistema(jugador, "habilidades"), "tramo_ganado", _marcar)
+
+
+## Devuelve un subsistema del jugador si EXISTE la propiedad, o null. Nunca
+## truena: `in` es la única forma de preguntar por una propiedad sin disparar el
+## error de acceso.
+func _subsistema(dueno: Object, nombre: String) -> Object:
+	if dueno == null or not is_instance_valid(dueno):
+		return null
+	if not (nombre in dueno):
+		return null
+	var v: Variant = dueno.get(nombre)
+	return v as Object
+
+
+## Conecta `senal` de `obj` a `destino` si el objeto la tiene. Igual que
+## `_conectar` pero tolerante a que la señal no exista.
+func _conectar_senales(obj: Object, senal: String, destino: Callable) -> void:
+	if obj == null or not is_instance_valid(obj):
+		return
+	if not (senal in obj):
+		return
+	_conectar(obj.get(senal), destino)
 
 
 func _conectar(sen: Signal, destino: Callable) -> void:

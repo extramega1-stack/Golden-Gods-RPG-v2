@@ -173,8 +173,30 @@ func _test_clips() -> void:
 	# caminando: velocidad horizontal
 	p.velocity = Vector3(4.0, 0.0, 0.0)
 	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "walk", "c: caminando reproduce 'walk'",
-		"reproduciendo '%s'" % str(ap.current_animation))
+	# BUG DEL BLOQUE 67 (encontrado jugando): con el AnimationTree FUNCIONANDO
+	# ya no se comprueba `current_animation`, porque el clip ya no lo elige el
+	# reproductor: lo conduce el arbol. Se comprueba lo que de verdad importa,
+	# que es la mezcla. Antes este test afirmaba "reproduce walk" y pasaba
+	# porque `blend.blend_amount` reventaba con "Invalid assignment" y el
+	# arbol no hacia nada: el test celebraba el bug.
+	var tree: AnimationTree = ap.get_node_or_null("ArbolAnimacion") as AnimationTree
+	if tree != null:
+		var b: Variant = tree.get("parameters/locomocion/blend_position")
+		_chk(b != null and absf(float(b) - 1.0) < 0.05,
+			"c: caminando la mezcla va a 'walk' (blend_position ~1)",
+			"blend_position=%s" % str(b))
+		# Y quieto debe volver a idle por el otro lado: si esto no baja, el
+		# personaje se queda congelado en el paso.
+		p.velocity = Vector3.ZERO
+		p.call("_actualizar_animacion", 0.016)
+		var b0: Variant = tree.get("parameters/locomocion/blend_position")
+		_chk(b0 != null and absf(float(b0)) < 0.05,
+			"c: quieto la mezcla vuelve a 'idle' (blend_position ~0)",
+			"blend_position=%s" % str(b0))
+	else:
+		_chk(str(ap.current_animation) == "walk",
+			"c: sin arbol, caminando reproduce 'walk' (fallback)",
+			"reproduciendo '%s'" % str(ap.current_animation))
 	# por debajo del umbral vuelve a quieto (el umbral existe para que el idle y
 	# el walk no parpadeen al soltar el WASD)
 	p.velocity = Vector3(0.2, 0.0, 0.0)

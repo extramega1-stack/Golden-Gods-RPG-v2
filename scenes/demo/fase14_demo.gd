@@ -131,7 +131,7 @@ func _colocar_refugios() -> void:
 		if _terreno != null:
 			r.position.y = _terreno.altura_en(r.position.x, r.position.z)
 		_refugios.append(r)
-		_sistemas.registrar(r, StringName("refugio:" + id))
+		_sistemas_de().registrar(r, StringName("refugio:" + id))
 		# Fase 64: al reclamar, el refugio pasa a ser punto seguro. Antes el
 		# ancla de reaparición venía solo de `CiudadLuna` y reclamar no
 		# cambiaba NADA, que era una de las debts del bloque 53–62.
@@ -179,11 +179,25 @@ func _instalar_barra_jefe() -> void:
 ## (`Systems.obtener(&"feed_avisos")`) sin tener que pasárselo de mano, que es
 ## lo que §9 quiere. Y los Hechos se escuchan acá y no dentro de `Hechos`,
 ## para que la lógica no sepa que existe una UI.
+## El contenedor `Systems`, creandolo la primera vez que se pide.
+##
+## BUG REAL (encontrado jugando): antes era un `var` que se asignaba en
+## `_al_mundo_listo()`, que corre DESPUES del `_ready` que registra el feed de
+## avisos y el pool de impacto.registrar sobre nil reventaba. Al pedirlo por metodo,
+## el orden deja de importar: si aun no existe, se crea aqui.
+func _sistemas_de() -> Systems:
+	if _sistemas == null or not is_instance_valid(_sistemas):
+		_sistemas = Systems.new()
+		_sistemas.name = "Systems"
+		add_child(_sistemas)
+	return _sistemas
+
+
 func _instalar_feed_avisos() -> void:
 	_feed = FeedAvisos.new()
 	_feed.name = "FeedAvisos"
 	add_child(_feed)
-	_sistemas.registrar(_feed, &"feed_avisos")
+	_sistemas_de().registrar(_feed, &"feed_avisos")
 	if _jugador.hechos != null:
 		_jugador.hechos.hecho_desbloqueado.connect(_al_desbloquear_hecho)
 ## Fase 64: E sobre un refugio reclamado abre el modo construcción. Es la
@@ -226,7 +240,7 @@ func _instalar_fase63_64_ui() -> void:
 	_pool_impacto = PoolImpacto.new()
 	_pool_impacto.name = "PoolImpacto"
 	add_child(_pool_impacto)
-	_sistemas.registrar(_pool_impacto, &"pool_impacto")
+	_sistemas_de().registrar(_pool_impacto, &"pool_impacto")
 
 	# Bloque 65: el menú de pausa y el panel de opciones. Se instalan AL FINAL
 	# y por encima de todo, y son los únicos que registran el árbol como
@@ -234,11 +248,11 @@ func _instalar_fase63_64_ui() -> void:
 	_pausa = MenuPausa.new()
 	_pausa.name = "MenuPausa"
 	add_child(_pausa)
-	_sistemas.registrar(_pausa, &"menu_pausa")
+	_sistemas_de().registrar(_pausa, &"menu_pausa")
 	_opciones = PanelOpciones.new()
 	_opciones.name = "PanelOpciones"
 	add_child(_opciones)
-	_sistemas.registrar(_opciones, &"panel_opciones")
+	_sistemas_de().registrar(_opciones, &"panel_opciones")
 	# Las opciones se aplican al arrancar: si el jugador guardó un volumen
 	# bajo, el juego arranca bajo, no a full hasta que abra el menú.
 	Opciones.cargar()
@@ -249,26 +263,26 @@ func _instalar_fase63_64_ui() -> void:
 	_vitales = IndicadorVitales.new()
 	_vitales.name = "IndicadorVitales"
 	add_child(_vitales)
-	_sistemas.registrar(_vitales, &"indicador_vitales")
+	_sistemas_de().registrar(_vitales, &"indicador_vitales")
 	_vitales.vigilar(_jugador)
 	# Fase 64: el prompt contextual. Se pone junto al feed porque los dos son
 	# "capas de información del mundo", no paneles.
 	_prompt = PromptInteraccion.new()
 	_prompt.name = "PromptInteraccion"
 	add_child(_prompt)
-	_sistemas.registrar(_prompt, &"prompt_interaccion")
+	_sistemas_de().registrar(_prompt, &"prompt_interaccion")
 	_prompt.vigilar(_jugador)
 	# Fase 64: el panel de cocina. Nace cerrado (lección 11) y se abre desde
 	# la fogata, no desde el HUD: cocinar es una decisión de sitio.
 	_cocina = PanelCocina.new()
 	_cocina.name = "PanelCocina"
 	add_child(_cocina)
-	_sistemas.registrar(_cocina, &"panel_cocina")
+	_sistemas_de().registrar(_cocina, &"panel_cocina")
 	# Fase 64: el modo construcción del refugio.
 	_construccion = PanelConstruccion.new()
 	_construccion.name = "PanelConstruccion"
 	add_child(_construccion)
-	_sistemas.registrar(_construccion, &"panel_construccion")
+	_sistemas_de().registrar(_construccion, &"panel_construccion")
 
 
 func _al_desbloquear_hecho(hecho_id: String) -> void:
@@ -322,14 +336,17 @@ func _instalar_respawn() -> void:
 func _al_mundo_listo() -> void:
 	# Fase 51.1: el contenedor de sistemas (§9.1). Los sistemas se registran
 	# acá, con su id, en vez de que cada uno ande buscándose por rutas de nodo.
-	_sistemas = Systems.new()
-	_sistemas.name = "Systems"
-	add_child(_sistemas)
+	# BUG REAL (encontrado jugando): el contenedor se creaba aqui, pero
+	# `_instalar_respawn()` ya corria en el `_ready` del padre y registraba el
+	# feed en un `_sistemas` nulo ("Nonexistent function 'registrar' in base
+	# 'Nil'"). Se pide por `_sistemas_de()`, que lo crea la primera vez que hace
+	# falta, y aqui ya solo se reutiliza.
+	_sistemas_de()
 	# El SaveSystem lo crea la demo padre (fase4) en su _ready, que ya
 	# corrió: se registra acá, que es el primer punto donde el contenedor
 	# existe.
 	if _guardado != null and is_instance_valid(_guardado):
-		_sistemas.registrar(_guardado, &"save_system")
+		_sistemas_de().registrar(_guardado, &"save_system")
 
 	# Jugador y NPCs a sus puntos data-driven de Moon Town.
 	_colocar_en_ciudad()
@@ -337,7 +354,7 @@ func _al_mundo_listo() -> void:
 	# PanelViaje con la ciudad del portero como origen.
 	_viaje = ViajeRapido.new()
 	_viaje.cargar_datos()
-	_sistemas.registrar(_viaje, &"viaje_rapido")
+	_sistemas_de().registrar(_viaje, &"viaje_rapido")
 	# Fase 50.4: el panel se fabricaba su propia `ViajeRapido` aparte de esta,
 	# y quedaban dos cachés de viaje_rapido.json vivas a la vez. Le pasamos la
 	# nuestra, que es la única fuente de verdad.
@@ -348,7 +365,7 @@ func _al_mundo_listo() -> void:
 	# remoto y arranca las oleadas; los trofeos se guardan con la partida.
 	_arena = Arena.new()
 	_arena.name = "Arena"
-	_sistemas.registrar(_arena, &"arena")
+	_sistemas_de().registrar(_arena, &"arena")
 	add_child(_arena)
 	_arena.configurar(_cargar_arena_json())
 	_arena.fijar_factory(_crear_enemigo_arena)
@@ -366,13 +383,13 @@ func _al_mundo_listo() -> void:
 	# con E; el estado de cada veta (usos + respawn) viaja en el save.
 	_mineria = GestorVetas.new()
 	_mineria.name = "GestorVetas"
-	_sistemas.registrar(_mineria, &"gestor_vetas")
+	_sistemas_de().registrar(_mineria, &"gestor_vetas")
 	# Fase 55: tala. Mismo streaming por histéresis que el de vetas.
 	_arboles = GestorArboles.new()
 	_arboles.name = "GestorArboles"
 	add_child(_arboles)
 	_arboles.fijar_jugador(_jugador)
-	_sistemas.registrar(_arboles, &"gestor_arboles")
+	_sistemas_de().registrar(_arboles, &"gestor_arboles")
 	# Fase 56: una fogata por ciudad, como los herreros. Es la estación de
 	# cocina; las piezas que el jugador coloca llegan en la fase 61.
 	_colocar_fogatas()

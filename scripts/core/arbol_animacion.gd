@@ -28,9 +28,28 @@ static var _trees: Dictionary = {}
 
 ## El `AnimationTree` de un `AnimationPlayer`, o null si no se puede.
 ##
-## `AnimationNodeBlendTree` con un nodo `output` alimentado por un
-## `AnimationNodeBlend2` (idle ↔ walk) es la forma más barata de cross-fade: no
-## necesita `StateMachine` y son 2Blend2 en vez de una máquina de estados.
+## `AnimationNodeBlendTree` con un `AnimationNodeBlendSpace1D` (idle en 0.0,
+## walk en 1.0) es la forma más barata de cross-fade: no necesita
+## `StateMachine` y son dos clips en vez de una máquina de estados.
+##
+## BUG REAL DEL BLOQUE 67 (encontrado jugando, no leyendo): esto se escribio
+## contra la API de Godot 4.3/4.4, y en 4.7 `AnimationNodeBlend2` ya NO TIENE
+## `blend_amount` NI `add_node`. Sus metodos son `blend_node`/`blend_input`, y
+## `blend_node` pide 6 argumentos (es interno). La consecuencia era un
+## "SCRIPT ERROR: Invalid assignment of property 'blend_amount'" CADA FRAME en
+## `_physics_process`: la locomocion no se mezclaba nunca y se recaia al
+## `play()` de siempre, o sea, el corte seco que este archivo vino a
+## arreglar. Los tests no lo cazaron porque solo comprobaban que el metodo
+## devolviera `true`, no que la mezcla existiera.
+##
+## La API que SI funciona en 4.7, verificada leyendo los parametros que genera
+## el propio AnimationTree:
+##   - `AnimationNodeBlendSpace1D` con `min_space=0`, `max_space=1`
+##   - `add_blend_point(nodo, posicion)` en 0.0 y 1.0
+##   - `AnimationNodeBlendTree.new()` YA trae un nodo `output` (añadir otro
+##     revienta con "Condition nodes.has(p_name) is true")
+##   - la mezcla se escribe por parametro:
+##     `tree.set("parameters/locomocion/blend_position", valor)`
 static func tree_de(anim: AnimationPlayer, idle: String, walk: String) -> AnimationTree:
 	if anim == null or not is_instance_valid(anim):
 		return null
@@ -42,17 +61,20 @@ static func tree_de(anim: AnimationPlayer, idle: String, walk: String) -> Animat
 	# AnimationTree es hermano del AnimationPlayer, cuelga del mismo padre.
 	tree.anim_player = anim.get_path() if anim.get_parent() != null else NodePath()
 	var root: AnimationNodeBlendTree = AnimationNodeBlendTree.new()
-	var blend := AnimationNodeBlend2.new()
-	blend.blend_amount = 0.0  # arranca en idle
-	# Los dos inputs del blend, cada uno su clip.
-	blend.add_node("idle", AnimationNodeAnimation.new())
-	(blend.get_node("idle") as AnimationNodeAnimation).animation = idle
-	blend.add_node("walk", AnimationNodeAnimation.new())
-	(blend.get_node("walk") as AnimationNodeAnimation).animation = walk
-	root.add_node("locomocion", blend, Vector2(200, 0))
-	var salida := AnimationNodeAnimation.new()
-	salida.animation = idle
-	root.add_node("output", salida, Vector2(400, 0))
+	# BlendSpace1D: 0.0 = idle, 1.0 = walk, y lo de en medio se interpola. Es el
+	# cross-fade, sin maquina de estados.
+	var espacio := AnimationNodeBlendSpace1D.new()
+	espacio.min_space = 0.0
+	espacio.max_space = 1.0
+	var n_idle := AnimationNodeAnimation.new()
+	n_idle.animation = idle
+	var n_walk := AnimationNodeAnimation.new()
+	n_walk.animation = walk
+	espacio.add_blend_point(n_idle, 0.0)
+	espacio.add_blend_point(n_walk, 1.0)
+	root.add_node("locomocion", espacio, Vector2(200, 0))
+	# `AnimationNodeBlendTree.new()` ya viene con un nodo `output`: añadir otro
+	# falla con "Condition nodes.has(p_name) is true".
 	root.connect_node("output", 0, "locomocion")
 	tree.tree_root = root
 	# El AnimationTree cuelga del AnimationPlayer.
@@ -79,14 +101,15 @@ static func mezclar(anim: AnimationPlayer, idle: String, walk: String,
 	var root: AnimationNodeBlendTree = tree.tree_root as AnimationNodeBlendTree
 	if root == null:
 		return false
-	var blend: AnimationNodeBlend2 = root.get_node("locomocion") as AnimationNodeBlend2
-	if blend == null:
+	var espacio: AnimationNodeBlendSpace1D = root.get_node("locomocion") as AnimationNodeBlendSpace1D
+	if espacio == null:
 		return false
-	# El blend_amount es TODO lo que hace falta: `AnimationNodeBlend2` mezcla
-	# los dos clips con este peso, y el cambio de 0 a 1 ES el cross-fade
-	# (continuous). El `xfade` del AnimationPlayer es para cambiar de clip
+	# El BlendSpace1D mezcla los dos clips con este peso, y el cambio de 0 a 1
+	# ES el cross-fade. El `xfade` del AnimationPlayer es para cambiar de clip
 	# ENTERO, que es otro caso (ataque, muerte) y lo lleva `_poner_clip`.
-	blend.blend_amount = n
+	# Se escribe por PARAMETRO, no por propiedad: en 4.7 el nodo no expone
+	# `blend_position` como propiedad suya, el AnimationTree lo publica.
+	tree.set("parameters/locomocion/blend_position", n)
 	return true
 
 
