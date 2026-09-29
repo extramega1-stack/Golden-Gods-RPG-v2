@@ -1280,6 +1280,15 @@ func _buscar_anim(n: Node) -> AnimationPlayer:
 
 ## `idle`, `walk` y `attack` ciclan; `die` no. Marcado una vez por modelo: el
 ## recurso Animation es compartido.
+## Escala del modelo colgado. El ritmo del clip de caminar depende de ella: la
+## zancada se mide en el esqueleto y en el MUNDO vale zancada * escala (las
+## clases van a 0,9). Sin pasarla, el pie patina un 10%.
+func escala_modelo() -> float:
+	if _modelo == null or not is_instance_valid(_modelo):
+		return 1.0
+	return maxf(absf(_modelo.scale.x), 0.01)
+
+
 func _preparar_clips() -> void:
 	if _anim == null:
 		return
@@ -1290,8 +1299,15 @@ func _preparar_clips() -> void:
 		_anim.get_animation("die").loop_mode = Animation.LOOP_NONE
 
 
-## Pone un clip solo si cambia: llamar a `play` cada frame reinicia la
-## animación y el jugador daría tirones.
+## Pone un clip entero (tajo, muerte) y le devuelve el reproductor al
+## control directo. Llamar `play` cada frame reinicia la animación y el
+## jugador daría tirones, así que solo se pone cuando cambia.
+##
+## El `ArbolAnimacion` se suelta ANTES del `play()`: con el árbol activo es el
+## árbol el que escribe las pistas del esqueleto, y el tajo que se ponía aquí
+## lo pisaba la mezcla de locomoción al frame siguiente. Y `_clip_actual` se
+## vacía para que el próximo tajo vuelva a empezar de cero en vez de quedarse
+## clavado donde lo dejó el anterior.
 func _poner_clip(nombre: String) -> void:
 	if _anim == null or not is_instance_valid(_anim):
 		return
@@ -1300,11 +1316,22 @@ func _poner_clip(nombre: String) -> void:
 	if not _anim.has_animation(nombre):
 		return
 	_clip_actual = nombre
+	ArbolAnimacion.soltar(_anim)
 	_anim.play(nombre)
 
 
 ## Decide el clip con los mismos hechos que usa el movimiento, sin estado
 ## propio: quieto, caminando, tajo o muerto.
+##
+## Las dos mitades de la locomoción, y las dos importan:
+##
+## - LA MEZCLA (idle ↔ walk) se pondera con la velocidad normalizada sobre el
+##   rango REAL de la entidad (`stats.vel_mov`), no sobre el umbral. Con el
+##   umbral (0,45) la mezcla saturaba a 1,0 a los 0,90 m/s y el jugador, que
+##   anda a 6,0, siempre iba en 1,0: era un corte disfrazado, no una mezcla.
+## - EL RITMO del clip se hornea para que el pie no patine. El clip de
+##   caminar viaja 1,4264 m/s por su cuenta y el juego va a 6,0: sin corregir
+##   esto el personaje se desliza 4,2 veces (ver `ArbolAnimacion.ritmo`).
 func _actualizar_animacion(delta: float) -> void:
 	_t_swing = maxf(_t_swing - delta, 0.0)
 	if not esta_vivo():
@@ -1314,17 +1341,22 @@ func _actualizar_animacion(delta: float) -> void:
 		_poner_clip(str(CLIP_ATAQUE))
 		return
 	var plano: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-	# Bloque 67: en vez de un corte entre idle y walk, se MEZCLAN por la
-	# velocidad normalizada. El `AnimationNodeBlend2` hace el cross-fade
-	# solo (continuo), y el pop de arrancar/parar/girar desaparece.
 	var v: float = plano.length()
+	# Al volver a la locomoción el clip anterior era un tajo o una muerte: se
+	# olvida, para que `_poner_clip` pueda volver a disparar un tajo después.
+	_clip_actual = ""
 	if _anim != null and is_instance_valid(_anim) \
-			and ArbolAnimacion.mezclar(_anim, str(CLIP_IDLE), "walk",
-				clampf((v - UMBRAL_CAMINAR) / UMBRAL_CAMINAR, 0.0, 1.0)):
+			and ArbolAnimacion.mezclar(_anim, str(CLIP_IDLE), str(CLIP_CAMINAR),
+				ArbolAnimacion.mezcla_por_velocidad(v, stats.vel_mov), v,
+				escala_modelo()):
 		# La mezcla se encarga; no hay que poner clip.
-		pass
-	elif v > UMBRAL_CAMINAR:
-		_poner_clip("walk")
+		# Y el reloj del árbol va al ritmo de la velocidad real: sin esto el clip
+		# de caminar va a 1,4264 u/s con el cuerpo a 6,0 m/s y el pie patina
+		# 492 cm por ciclo (ver `ArbolAnimacion.ritmo`).
+		ArbolAnimacion.avanzar(_anim, delta, v, escala_modelo())
+		return
+	if v > UMBRAL_CAMINAR:
+		_poner_clip(str(CLIP_CAMINAR))
 	else:
 		_poner_clip(str(CLIP_IDLE))
 

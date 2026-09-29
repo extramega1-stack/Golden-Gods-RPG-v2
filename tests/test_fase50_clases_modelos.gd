@@ -179,12 +179,31 @@ func _test_clips() -> void:
 	# que es la mezcla. Antes este test afirmaba "reproduce walk" y pasaba
 	# porque `blend.blend_amount` reventaba con "Invalid assignment" y el
 	# arbol no hacia nada: el test celebraba el bug.
+	#
+	# FASE 70, y este test CELEBRABA EL SIGUIENTE BUG: afirmaba que a 4 m/s la
+	# mezcla iba a `blend_position ~ 1`, y pasaba — porque la mezcla estaba
+	# SATURADA y a 4 m/s ya valía exactamente 1,0. O sea, este test contaba
+	# "la mezcla funciona" cuando lo que comprobaba era "la mezcla no mezcla".
+	# Ahora se comprueba lo que sí distingue una mezcla de un corte: que a
+	# media velocidad esté en un valor INTERMEDIO, y que a tope sí llegue a 1.
 	var tree: AnimationTree = ap.get_node_or_null("ArbolAnimacion") as AnimationTree
 	if tree != null:
 		var b: Variant = tree.get("parameters/locomocion/blend_position")
-		_chk(b != null and absf(float(b) - 1.0) < 0.05,
-			"c: caminando la mezcla va a 'walk' (blend_position ~1)",
-			"blend_position=%s" % str(b))
+		var v_max: float = p.stats.vel_mov
+		var esperada: float = ArbolAnimacion.mezcla_por_velocidad(4.0, v_max)
+		_chk(b != null and absf(float(b) - esperada) < 0.02,
+			"c: la mezcla es la que toca a 4 m/s (ni 0 ni 1)",
+			"blend_position=%s esperada=%.3f (v_max=%.2f)" % [str(b), esperada, v_max])
+		_chk(float(b) > 0.05 and float(b) < 0.95,
+			"c: y a media velocidad esta en un valor INTERMEDIO, no saturada",
+			"blend_position=%.3f" % float(b))
+		# A tope sí tiene que ser walk puro.
+		p.velocity = Vector3(v_max, 0.0, 0.0)
+		p.call("_actualizar_animacion", 0.016)
+		var bt: Variant = tree.get("parameters/locomocion/blend_position")
+		_chk(bt != null and float(bt) > 0.99,
+			"c: a tope la mezcla es walk puro",
+			"blend_position=%s" % str(bt))
 		# Y quieto debe volver a idle por el otro lado: si esto no baja, el
 		# personaje se queda congelado en el paso.
 		p.velocity = Vector3.ZERO
@@ -193,16 +212,30 @@ func _test_clips() -> void:
 		_chk(b0 != null and absf(float(b0)) < 0.05,
 			"c: quieto la mezcla vuelve a 'idle' (blend_position ~0)",
 			"blend_position=%s" % str(b0))
+		# Y el árbol tiene que estar CONECTADO al esqueleto. Con el
+		# `root_node` de por defecto ("..") el árbol no resuelve ninguna pista y
+		# no anima nada, y todo lo de arriba pasaba igual: por eso se comprueba.
+		_chk(str(tree.root_node) != "..",
+			"c: el arbol apunta al esqueleto (con '..' no anima NADA)",
+			"root_node='%s'" % str(tree.root_node))
 	else:
 		_chk(str(ap.current_animation) == "walk",
 			"c: sin arbol, caminando reproduce 'walk' (fallback)",
 			"reproduciendo '%s'" % str(ap.current_animation))
-	# por debajo del umbral vuelve a quieto (el umbral existe para que el idle y
-	# el walk no parpadeen al soltar el WASD)
+	# Por debajo del umbral vuelve a quieto (el umbral existe para que el idle y
+	# el walk no parpadeen al soltar el WASD). SIN arbol, el clip lo elige el
+	# reproductor; CON arbol, lo que importa es que la mezcla se vaya a idle.
 	p.velocity = Vector3(0.2, 0.0, 0.0)
 	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "idle", "c: velocidad minima vuelve a 'idle'",
-		"reproduciendo '%s'" % str(ap.current_animation))
+	if tree != null:
+		var bm: Variant = tree.get("parameters/locomocion/blend_position")
+		_chk(bm != null and absf(float(bm)) < 0.05,
+			"c: velocidad minima vuelve a la mezcla 'idle'",
+			"blend_position=%s" % str(bm))
+	else:
+		_chk(str(ap.current_animation) == "idle",
+			"c: velocidad minima vuelve a 'idle'", "reproduciendo '%s'"
+			% str(ap.current_animation))
 	# tajo: el timer que deja el ataque
 	p.velocity = Vector3.ZERO
 	p.set("_t_swing", 0.3)
