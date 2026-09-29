@@ -55,6 +55,10 @@ var _opciones: PanelOpciones = null
 var _tutorial_ui: PanelTutorial = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
+## Fase 70: la vegetación del mundo abierto. Un anillo que sigue al jugador con
+## LOD por distancia; NUNCA todo a la vez (serían cientos de miles de mallas
+## para las 36.864 u de lado, y el presupuesto de VRAM es 1 GB).
+var _vegetacion: Vegetacion = null
 ## Fase 56: las fogatas de las ciudades (estación de cocina).
 var _fogatas: Array = []
 ## Fase 60: los 9 refugios reclamables.
@@ -424,6 +428,17 @@ func _al_mundo_listo() -> void:
 	add_child(_arboles)
 	_arboles.fijar_jugador(_jugador)
 	_sistemas_de().registrar(_arboles, &"gestor_arboles")
+	# Fase 70: lo mismo para la vegetación, con la diferencia de que NO hay
+	# histéresis: no es un recurso que se pueda recolectar (es decorativo y no
+	# se guarda) sino un anillo que se replanta cuando el jugador se movió lo
+	# bastante. El terreno va PRIMERO porque `altura_en` es lo que pega cada
+	# planta al suelo.
+	_vegetacion = Vegetacion.new()
+	_vegetacion.name = "Vegetacion"
+	add_child(_vegetacion)
+	_vegetacion.fijar_terreno($Terreno as Terreno)
+	_vegetacion.fijar_jugador(_jugador)
+	_sistemas_de().registrar(_vegetacion, &"vegetacion")
 	# Fase 56: una fogata por ciudad, como los herreros. Es la estación de
 	# cocina; las piezas que el jugador coloca llegan en la fase 61.
 	_colocar_fogatas()

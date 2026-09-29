@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "nota": "Fase 70 — LA FORMA del mundo. La ola 2 (fase 69) le puso COLOR y TEXTURA; aca va FORMA: vegetacion, props de calle y siluetas. Todo lo que hay aca es DATO, no codigo: si una densidad, un tinte o una silueta cambia, se cambia este archivo y no se recompila. Reglas duras que este archivo respeta: (1) la vegetacion NUNCA esta toda a la vez — es un anillo que sigue al jugador con LOD por distancia, en `vegetacion.radio_cerca`/`radio_lejos`; (2) la ZONA SEGURA de 40 m del origen queda sin nada alto, para que la aldea inicial no nazca dentro de un arbusto (los tests test_fase12_spawns y test_fase14_terreno ya vigilan ese radio); (3) TODO sale de la POSICION por FNV-1a, jamas de un `rand` ni de un contador: un save que reconstruye el mundo tiene que devolver el mismo pasto en el mismo metro.",
+
+  "_comentarios": {
+    "vegetacion.paso": "Lado de la celda de la grilla de vegetacion, en metros. Todo lo que se siembra usa ESTA celda: el multimesh tiene un slot por celda del anillo, asi que no hay ni asignaciones dinamicas ni busquedas libres (ver `vegetacion.gd`).",
+    "vegetacion.radio_cerca": "Desde aqui hacia dentro hay hierba, flores y juncos. Son las cosas que solo se ven de cerca: en el borde del anillo serian 2 px y salen como ruido.",
+    "vegetacion.radio_lejos": "Fin del anillo. Mas alla no hay geometria: NO es que se oculte, es que no existe, y por eso el anillo es un numero cerrado (ver `RejillaDecoracion.capacidad`).",
+    "vegetacion.celdas_por_frame": "Celdas que se reescriben por frame durante una reconstruccion. El anillo entero son ~320 celdas x ~3 piezas = ~1.000 escrituras de buffer, repartidas en 8 frames: sin tiron.",
+    "vegetacion.reconstruir_tras_m": "Metros que tiene que caminar el jugador antes de replantear el anillo. Un margen grande evita el re-trabajo cuando uno zigzaguea sobre una frontera de celda.",
+    "vegetacion.tipos_altos": "Los que NO se siembran dentro de `radio_zona_segura`. Son los que tapan la vista y los que chocarían con la aparicion del jugador.",
+    "formas.prim": "caja | cilindro | cono | esfera | prisma. Todas son PRIMITIVAS de Godot y se comparten entre TODAS las piezas del mundo: una `BoxMesh` de 1x1x1 y un `scale`. Es lo que hace que 20.000 matas cuesten 20 llamadas de dibujo y cero mallas nuevas.",
+    "formas.partes.tam": "TAMANO de la primitiva (la malla es de 1x1x1 y se escala). OJO: no es media altura; el centro de la pieza es su posicion + tam/2 salvo que se diga otra cosa.",
+    "formas.partes.pos": "Centro de la pieza en el espacio de la FORMA (no del mundo).",
+    "formas.partes.altura": "Altura del CENTRO de la pieza. Si esta, manda sobre `pos[1]`, y `pos` solo lleva x/z. Es la forma legible de escribir una planta apoyada en el suelo.",
+    "vegetales.tinte": "Clave de `tintes` que usa el FOLLAJE de esa especie. El tronco, si lo tiene, usa `tinte_leno`.",
+    "vegetales.alcance": "cerca = solo dentro de `radio_cerca`; lejos = en todo el anillo. Es el LOD, y sale del dato.",
+    "vegetales.uno_cada": "1 = puede caer en cualquier celda; 4 = en una de cada cuatro. Se mezcla con el peso de la zona: la probabilidad final es `peso / uno_cada`, recortada a 1.",
+    "zonas": "Una por region de `data/regiones.json` (los ids se leen de ahi, no estan duplicados aca) + `default` para lo que caiga fuera. El tinte va por ZONA, no por especie: el mismo arbusto es verde en el Bosque Hondo y gris en la Ceniza y Forja.",
+    "ciudad.paso": "Lado de la celda de la grilla de los props de calle, en metros. Es independiente del de la vegetacion a proposito: los props son objetos, noIan s sembrados, y merecen su propia frecuencia.",
+    "ciudad.margen": "Cuanto se separan del eje de la calle. La calle mide 40 u: los props quedan en `20 + margen`, o sea sobre la vereda y NO en el paso de los vehiculos ni delante de las puertas.",
+    "ciudad.slots": "De donde sale el material de cada pieza: `pal_*` es la PALETA DE LA CIUDAD (los 5 colores que trae su JSON, asi que un farol de Golden Town es dorado y uno de Fury Town es de acero) y el resto son tintes fijos de `ciudad_paleta`.",
+    "ciudad.props.uno_cada": "1 = en toda celda de la vereda; 9 = en una de cada nueve. Una celda lleva UN SOLO prop: el primero de la lista que pasa el dado, y si ninguno pasa, la celda queda vacia.",
+    "bordes.zocalo": "El BORDE contra el suelo: dos escalones de piedra, cada uno `margen` metros mas angosto que el anterior (el de abajo es el mas ANCHO, y sobresale de la pared), con la hilada inferior medio metro enterrada. `sirga` paso a ser `margen` porque el margen va en METROS, no en fraccion: un zocalo de 1.2 m se lee igual en una casa de 20 m que en un salon de 84 m, y uno de '15% del ancho' daria un escalon de 12 m en el salon. Sin esto todo edificio termina en un plano contra el terreno, que es el defecto de forma mas visible del mundo y el mas barato de arreglar (2 cajas por edificio, malla compartida).",
+    "siluetas": "Tres siluetas por tipo de edificio + un jitter. Los factores se multiplican sobre las medidas base del constructor. `torre` agrega un segundo volumen (chimenea, torre, sobrado): es lo que hace que dos casas del mismo tipo no se parezcan, sin salir de las primitivas."
+  },
+
+  "vegetacion": {
+    "paso": 14.0,
+    "radio_cerca": 52.0,
+    "radio_lejos": 140.0,
+    "celdas_por_frame": 44,
+    "reconstruir_tras_m": 9.0,
+    "radio_zona_segura": 40.0,
+    "tipos_altos": ["arbusto", "arbol_choto", "junco", "roca", "tronco_muerto"]
+  },
+
+  "tintes": {
+    "claro":       {"superficie": "hoja", "tinte": "#5f8f36"},
+    "llanura":     {"superficie": "hoja", "tinte": "#4e7a2b"},
+    "bosque":      {"superficie": "hoja", "tinte": "#1f4a1c"},
+    "hondo":       {"superficie": "hoja", "tinte": "#173719"},
+    "seco":        {"superficie": "hoja", "tinte": "#6e6433"},
+    "duna":        {"superficie": "hoja", "tinte": "#8a7a3e"},
+    "ceniza":      {"superficie": "hoja", "tinte": "#4d4d4a"},
+    "brasa":       {"superficie": "hoja", "tinte": "#6a3a2a"},
+    "nieve":       {"superficie": "hoja", "tinte": "#b9c6d2"},
+    "alpino":      {"superficie": "hoja", "tinte": "#6d7a5a"},
+    "umbral":      {"superficie": "hoja", "tinte": "#33304a"},
+    "abismo":      {"superficie": "hoja", "tinte": "#7d97a6"},
+    "costa":       {"superficie": "hoja", "tinte": "#4c7a4e"},
+    "dorado":      {"superficie": "hoja", "tinte": "#7d7a2a"},
+    "flor_clara":  {"superficie": "hoja", "tinte": "#d8a8b4"},
+    "flor_oro":    {"superficie": "hoja", "tinte": "#d8b23a"},
+    "flor_roja":   {"superficie": "hoja", "tinte": "#b03a34"},
+    "flor_violeta":{"superficie": "hoja", "tinte": "#8a6ab0"},
+
+    "leno":        {"superficie": "madera", "tinte": "#4a3320"},
+    "leno_seco":   {"superficie": "madera", "tinte": "#6a563c"},
+    "leno_negro":  {"superficie": "madera", "tinte": "#241a12"},
+
+    "roca_seca":   {"superficie": "piedra", "tinte": "#6a6259"},
+    "roca_nieve":  {"superficie": "yeso",   "tinte": "#cdd6e2"},
+    "roca_oscura": {"superficie": "piedra", "tinte": "#3a3a42"},
+    "roca_caliza": {"superficie": "piedra", "tinte": "#8f877a"},
+    "roca_roja":   {"superficie": "piedra", "tinte": "#6b463c"},
+    "roca_hielo":  {"superficie": "piedra", "tinte": "#8fa6b4"}
+  },
+
+  "formas": {
+    "mata_baja": {
+      "partes": [
+        {"prim": "caja", "tam": [0.95, 0.52, 0.95], "altura": 0.26, "giro": [0, 0, 0.22], "tinte": "follaje"},
+        {"prim": "caja", "tam": [0.62, 0.40, 0.62], "pos": [0.26, 0.34, 0.15], "giro": [0, 0.8, -0.30], "tinte": "follaje"}
+      ]
+    },
+    "flor": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.09, 0.55, 0.09], "altura": 0.27, "tinte": "follaje"},
+        {"prim": "caja", "tam": [0.34, 0.20, 0.34], "altura": 0.62, "giro": [0, 0.5, 0], "tinte": "flor"}
+      ]
+    },
+    "arbusto": {
+      "partes": [
+        {"prim": "caja", "tam": [1.55, 1.00, 1.40], "altura": 0.50, "giro": [0, 0.3, 0], "tinte": "follaje"},
+        {"prim": "caja", "tam": [0.95, 0.72, 0.90], "pos": [0.48, 1.05, 0.22], "giro": [0, 0.9, 0.12], "tinte": "follaje"},
+        {"prim": "cilindro", "tam": [0.20, 0.42, 0.20], "altura": 0.21, "tinte": "leno"}
+      ]
+    },
+    "arbol_choto": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.34, 2.70, 0.34], "altura": 1.35, "giro": [0.05, 0, 0.04], "tinte": "leno"},
+        {"prim": "esfera", "tam": [2.60, 2.20, 2.60], "altura": 3.40, "giro": [0, 0.4, 0], "tinte": "follaje"},
+        {"prim": "esfera", "tam": [1.70, 1.50, 1.70], "pos": [0.70, 4.35, 0.30], "giro": [0, 1.1, 0], "tinte": "follaje"}
+      ]
+    },
+    "junco": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.13, 2.20, 0.13], "altura": 1.10, "giro": [0.10, 0, 0.08], "tinte": "follaje"},
+        {"prim": "cilindro", "tam": [0.11, 1.70, 0.11], "pos": [0.26, 0.86, 0.22], "giro": [-0.14, 0, -0.10], "tinte": "follaje"}
+      ]
+    },
+    "roca": {
+      "partes": [
+        {"prim": "caja", "tam": [1.85, 0.95, 1.40], "altura": 0.30, "giro": [0.08, 0.6, 0.14], "tinte": "roca"},
+        {"prim": "caja", "tam": [0.90, 0.55, 0.80], "pos": [0.62, 0.72, 0.30], "giro": [-0.12, -0.4, 0.18], "tinte": "roca"}
+      ]
+    },
+    "tronco_muerto": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.42, 4.10, 0.42], "altura": 2.05, "giro": [0.06, 0, 0.05], "tinte": "leno_seco"},
+        {"prim": "cilindro", "tam": [0.24, 1.45, 0.24], "pos": [0.52, 3.10, 0.12], "giro": [0.5, 0, -0.4], "tinte": "leno_seco"}
+      ]
+    },
+
+    "farola": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.24, 4.60, 0.24], "altura": 2.30, "tinte": "madera_oscura"},
+        {"prim": "caja", "tam": [1.05, 0.17, 0.17], "pos": [0.44, 4.52, 0], "tinte": "acero"},
+        {"prim": "caja", "tam": [0.56, 0.72, 0.56], "pos": [0.88, 4.05, 0], "tinte": "farol"},
+        {"prim": "caja", "tam": [0.70, 0.14, 0.70], "pos": [0.88, 4.48, 0], "tinte": "acero"}
+      ]
+    },
+    "banco": {
+      "partes": [
+        {"prim": "caja", "tam": [2.40, 0.18, 0.72], "altura": 0.62, "tinte": "madera"},
+        {"prim": "caja", "tam": [2.40, 0.62, 0.16], "pos": [0, 1.00, -0.30], "giro": [-0.12, 0, 0], "tinte": "madera"},
+        {"prim": "caja", "tam": [0.22, 0.60, 0.62], "pos": [0.88, 0.30, 0], "tinte": "pal_detalle"},
+        {"prim": "caja", "tam": [0.22, 0.60, 0.62], "pos": [-0.88, 0.30, 0], "tinte": "pal_detalle"}
+      ]
+    },
+    "cajas": {
+      "partes": [
+        {"prim": "caja", "tam": [1.55, 1.45, 1.55], "altura": 0.72, "giro": [0, 0.2, 0], "tinte": "madera"},
+        {"prim": "caja", "tam": [1.10, 1.00, 1.10], "pos": [0.92, 0.50, 0.42], "giro": [0, 0.5, 0], "tinte": "madera"},
+        {"prim": "caja", "tam": [0.82, 0.82, 0.82], "pos": [-0.24, 2.00, 0.18], "giro": [0, -0.7, 0], "tinte": "pal_detalle"}
+      ]
+    },
+    "barriles": {
+      "partes": [
+        {"prim": "cilindro", "tam": [1.05, 1.70, 1.05], "altura": 0.85, "tinte": "madera_oscura"},
+        {"prim": "cilindro", "tam": [1.12, 0.20, 1.12], "altura": 0.52, "tinte": "acero"},
+        {"prim": "cilindro", "tam": [0.88, 1.45, 0.88], "pos": [1.18, 0.72, 0.32], "giro": [0, 0.4, 0], "tinte": "madera_oscura"}
+      ]
+    },
+    "toldo": {
+      "partes": [
+        {"prim": "caja", "tam": [0.20, 2.40, 0.20], "pos": [-1.30, 1.20, 0], "tinte": "madera_oscura"},
+        {"prim": "caja", "tam": [0.20, 2.40, 0.20], "pos": [1.30, 1.20, 0], "tinte": "madera_oscura"},
+        {"prim": "caja", "tam": [3.30, 0.14, 2.00], "pos": [0, 2.40, 0.48], "giro": [-0.32, 0, 0], "tinte": "pal_extra"}
+      ]
+    },
+    "poste": {
+      "partes": [
+        {"prim": "cilindro", "tam": [0.36, 1.15, 0.36], "altura": 0.57, "tinte": "madera_oscura"},
+        {"prim": "esfera", "tam": [0.46, 0.36, 0.46], "altura": 1.20, "tinte": "acero"}
+      ]
+    },
+    "carrito": {
+      "partes": [
+        {"prim": "caja", "tam": [2.25, 0.20, 1.20], "altura": 0.82, "tinte": "madera"},
+        {"prim": "cilindro", "tam": [0.72, 0.20, 0.72], "pos": [0.72, 0.46, 0.66], "giro": [1.5708, 0, 0], "tinte": "madera_oscura"},
+        {"prim": "cilindro", "tam": [0.72, 0.20, 0.72], "pos": [-0.72, 0.46, 0.66], "giro": [1.5708, 0, 0], "tinte": "madera_oscura"},
+        {"prim": "caja", "tam": [1.10, 0.55, 0.90], "pos": [0.30, 1.18, 0], "giro": [0, 0.3, 0], "tinte": "tela_roja"}
+      ]
+    }
+  },
+
+  "vegetales": {
+    "hierba": {
+      "forma": "mata_baja", "alcance": "cerca", "uno_cada": 1,
+      "escala": [0.75, 1.55], "inclinacion": 0.20, "hundir": 0.12
+    },
+    "flor": {
+      "forma": "flor", "alcance": "cerca", "uno_cada": 4,
+      "escala": [0.80, 1.40], "inclinacion": 0.16, "hundir": 0.06
+    },
+    "arbusto": {
+      "sombra": true,
+      "forma": "arbusto", "alcance": "lejos", "uno_cada": 3,
+      "escala": [0.70, 1.45], "inclinacion": 0.10, "hundir": 0.20
+    },
+    "arbol_choto": {
+      "sombra": true,
+      "forma": "arbol_choto", "alcance": "lejos", "uno_cada": 8,
+      "escala": [0.62, 1.35], "inclinacion": 0.06, "hundir": 0.18
+    },
+    "junco": {
+      "forma": "junco", "alcance": "cerca", "uno_cada": 5,
+      "escala": [0.75, 1.35], "inclinacion": 0.14, "hundir": 0.10
+    },
+    "roca": {
+      "sombra": true,
+      "forma": "roca", "alcance": "lejos", "uno_cada": 6,
+      "escala": [0.55, 1.60], "inclinacion": 0.10, "hundir": 0.26
+    },
+    "tronco_muerto": {
+      "sombra": true,
+      "forma": "tronco_muerto", "alcance": "lejos", "uno_cada": 14,
+      "escala": [0.65, 1.20], "inclinacion": 0.08, "hundir": 0.14
+    }
+  },
+
+  "zonas": {
+    "default": {
+      "follaje": "llanura", "flor": "flor_clara", "leno": "leno", "leno_seco": "leno_seco", "roca": "roca_caliza",
+      "tipos": {"hierba": 0.7, "flor": 0.5, "arbusto": 0.4, "arbol_choto": 0.3, "junco": 0.2, "roca": 0.5, "tronco_muerto": 0.1}
+    },
+    "moon_town": {
+      "follaje": "llanura", "flor": "flor_clara", "leno": "leno", "leno_seco": "leno_seco", "roca": "roca_caliza",
+      "tipos": {"hierba": 0.85, "flor": 0.70, "arbusto": 0.65, "arbol_choto": 0.45, "junco": 0.25, "roca": 0.45, "tronco_muerto": 0.08},
+      "uno_cada": {"arbol_choto": 6}
+    },
+    "tierras_francas": {
+      "follaje": "duna", "flor": "flor_oro", "leno": "leno_seco", "leno_seco": "leno_seco", "roca": "roca_seca",
+      "tipos": {"hierba": 0.50, "flor": 0.55, "arbusto": 0.30, "arbol_choto": 0.10, "junco": 0.10, "roca": 0.70, "tronco_muerto": 0.25},
+      "uno_cada": {"arbol_choto": 18}
+    },
+    "ceniza_forja": {
+      "follaje": "ceniza", "flor": "flor_roja", "leno": "leno_negro", "leno_seco": "leno_negro", "roca": "roca_oscura",
+      "tipos": {"hierba": 0.18, "flor": 0.12, "arbusto": 0.18, "arbol_choto": 0.05, "junco": 0.05, "roca": 1.00, "tronco_muerto": 0.65},
+      "uno_cada": {"arbol_choto": 26, "tronco_muerto": 8}
+    },
+    "tierras_trueno": {
+      "follaje": "alpino", "flor": "flor_violeta", "leno": "leno", "leno_seco": "leno_seco", "roca": "roca_seca",
+      "tipos": {"hierba": 0.55, "flor": 0.35, "arbusto": 0.60, "arbol_choto": 0.50, "junco": 0.20, "roca": 0.95, "tronco_muerto": 0.25},
+      "uno_cada": {"arbol_choto": 7}
+    },
+    "bosque_hondo": {
+      "follaje": "hondo", "flor": "flor_clara", "leno": "leno", "leno_seco": "leno_seco", "roca": "roca_hielo",
+      "tipos": {"hierba": 0.75, "flor": 0.45, "arbusto": 1.00, "arbol_choto": 1.00, "junco": 0.35, "roca": 0.55, "tronco_muerto": 0.20},
+      "uno_cada": {"arbol_choto": 5, "arbusto": 2}
+    },
+    "umbral_ladon": {
+      "follaje": "umbral", "flor": "flor_violeta", "leno": "leno_negro", "leno_seco": "leno_negro", "roca": "roca_oscura",
+      "tipos": {"hierba": 0.40, "flor": 0.30, "arbusto": 0.80, "arbol_choto": 0.55, "junco": 0.20, "roca": 0.85, "tronco_muerto": 0.45},
+      "uno_cada": {"arbol_choto": 9}
+    },
+    "abismo_lloroso": {
+      "follaje": "abismo", "flor": "flor_clara", "leno": "leno_seco", "leno_seco": "leno_seco", "roca": "roca_hielo",
+      "tipos": {"hierba": 0.30, "flor": 0.20, "arbusto": 0.45, "arbol_choto": 0.20, "junco": 0.15, "roca": 1.00, "tronco_muerto": 0.55},
+      "uno_cada": {"arbol_choto": 16, "tronco_muerto": 9}
+    },
+    "costa_lamento": {
+      "follaje": "costa", "flor": "flor_oro", "leno": "leno_seco", "leno_seco": "leno_seco", "roca": "roca_seca",
+      "tipos": {"hierba": 0.60, "flor": 0.40, "arbusto": 0.45, "arbol_choto": 0.25, "junco": 0.90, "roca": 0.75, "tronco_muerto": 0.30},
+      "uno_cada": {"junco": 3, "arbol_choto": 12}
+    },
+    "corona_quebrada": {
+      "follaje": "dorado", "flor": "flor_oro", "leno": "leno", "leno_seco": "leno_seco", "roca": "roca_roja",
+      "tipos": {"hierba": 0.85, "flor": 0.90, "arbusto": 0.55, "arbol_choto": 0.30, "junco": 0.30, "roca": 0.65, "tronco_muerto": 0.15},
+      "uno_cada": {"arbol_choto": 10}
+    },
+    "velo": {
+      "follaje": "nieve", "flor": "flor_clara", "leno": "leno_seco", "leno_seco": "leno_seco", "roca": "roca_nieve",
+      "tipos": {"hierba": 0.18, "flor": 0.10, "arbusto": 0.25, "arbol_choto": 0.08, "junco": 0.05, "roca": 0.95, "tronco_muerto": 0.60},
+      "uno_cada": {"arbol_choto": 24, "tronco_muerto": 7}
+    }
+  },
+
+  "ciudad": {
+    "paso": 11.0,
+    "margen": 3.4,
+    "r_desde": 90.0,
+    "r_hasta": 0.0,
+    "distancia_puerta": 26.0,
+    "alcance": 420.0,
+    "props": [
+      {"id": "farola",   "forma": "farola",   "uno_cada": 6, "yaw": 0.0},
+      {"id": "banco",    "forma": "banco",    "uno_cada": 14, "yaw": 1.5708},
+      {"id": "barriles", "forma": "barriles", "uno_cada": 11, "yaw": 0.0},
+      {"id": "cajas",     "forma": "cajas",    "uno_cada": 18, "yaw": 0.0},
+      {"id": "poste",    "forma": "poste",    "uno_cada": 10, "yaw": 0.0},
+      {"id": "toldo",    "forma": "toldo",    "uno_cada": 26, "yaw": 0.0},
+      {"id": "carrito",  "forma": "carrito",  "uno_cada": 30, "yaw": 1.5708}
+    ]
+  },
+
+  "ciudad_paleta": {
+    "pal_muro":    {"superficie": "piedra", "tinte": "#4e505a"},
+    "pal_techo":   {"superficie": "teja",   "tinte": "#404759"},
+    "pal_acento":  {"superficie": "metal",  "tinte": "#8c612e", "metalicidad_rel": 1.0, "rugosidad_rel": 1.2},
+    "pal_detalle": {"superficie": "piedra", "tinte": "#8d877f"},
+    "pal_extra":   {"superficie": "madera", "tinte": "#38240f"},
+    "madera":       {"superficie": "madera", "tinte": "#613d24"},
+    "madera_oscura": {"superficie": "madera", "tinte": "#38240f"},
+    "piedra":       {"superficie": "piedra", "tinte": "#4e505a"},
+    "piedra_clara": {"superficie": "piedra", "tinte": "#8d877f"},
+    "acero":        {"superficie": "metal",  "tinte": "#595e6b", "metalicidad_rel": 0.8, "rugosidad_rel": 1.4},
+    "bronce":       {"superficie": "metal",  "tinte": "#8c612e", "metalicidad_rel": 1.0, "rugosidad_rel": 1.2},
+    "tela_roja":    {"superficie": "tela",   "tinte": "#7a0f17"},
+    "tela_oro":     {"superficie": "tela",   "tinte": "#c79438"},
+    "farol":        {"plano": true, "tinte": "#ffd79a", "rugosidad_rel": 0.35,
+                     "emision": "#ffb050", "emision_energia": 1.6}
+  },
+
+  "bordes": {
+    "zocalo": {
+      "escalones": 2,
+      "alto": 1.25,
+      "margen": 1.2,
+      "hundir": 0.42,
+      "tinte": "piedra"
+    }
+  },
+
+  "siluetas": {
+    "jitter": {"ancho": 0.10, "largo": 0.10, "alto": 0.10, "paso": 0.5},
+    "_nota_reserva": "Cuanto alto come el remate de cada tipo POR ENCIMA del muro: el tejado, la cornisa, la variante regional mas alta y la tapa. El constructor lo descuenta del tope de 28 u ANTES de decidir la silueta, porque la silueta se elige mirando el alto del muro y el remate se apoya en el. Si la reserva no esta, el muro crece, el remate sube con el, y el edificio pasa los 28 u reales (que es lo que vigila test_fase15_ciudades).",
+    "reserva": {
+      "casa": 9.5,
+      "salon_clases": 5.5,
+      "forja": 8.0,
+      "tienda": 10.0,
+      "cuartel": 4.0,
+      "templo": 12.5
+    },
+    "casa": [
+      {"nombre": "clasica", "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0,  "torre_x": 0.28, "torre_z": -0.22, "torre_tam": 2.5, "torre_alto": 7.0},
+      {"nombre": "alta",    "ancho": 0.86, "largo": 0.90, "alto": 1.34, "torre": 0.0,  "torre_x": -0.30, "torre_z": 0.18, "torre_tam": 1.8, "torre_alto": 0.0},
+      {"nombre": "torre",   "ancho": 1.14, "largo": 1.10, "alto": 0.74, "torre": 1.0,  "torre_x": 0.30, "torre_z": 0.20, "torre_tam": 4.2, "torre_alto": 15.0}
+    ],
+    "salon_clases": [
+      {"nombre": "ancho",   "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0,  "torre_x": 0.40, "torre_z": -0.40, "torre_tam": 6.0, "torre_alto": 0.0},
+      {"nombre": "bajo",    "ancho": 1.08, "largo": 1.06, "alto": 0.86, "torre": 0.0,  "torre_x": 0.40, "torre_z": -0.40, "torre_tam": 6.0, "torre_alto": 0.0},
+      {"nombre": "torres",  "ancho": 0.94, "largo": 0.96, "alto": 1.06, "torre": 1.0,  "torre_x": 0.40, "torre_z": -0.40, "torre_tam": 7.0, "torre_alto": 17.0}
+    ],
+    "forja": [
+      {"nombre": "chimenea_alta", "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0, "torre_x": 0.30, "torre_z": -0.25, "torre_tam": 5.0, "torre_alto": 14.0},
+      {"nombre": "ancha",         "ancho": 1.10, "largo": 1.04, "alto": 0.86, "torre": 0.0, "torre_x": 0.30, "torre_z": -0.25, "torre_tam": 5.0, "torre_alto": 14.0},
+      {"nombre": "corta",         "ancho": 0.94, "largo": 1.08, "alto": 1.08, "torre": 0.0, "torre_x": 0.30, "torre_z": -0.25, "torre_tam": 6.5, "torre_alto": 9.0}
+    ],
+    "tienda": [
+      {"nombre": "normal",   "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0, "torre_x": 0.36, "torre_z": 0.22, "torre_tam": 3.0, "torre_alto": 5.5},
+      {"nombre": "baja",     "ancho": 1.12, "largo": 1.06, "alto": 0.82, "torre": 0.0, "torre_x": 0.36, "torre_z": 0.22, "torre_tam": 3.0, "torre_alto": 5.5},
+      {"nombre": "soplado",  "ancho": 0.92, "largo": 1.10, "alto": 1.20, "torre": 1.0, "torre_x": 0.36, "torre_z": 0.22, "torre_tam": 4.0, "torre_alto": 13.0}
+    ],
+    "cuartel": [
+      {"nombre": "clasic",   "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0, "torre_x": 0.40, "torre_z": 0.36, "torre_tam": 10.0, "torre_alto": 24.0},
+      {"nombre": "achaparr", "ancho": 1.06, "largo": 1.02, "alto": 0.88, "torre": 0.0, "torre_x": 0.40, "torre_z": 0.36, "torre_tam": 12.0, "torre_alto": 15.0},
+      {"nombre": "esbelto",  "ancho": 0.94, "largo": 1.00, "alto": 1.06, "torre": 0.0, "torre_x": 0.40, "torre_z": 0.36, "torre_tam": 8.0, "torre_alto": 26.0}
+    ],
+    "templo": [
+      {"nombre": "redondo",  "ancho": 1.00, "largo": 1.00, "alto": 1.00, "torre": 0.0, "torre_x": 0.0, "torre_z": 0.0, "torre_tam": 4.0, "torre_alto": 0.0},
+      {"nombre": "bajo",     "ancho": 1.10, "largo": 1.10, "alto": 0.84, "torre": 0.0, "torre_x": 0.0, "torre_z": 0.0, "torre_tam": 4.0, "torre_alto": 0.0},
+      {"nombre": "con_aguja","ancho": 0.94, "largo": 0.94, "alto": 1.10, "torre": 1.0, "torre_x": 0.0, "torre_z": 0.0, "torre_tam": 3.0, "torre_alto": 22.0}
+    ]
+  }
+}
