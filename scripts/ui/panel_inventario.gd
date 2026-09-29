@@ -36,9 +36,10 @@ func _init() -> void:
 
 func _construir_cromo() -> void:
 	var fondo := PanelContainer.new()
-	fondo.set_anchors_preset(Control.PRESET_CENTER)
-	fondo.position = Vector2(-280.0, -260.0)
-	fondo.size = Vector2(560.0, 520.0)
+	# Bloque 67: el tamaño y la posición salen del viewport, no de
+	# numeros duros: con una ventana estrecha el panel se salia, y
+	# en una enorme quedaba ridiculo en una esquina.
+	AjustaUI.centrar(fondo, 0.44, 0.72)
 	fondo.mouse_filter = Control.MOUSE_FILTER_STOP
 	# Fase 32: marco FlyFF compartido (dorado sobre fondo oscuro).
 	fondo.add_theme_stylebox_override("panel", TemaFlyFF.marco())

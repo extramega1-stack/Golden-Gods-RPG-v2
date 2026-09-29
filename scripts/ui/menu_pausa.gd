@@ -55,8 +55,8 @@ func _construir() -> void:
 
 	var fondo := PanelContainer.new()
 	fondo.set_anchors_preset(Control.PRESET_CENTER)
-	fondo.size = Vector2(320.0, 340.0)
-	fondo.position = Vector2(-160.0, -170.0)
+	# Bloque 67: tamaño y posicion del viewport, no numeros duros.
+	AjustaUI.centrar(fondo, 0.30, 0.47)
 	fondo.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(fondo)
 

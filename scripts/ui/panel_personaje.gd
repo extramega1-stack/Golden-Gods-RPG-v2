@@ -29,8 +29,8 @@ func _init() -> void:
 func _construir_cromo() -> void:
 	_fondo = PanelContainer.new()
 	_fondo.set_anchors_preset(Control.PRESET_CENTER)
-	_fondo.position = Vector2(-220.0, -230.0)
-	_fondo.size = Vector2(440.0, 460.0)
+	# Bloque 67: tamaño y posicion del viewport, no numeros duros.
+	AjustaUI.centrar(_fondo, 0.34, 0.64)
 	add_child(_fondo)
 	var margen := MarginContainer.new()
 	margen.add_theme_constant_override("margin_left", 16)

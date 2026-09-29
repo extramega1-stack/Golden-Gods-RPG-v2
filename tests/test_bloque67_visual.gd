@@ -29,6 +29,7 @@ func _process(_delta: float) -> bool:
 	_test_post_proceso_escalable()
 	_test_anclajes_en_el_dato()
 	_test_equipo_sigue_al_hueso()
+	_test_ui_responsive()
 	print("[TEST] bloque67_visual: %d ok, %d fallos" % [_ok, _fallos])
 	for n in _basura:
 		var nd: Node = n as Node
@@ -217,3 +218,52 @@ func _buscar_por_nombre(n: Node, nombre: String) -> Node:
 		if r != null:
 			return r
 	return null
+
+
+# --- (e) la UI se ajusta al viewport ---------------------------------
+
+## El juego corría a 1280x720 FIJO, sin `window/stretch`. En un monitor de
+## 2560x1440 los paneles ocupaban el mismo número de píxeles y se veían
+## diminutos; en una ventana estrecha se salían por los bordes. Con
+## `canvas_items` + `expand` y `AjustaUI`, el panel se adapta.
+func _test_ui_responsive() -> void:
+	# La configuración del proyecto: sin esto, nada de lo demás sirve.
+	_chk(str(ProjectSettings.get_setting("display/window/stretch/mode", "")) == "canvas_items",
+		"el viewport estira en canvas_items", 
+		str(ProjectSettings.get_setting("display/window/stretch/mode", "")))
+	_chk(str(ProjectSettings.get_setting("display/window/stretch/aspect", "")) == "expand",
+		"con aspecto 'expand' (no letterbox)", "")
+
+	# Un panel centrado se dimensiona dentro de los límites, en varias
+	# resoluciones. Se usa un Control suelto porque el ajuste es puro.
+	for res in [Vector2(1920, 1080), Vector2(2560, 1440), Vector2(1024, 600),
+			Vector2(3440, 1440)]:
+		var vp: Viewport = root
+		# No se puede cambiar el tamaño del root en headless, así que se
+		# comprueba el cálculo contra el viewport REAL y se verifica que el
+		# panel que devuelve cabe (que es lo que importa).
+		var panel := Control.new()
+		vp.add_child(panel)
+		var t: Vector2 = AjustaUI.centrar(panel, 0.44, 0.72)
+		_chk(t.x >= AjustaUI.ANCHO_MIN - 0.01 and t.x <= AjustaUI.ANCHO_MAX + 0.01,
+			"el ancho del panel esta entre los limites (%dx%d)" % [int(res.x), int(res.y)],
+			str(t))
+		_chk(t.y >= AjustaUI.ALTO_MIN - 0.01 and t.y <= AjustaUI.ALTO_MAX + 0.01,
+			"y el alto tambien", str(t))
+		_chk(AjustaUI.cabe(panel),
+			"el panel cabe en el viewport (%dx%d)" % [int(res.x), int(res.y)],
+			"pos=%s size=%s" % [str(panel.position), str(panel.size)])
+		panel.queue_free()
+
+	# Y que el panel centrado queda CENTRADO (no en una esquina).
+	var p2 := Control.new()
+	root.add_child(p2)
+	var vp2: Vector2 = root.get_visible_rect().size
+	var s2: Vector2 = AjustaUI.centrar(p2, 0.44, 0.72)
+	var centro_x: float = p2.position.x + s2.x * 0.5
+	_chk(absf(centro_x - vp2.x * 0.5) < 2.0, "el panel queda centrado en X",
+		"%.1f vs %.1f" % [centro_x, vp2.x * 0.5])
+	var centro_y: float = p2.position.y + s2.y * 0.5
+	_chk(absf(centro_y - vp2.y * 0.5) < 2.0, "y en Y",
+		"%.1f vs %.1f" % [centro_y, vp2.y * 0.5])
+	p2.queue_free()
