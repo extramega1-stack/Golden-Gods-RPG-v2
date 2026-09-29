@@ -42,6 +42,8 @@ var _prompt: PromptInteraccion = null
 var _cocina: PanelCocina = null
 ## Fase 64: el modo construcción (capa 33).
 var _construccion: PanelConstruccion = null
+## Bloque 68: el CÓDICE / bestiario (capa 35). Nace cerrado y lo abre la tecla L.
+var _codice: PanelCodice = null
 ## Bloque 65: pausa y opciones.
 var _pausa: MenuPausa = null
 ## Bloque 68: los efectos que hacen que un golpe se sienta.
@@ -89,6 +91,8 @@ var _mineria: GestorVetas = null
 ## Fase 46: manual de ayuda (controles y mecánicas), con la tecla `?`.
 var _ayuda: PanelAyuda = null
 const ESCENA_AYUDA: PackedScene = preload("res://scenes/ui/panel_ayuda.tscn")
+## Bloque 68: el CÓDICE / bestiario, con la tecla L.
+const ESCENA_CODICE: PackedScene = preload("res://scenes/ui/panel_codice.tscn")
 
 
 func _ready() -> void:
@@ -419,6 +423,19 @@ func _al_mundo_listo() -> void:
 	# El botón "?" del HUD abre el mismo manual que la tecla.
 	if _hud != null and is_instance_valid(_hud):
 		_hud.ayuda_solicitada.connect(_al_ayuda_hud)
+	# Bloque 68: el CÓDICE, al lado del manual, por el mismo motivo y con la
+	# misma forma (sale de la ESCENA para poder correrlo suelto con F6, y nace
+	# cerrado porque lo abre la tecla L).
+	#
+	## POR QUÉ AQUÍ Y NO EN `_instalar_fase63_64_ui()`: esa función NO LA LLAMA
+	## NADIE (ni el juego ni los tests la invocan desde la escena), así que lo
+	# que se cuelgue ahí no existe en la partida. Va en `_al_mundo_listo()`,
+	# que es donde vive el resto de la UI que sí se ve.
+	_codice = ESCENA_CODICE.instantiate() as PanelCodice
+	_codice.abrir_al_arrancar = false
+	_codice.name = "PanelCodice"
+	add_child(_codice)
+	_sistemas_de().registrar(_codice, &"panel_codice")
 	super._al_mundo_listo()
 	# Fase 45.2: con el mundo ya construido, la pantalla de carga fuera y el
 	# jugador colocado en su punto, arranca el tutorial (nueva partida). Es el

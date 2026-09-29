@@ -87,6 +87,25 @@ static func region_de(arq_id: String) -> String:
 	return str((_arquetipos[arq_id] as Dictionary).get("region", ""))
 
 
+## ¿Es un jefe? De los 20 arquetipos, 5 lo son. Lo lee el bloque `jefe` del
+## dato (que es lo que usa el spawner), no una lista en el panel: si mañana se
+## promotiona un mob a jefe, el códice se entera solo.
+static func es_jefe_de(arq_id: String) -> bool:
+	cargar()
+	if not _arquetipos.has(arq_id):
+		return false
+	return (_arquetipos[arq_id] as Dictionary).has("jefe")
+
+
+## ¿Puede salir élite? El bloque `elite` del dato (la 68 lo puso con su tinte y
+## sus afijos).
+static func es_elite_de(arq_id: String) -> bool:
+	cargar()
+	if not _arquetipos.has(arq_id):
+		return false
+	return (_arquetipos[arq_id] as Dictionary).has("elite")
+
+
 ## La ficha completa, para pintar una fila del panel.
 static func ficha(arq_id: String) -> Dictionary:
 	cargar()
@@ -99,6 +118,8 @@ static func ficha(arq_id: String) -> Dictionary:
 		"drops": drops_de(arq_id),
 		"nivel": nivel_de(arq_id),
 		"region": region_de(arq_id),
+		"jefe": es_jefe_de(arq_id),
+		"elite": es_elite_de(arq_id),
 	}
 
 

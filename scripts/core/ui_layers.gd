@@ -52,6 +52,9 @@ const CINEMATICA: int = 99
 const PANEL_CONSTRUCCION: int = 33
 ## Fase 64: recetas de la fogata. Mismo rango de panel de sistema.
 const PANEL_COCINA: int = 34
+## Bloque 68: el CÓDICE / bestiario. Panel de sistema, así que rango 20–69,
+## justo detrás de PANEL_COCINA (34).
+const PANEL_CODICE: int = 35
 ## Fase 53: barra de jefe, arriba-centro (rango 10–19 = HUD persistente).
 ## UI pura, a diferencia de `BarraVidaMob` que es 3D sobre el mob.
 const BARRA_JEFE: int = 13

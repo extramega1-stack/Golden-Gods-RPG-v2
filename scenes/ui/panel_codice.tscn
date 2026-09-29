@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/panel_codice.gd" id="1_codice"]
+
+[node name="PanelCodice" type="CanvasLayer"]
+layer = 35
+script = ExtResource("1_codice")
+abrir_al_arrancar = true
