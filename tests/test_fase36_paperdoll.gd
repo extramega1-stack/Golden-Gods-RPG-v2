@@ -91,6 +91,33 @@ func _test_cableado() -> void:
 	_chk(d.get_child_count() == 0, "a: desnudo sin piezas")
 
 
+## Bloque 67: la pieza de un slot, este donde este. Con anclaje a hueso cuelga
+## del `BoneAttachment3D` (bajo el esqueleto) y NO del `PaperDoll`.
+func _pieza_de(p: Player, ruta: String) -> Node:
+	var partes: PackedStringArray = ruta.split("/")
+	var actual: Node = p
+	for parte in partes:
+		if actual == null:
+			return null
+		var siguiente: Node = actual.get_node_or_null(parte)
+		if siguiente == null:
+			siguiente = _buscar(actual, parte)
+			if siguiente == null:
+				return null
+		actual = siguiente
+	return actual
+
+
+func _buscar(n: Node, nombre: String) -> Node:
+	for c in n.get_children():
+		if c.name == nombre:
+			return c
+		var r: Node = _buscar(c, nombre)
+		if r != null:
+			return r
+	return null
+
+
 ## (b) Piezas por slot.
 func _test_piezas() -> void:
 	var p: Player = _player()
@@ -101,13 +128,15 @@ func _test_piezas() -> void:
 	for par in pares:
 		_equipar(p, str(par[0]))
 	for par in pares:
-		var pieza: Node = d.get_node_or_null(str(par[1]))
+		var pieza: Node = _pieza_de(p, str(par[1]))
 		_chk(pieza != null, "b: pieza " + str(par[1]))
 		_chk(_mallas(pieza) >= 1, "b: %s con malla" % str(par[1]))
-	_chk(_mallas(d) >= 7, "b: al menos 7 mallas con equipo", str(_mallas(d)))
+	# Bloque 67: las piezas cuelgan del esqueleto (vía BoneAttachment3D), no
+	# del PaperDoll, así que se cuenta el subarbol del JUGADOR.
+	_chk(_mallas(p) >= 7, "b: al menos 7 mallas con equipo", str(_mallas(p)))
 	_chk(p.equipo.desequipar("arma", p.stats, p.inventario), "b: desequipa arma")
 	# queue_free es diferido: vale ausente o en cola de borrado.
-	var vieja: Node = d.get_node_or_null("arma")
+	var vieja: Node = _pieza_de(p, "arma")
 	_chk(vieja == null or vieja.is_queued_for_deletion(),
 		"b: la pieza desaparece")
 
@@ -118,9 +147,9 @@ func _test_joyeria() -> void:
 	var d: PaperDoll = _doll(p)
 	_equipar(p, "anillo_poder")
 	_equipar(p, "collar_cobre")
-	var anillo: Node = d.get_node_or_null("anillo_1")
+	var anillo: Node = _pieza_de(p, "anillo_1")
 	_chk(anillo != null, "c: anillo_1 genera gema")
-	var collar: Node = d.get_node_or_null("collar")
+	var collar: Node = _pieza_de(p, "collar")
 	_chk(collar != null, "c: collar genera gema")
 	var gema: MeshInstance3D = anillo as MeshInstance3D
 	var mat: StandardMaterial3D = gema.material_override as StandardMaterial3D
@@ -132,17 +161,17 @@ func _test_reemplazo() -> void:
 	var p: Player = _player()
 	var d: PaperDoll = _doll(p)
 	_equipar(p, "espada_corta")
-	_chk(d.get_node_or_null("arma") != null, "d: setup con arma")
+	_chk(_pieza_de(p, "arma") != null, "d: setup con arma")
 	var viejo: Equipo = p.equipo
 	p.equipo = Equipo.new()
 	d._vigilar_equipo(false)
 	_chk(d._equipo == p.equipo, "d: re-suscribe al nuevo")
-	var sin_arma: Node = d.get_node_or_null("arma")
+	var sin_arma: Node = _pieza_de(p, "arma")
 	_chk(sin_arma == null or sin_arma.is_queued_for_deletion(),
 		"d: reconstruye vacío")
 	p.inventario.agregar("casco_cuero", 1)
 	_chk(p.equipo.equipar("casco_cuero", p.stats, p.inventario), "d: equipa en el nuevo")
-	_chk(d.get_node_or_null("casco") != null, "d: el nuevo manda")
+	_chk(_pieza_de(p, "casco") != null, "d: el nuevo manda")
 	_chk(not viejo.cambiado.is_connected(d.reconstruir),
 		"d: el viejo desconectado")
 

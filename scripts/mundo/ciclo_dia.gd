@@ -101,6 +101,11 @@ func _construir() -> void:
 	mundo.name = "Cielo"
 	mundo.environment = _env
 	add_child(mundo)
+	# Bloque 67: post-proceso (tonemap filmic, glow, SSAO, ajustes). Sin esto,
+	# el sol a 1.25 con el tonemapping LINEAR por defecto CLIPEA A BLANCO PURO:
+	# no es una feature que falte, es una imagen que se quema.
+	PostProceso.aplicar(_env)
+	PostProceso.afinar_sol(_sol)
 
 
 func _process(delta: float) -> void:

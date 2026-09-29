@@ -163,20 +163,27 @@ func _test_paperdoll() -> void:
 		p.inventario.agregar(iid, 1)
 		_chk(p.equipo.equipar(iid, p.stats, p.inventario), "setup: equipa " + iid)
 	muneco.reconstruir()
+	# BLOQUE 67: las piezas ya NO cuelgan del PaperDoll. Con anclaje a hueso
+	# cuelgan de un `BoneAttachment3D`, que a su vez cuelga del `Skeleton3D`
+	# del modelo. Por eso se cuentan las mallas del MODELO ENTERO, no del
+	# PaperDoll: si se contaran solo del doll, daría 0 con el equipo puesto.
 	var mallas: int = 0
 	for n in _mallas_de(muneco):
 		mallas += 1
+	if mallas == 0:
+		for n in _mallas_de(p):
+			mallas += 1
 	_chk(mallas >= 12, "c: con todo equipado hay al menos 12 mallas", str(mallas))
 	# Los nombres de nodo de siempre (el resto de fases los tienen localizados).
 	for sl in Equipo.SLOTS:
-		_chk(muneco.get_node_or_null(sl) != null, "c: existe la pieza del slot " + sl)
-	_chk(muneco.get_node_or_null("arma/Hoja") != null, "c: el arma sigue con hoja")
-	_chk(muneco.get_node_or_null("arma/Guarda") != null, "c: el arma sigue con guarda")
-	_chk(muneco.get_node_or_null("guantes/Guantes_der") != null, "c: guantes der")
-	_chk(muneco.get_node_or_null("botas/Botas_izq") != null, "c: botas izq")
+		_chk(_pieza_de(p, sl) != null, "c: existe la pieza del slot " + sl)
+	_chk(_pieza_de(p, "arma/Hoja") != null, "c: el arma sigue con hoja")
+	_chk(_pieza_de(p, "arma/Guarda") != null, "c: el arma sigue con guarda")
+	_chk(_pieza_de(p, "guantes/Guantes_der") != null, "c: guantes der")
+	_chk(_pieza_de(p, "botas/Botas_izq") != null, "c: botas izq")
 	# La pieza ES la malla y se renombra con el slot (como siempre); lo que
 	# viene de la tabla es su forma y su tamaño.
-	var coraza: MeshInstance3D = muneco.get_node_or_null("armadura") as MeshInstance3D
+	var coraza: MeshInstance3D = _pieza_de(p, "armadura") as MeshInstance3D
 	_chk(coraza != null and coraza.mesh is BoxMesh, "c: la coraza es una caja")
 	var tam: Vector3 = _vec3(AnclajesDB.forma_de("armadura").get("tam", []))
 	_chk(coraza != null and (coraza.mesh as BoxMesh).size.distance_to(tam) < 0.001,
@@ -185,10 +192,15 @@ func _test_paperdoll() -> void:
 	_chk(coraza != null and coraza.material_override != null, "c: lleva material")
 	# Y las posiciones son las de la TABLA, no unas hardcodeadas.
 	for s in Equipo.SLOTS:
-		var pieza: Node3D = muneco.get_node_or_null(s) as Node3D
+		var pieza: Node3D = _pieza_de(p, s) as Node3D
 		if pieza == null:
 			continue
 		var off: Vector3 = AnclajesDB.offset_de(s)
+		# Los slots espejados (_2) cuelgan de un hueso que el rig ya refleja,
+		# así que su ajuste lleva la X invertida a propósito (el cigue lo pone
+		# al revés). Para el resto, el ajuste es el offset tal cual.
+		if s.ends_with("_2"):
+			off.x = -off.x
 		_chk(pieza.position.distance_to(off) < 0.001,
 			"c: la pieza de " + s + " está donde dice la tabla",
 			"%s vs %s" % [str(pieza.position), str(off)])
@@ -385,3 +397,34 @@ func _test_presupuesto() -> void:
 	_chk(MD.PRESUPUESTO_DRAW_CALLS > 0, "f: hay presupuesto de draw calls")
 	_chk(MD.PRESUPUESTO_PRIMITIVAS > 0, "f: hay presupuesto de triángulos")
 	_chk(MD.PRESUPUESTO_VIDEO_MB > 0, "f: hay presupuesto de memoria de video")
+
+
+## BLOQUE 67: la pieza de un slot, este donde este. Con anclaje a hueso cuelga
+## de un `BoneAttachment3D` (que cuelga del esqueleto) y NO del `PaperDoll`, así
+## que `get_node_or_null(slot)` sobre el doll ya no la encuentra. Se busca en el
+## subarbol del jugador entero, que contiene las dos topologías.
+func _pieza_de(p: Player, ruta: String) -> Node:
+	var partes: PackedStringArray = ruta.split("/")
+	var actual: Node = p
+	for parte in partes:
+		if actual == null:
+			return null
+		var siguiente: Node = actual.get_node_or_null(parte)
+		if siguiente == null:
+			# Puede estar en OTRO anclaje: se recorre el subarbol buscando el
+			# primer segmento por nombre.
+			siguiente = _buscar_por_nombre(actual, parte)
+			if siguiente == null:
+				return null
+		actual = siguiente
+	return actual
+
+
+func _buscar_por_nombre(n: Node, nombre: String) -> Node:
+	for c in n.get_children():
+		if c.name == nombre:
+			return c
+		var r: Node = _buscar_por_nombre(c, nombre)
+		if r != null:
+			return r
+	return null

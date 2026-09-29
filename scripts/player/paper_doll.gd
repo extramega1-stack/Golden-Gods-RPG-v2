@@ -26,6 +26,12 @@ extends Node3D
 ## La clave incluye el color porque ahora el tinte sale de la tabla.
 static var _mats: Dictionary = {}
 
+## Bloque 67: caché del esqueleto y de los BoneAttachment3D. El esqueleto se
+## busca una vez (es recursivo sobre toda la malla) y los anclajes, uno por
+## hueso: crearlos en cada reconstrucción sería una alloc por pieza.
+var _esq_cache: Skeleton3D = null
+var _huesos_cache: Dictionary = {}
+
 var _jugador: Player = null
 var _equipo: Equipo = null
 
@@ -64,8 +70,17 @@ func _vigilar_equipo(forzar: bool) -> void:
 
 ## Tira las piezas y regenera desde el equipo actual.
 func reconstruir(_arg = null) -> void:
+	# Bloque 67: hay que liberar las piezas del PaperDoll Y las que cuelgan de
+	# los BoneAttachment3D. Antes solo se limpiaban los hijos directos, y con el
+	# anclaje a hueso las piezas viven bajo el esqueleto: cada cambio de equipo
+	# dejaba las anteriores colgando (fuga de nodos y mallas fantasma).
 	for h in get_children():
 		h.queue_free()
+	for hueso in _huesos_cache.keys():
+		var ba: Node = _huesos_cache[hueso] as Node
+		if ba != null and is_instance_valid(ba):
+			for h2 in ba.get_children():
+				h2.queue_free()
 	if _equipo == null or not is_instance_valid(_equipo):
 		return
 	for slot in Equipo.SLOTS:
@@ -75,7 +90,13 @@ func reconstruir(_arg = null) -> void:
 		var pieza: Node3D = _pieza(slot)
 		if pieza != null:
 			pieza.name = slot
-			add_child(pieza)
+			# Bloque 67: `_aplicar_anclaje` ya decidió si la pieza va colgada
+			# de un BoneAttachment3D (sigue al hueso) o de este nodo (fallback
+			# sin esqueleto). Aquí SOLO se cuelga de este nodo cuando la pieza
+			# NO se ha movido de padre, porque `add_child` la volvería a colgar
+			# del PaperDoll y el anclaje a hueso se perdería.
+			if pieza.get_parent() == null:
+				add_child(pieza)
 
 
 ## Pieza de un slot, según la tabla de anclajes. `mesh_path` vacío = respaldo
@@ -123,14 +144,112 @@ func _pieza(slot: String) -> Node3D:
 
 
 ## Coloca la pieza donde dice la tabla (offset + rotación + escala).
+## Bloque 67: la pieza se cuelga del HUESO que el JSON declara, no de un
+## offset absoluto en el mundo.
+##
+## POR QUÉ: `data/anclajes.json` ya tenía el campo `anclaje` con el nombre del
+## hueso ("Hand.R", "Head", "Chest") desde la fase 43, y los 6 GLB del repo
+## tienen sus 19 huesos con esos nombres exactos. Pero el código NUNCA leyó
+## ese campo: usaba `offset` (metros absolutos: casco a 1,58 m, arma a
+## 0,5/1,15/0,1). Consecuencia: el casco flotaba a 1,58 m mientras el
+## personaje se agachaba, atacaba o moría, y el arma se quedaba clavada en el
+## aire cuando el `walk` movía los brazos. Era la deuda #1 del traspaso.
+##
+## El `BoneAttachment3D` sigue al hueso en cada frame del motor, así que el
+## equipo se mueve CON el personaje sin que este script haga nada por frame.
+##
+## FALLBACK: si el modelo no trae esqueleto (o el hueso no existe), se usa el
+## offset de antes, que es la posición correcta en reposo. Así el equipo
+## nunca desaparece ni queda flotando en el origen.
 func _aplicar_anclaje(n: Node3D, slot: String) -> void:
 	if n == null:
 		return
-	n.position = AnclajesDB.offset_de(slot)
-	n.rotation_degrees = AnclajesDB.rotacion_de(slot)
+	var hueso: String = AnclajesDB.anclaje_de(slot)
+	var padre: BoneAttachment3D = _anclaje_a_hueso(hueso)
+	if padre != null:
+		_reparentar(n, padre)
+		# BoneAttachment3D ya está en la posición del hueso: el offset del JSON
+		# pasa a ser un AJUSTE fino respecto al hueso, no una posición absoluta.
+		#
+		# Para los slots ESPEJADOS (anillo_2, pendiente_2, el otro guante...), el
+		# offset viene con la X en negativo porque antes era una posición
+		# absoluta. Al colgarlos de un hueso que el rig ya espeja (Hand.L), sumar
+		# el offset tal cual invierte el lado. Por eso se invierte la X para que
+		# la pieza quede en su sitio.
+		var off: Vector3 = AnclajesDB.offset_de(slot)
+		if _es_espejado(slot):
+			off.x = -off.x
+		n.position = off
+		n.rotation_degrees = AnclajesDB.rotacion_de(slot)
+	else:
+		# Sin esqueleto: el offset absoluto de siempre (posición de reposo).
+		n.position = AnclajesDB.offset_de(slot)
+		n.rotation_degrees = AnclajesDB.rotacion_de(slot)
 	var e: float = AnclajesDB.escala_de(slot)
 	if not is_equal_approx(e, 1.0):
 		n.scale = Vector3(e, e, e)
+
+
+## El `BoneAttachment3D` del hueso pedido, o null si no hay esqueleto o no
+## existe. Cacheado por nombre de hueso: crearlo cada vez sería una alloc por
+## pieza y por reconstrucción.
+func _anclaje_a_hueso(hueso: String) -> BoneAttachment3D:
+	if hueso == "":
+		return null
+	var esq: Skeleton3D = _esqueleto()
+	if esq == null or not is_instance_valid(esq):
+		return null
+	if _huesos_cache.has(hueso):
+		var cached: BoneAttachment3D = _huesos_cache[hueso]
+		return cached if cached != null and is_instance_valid(cached) else null
+	var idx: int = esq.find_bone(hueso)
+	if idx < 0:
+		# El JSON declara un hueso que este modelo no tiene (ej. "Foot.L +
+		# Foot.R" son dos huesos): se prueba con el primero.
+		var limpio: String = hueso.get_slice(" ", 0).get_slice("+", 0)
+		idx = esq.find_bone(limpio)
+		if idx < 0:
+			_huesos_cache[hueso] = null
+			return null
+	var ba := BoneAttachment3D.new()
+	ba.name = "Anclaje_%s" % hueso
+	ba.bone_idx = idx
+	# cuelga del ESQUELETO, no del PaperDoll: es lo que lo hace seguirlo.
+	esq.add_child(ba)
+	_huesos_cache[hueso] = ba
+	return ba
+
+
+## Mueve un nodo bajo otro padre, conservándolo en la escena (reparent sin
+## liberar). `remove_child` + `add_child` lo haria desaparecer un frame.
+func _reparentar(n: Node3D, nuevo_padre: Node3D) -> void:
+	if n.get_parent() == nuevo_padre:
+		return
+	var viejo: Node = n.get_parent()
+	if viejo != null:
+		viejo.remove_child(n)
+	nuevo_padre.add_child(n)
+
+
+## ¿Este slot es la versión espejada de otro? Los slots con sufijo `_2` (anillo_2,
+## pendiente_2, ...) van en la mano/cabeza opuesta. Es la convención de la
+## tabla, no una heurística: el rig ya los espeja.
+func _es_espejado(slot: String) -> bool:
+	return slot.ends_with("_2")
+
+
+## El `Skeleton3D` del modelo del jugador. El `PaperDoll` se cuelga del
+## `Player` (fase 36) y el modelo también, así que se busca por la rama.
+func _esqueleto() -> Skeleton3D:
+	if _esq_cache != null and is_instance_valid(_esq_cache):
+		return _esq_cache
+	var modelo: Node = _jugador.get_node_or_null("Modelo") if _jugador != null else null
+	if modelo == null:
+		return null
+	var candidatos: Array[Node] = modelo.find_children("*", "Skeleton3D", true, false)
+	if candidatos.size() > 0:
+		_esq_cache = candidatos[0] as Skeleton3D
+	return _esq_cache
 
 
 ## Fase 48: el modelo del slot, si lo hay. Es la vía por la que entrará el
