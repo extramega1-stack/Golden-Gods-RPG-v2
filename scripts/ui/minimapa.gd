@@ -50,6 +50,9 @@ const DORADO: Color = Color(0.85, 0.68, 0.25)
 const FONDO_OSCURO: Color = Color(0.02, 0.02, 0.04, 0.95)
 const ROJO_MOB: Color = Color(0.9, 0.15, 0.15)
 const BLANCO_JUGADOR: Color = Color(1.0, 1.0, 1.0)
+## Fase 69: el objetivo del tutorial. Celeste, para que no se confunda con
+## el rojo de los mobs ni con el dorado de los NPCs.
+const OBJETIVO_TUTORIAL: Color = Color(0.35, 0.9, 1.0)
 
 var _jugador: Player = null
 var _terreno: Terreno = null
@@ -68,6 +71,11 @@ var _ultima_pos: Vector3 = Vector3.ZERO
 var _tiene_pos: bool = false
 var _tiempo_quieto: float = 0.0
 var _arrastrando: bool = false
+## Fase 69 (tutorial): objetivo actual del mundo, para dibujarlo como un
+## punto celeste. `Vector3(NAN, NAN, NAN)` = sin objetivo (lo que hay por
+## defecto, así que un minimapa sin tutorial se dibuja igual que antes).
+## Lo fija `Tutorial` por su cuenta: la UI no busca nada por su cuenta.
+var _objetivo: Vector3 = Vector3(NAN, NAN, NAN)
 ## Fase 20 (P0-2): redibujo dirty-driven. Antes `_process` hacía
 ## `queue_redraw()` cada frame (60/s) y `_dibujar_mobs` recorría los 1127
 ## registros del streaming por frame. Ahora solo se redibuja si algo
@@ -182,6 +190,34 @@ func _al_mob_cambio(_e: Enemy) -> void:
 func fijar_npcs(npcs: Array) -> void:
 	_npcs = npcs.duplicate()
 	queue_redraw()
+
+
+## Fase 69: el objetivo que el tutorial está pidiendo ahora. Vector3 con NAN
+## (o por defecto) = "no hay objetivo". Es el mismo patrón que el ping: se
+## guarda la coordenada de mundo y el dibujo la proyecta. No lee nada del
+## jugador ni del mundo, y no redibuja si la posición no cambió de metro
+## (así un objetivo quieto no obliga a repintar 60 veces por segundo).
+func fijar_objetivo_tutorial(pos: Vector3) -> void:
+	var antes: Vector3 = _objetivo
+	_objetivo = pos
+	if _mismo_punto(antes, pos):
+		return
+	_forzar_redibujo = true
+
+
+static func _mismo_punto(a: Vector3, b: Vector3) -> bool:
+	if is_nan(a.x) or is_nan(b.x):
+		return is_nan(a.x) == is_nan(b.x) and is_nan(a.z) == is_nan(b.z)
+	return Vector2(roundf(a.x), roundf(a.z)) == Vector2(roundf(b.x), roundf(b.z))
+
+
+## ¿Hay un objetivo del tutorial que dibujar? Y dónde, en coords de mundo.
+func objetivo_tutorial() -> Vector3:
+	return _objetivo
+
+
+func tiene_objetivo_tutorial() -> bool:
+	return not is_nan(_objetivo.x) and not is_nan(_objetivo.z)
 
 
 ## Lado util del mapa (el `size` real; 200x200 de respaldo sin layout).
@@ -391,6 +427,7 @@ func _draw() -> void:
 	_dibujar_pings()
 	_dibujar_mobs()
 	_dibujar_npcs()
+	_dibujar_objetivo()
 	_dibujar_jugador()
 	# Fase 32: marco FlyFF — borde dorado exterior (2 px) + filo interior
 	# oscuro, encima de todo.
@@ -428,6 +465,18 @@ func _dibujar_npcs() -> void:
 			continue
 		var c: Vector2 = mundo_a_mapa(Vector2(npc.global_position.x, npc.global_position.z))
 		draw_circle(c, 2.5, DORADO)
+
+
+## Fase 69: el objetivo del tutorial, en celeste. Se dibuja ENCIMA de los
+## mobs (que son rojos) para que no se confunda con un enemigo. Un anillo
+## alrededor de un punto lleno: se lee como "aquí", no como "peligro".
+func _dibujar_objetivo() -> void:
+	if not tiene_objetivo_tutorial():
+		return
+	var c: Vector2 = mundo_a_mapa(Vector2(_objetivo.x, _objetivo.z))
+	draw_circle(c, 3.0, OBJETIVO_TUTORIAL)
+	draw_arc(c, 6.0, 0.0, TAU, 20, Color(OBJETIVO_TUTORIAL.r, OBJETIVO_TUTORIAL.g,
+		OBJETIVO_TUTORIAL.b, 0.6), 1.5)
 
 
 ## Triangulo blanco orientado con `rotation.y` del jugador.

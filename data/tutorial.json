@@ -1,0 +1,56 @@
+{
+	"_nota": "Fase 69 (tutorial de los primeros 5 minutos). PASOS DEL TUTORIAL COMO DATOS. El codigo (scripts/tutorial/) NO escribe textos: los lee de aqui. Para cambiar lo que el jugador ve al arrancar, se toca este archivo. Un paso nuevo = una entrada mas en 'pasos'; el orden es el del array.",
+	"_objetivo": "Campo 'objetivo' = QUE SE MARCA EN EL MUNDO (scripts/tutorial/marcador_objetivo.gd) y en el minimapa. Tipos: 'punto' (x/z fijos del mundo), 'npc' (npc_id de data/npcs.json), 'mob' (el arquetipo vivo mas cercano), 'ninguno' (el paso es una tecla, no un lugar: no se marca nada).",
+	"_regalo": "Campo 'regalo': item_id que el tutorial REGALA al entrar al paso si el jugador no lo tiene. Es lo que evita el bloqueo blando: antes, el paso 'usa una pocion' exigia el botin de un goblin (15% de drop) y sin saltar no habia salida.",
+	"_distancias": "Todos los puntos referidos existen de verdad en el mundo real de Moon Town (data/ciudad_luna.json) y estan a menos de 150 m del punto de aparicion (0, 45). tests/test_tutorial_primeros_minutos.gd lo comprueba: si alguien anade un objetivo al otro extremo del mapa, el test se pone rojo.",
+	"version": 1,
+	"titulo": "Primeros 5 minutos",
+	"pasos": [
+		{
+			"id": "mover",
+			"texto": "Muévete con WASD o clic izquierdo",
+			"detalle": "La marca dorada del centro de la plaza es a dónde ir. WASD para caminar a mano, o clic izquierdo en el suelo para dejar que el héroe vaya solo.",
+			"objetivo": {"tipo": "punto", "x": 0.0, "z": 22.0},
+			"regalo": ""
+		},
+		{
+			"id": "atacar",
+			"texto": "Atacá al goblin de la marca",
+			"detalle": "Tecla T, o el botón ATACAR de la barra. El goblin es el punto rojo más cercano del minimapa.",
+			"objetivo": {"tipo": "mob", "arquetipo": "goblin"},
+			"regalo": ""
+		},
+		{
+			"id": "skill",
+			"texto": "Lanzá una skill",
+			"detalle": "Teclas 2 a 5 (o arrastrá una skill a la barra). K abre el libro de habilidades.",
+			"objetivo": {"tipo": "mob", "arquetipo": "goblin"},
+			"regalo": ""
+		},
+		{
+			"id": "pocion",
+			"texto": "Usá una poción de vida",
+			"detalle": "Abrí la mochila (I), seleccioná la Poción de vida y tocá USAR. Curás vida sin más.",
+			"objetivo": {"tipo": "ninguno"},
+			"regalo": "pocion_vida"
+		},
+		{
+			"id": "hablar",
+			"texto": "Hablá con la Mariscala Ilya",
+			"detalle": "La marca dorada está sobre ella. Llegá hasta el círculo dorado y pulsá E (Interactuar).",
+			"objetivo": {"tipo": "npc", "npc": "ilya"},
+			"regalo": ""
+		},
+		{
+			"id": "mision",
+			"texto": "Aceptá la misión de Ilya",
+			"detalle": "En el diálogo, elegí la misión que tiene un \"!\". Aceptala y seguí la brújula de arriba.",
+			"objetivo": {"tipo": "npc", "npc": "ilya"},
+			"regalo": ""
+		}
+	],
+	"cierre": {
+		"texto": "¡Listo! Ya sabés lo esencial.",
+		"detalle": "Misiones y su detalle: J  ·  Inventario: I  ·  Equipo: C  ·  Habilidades: K  ·  Códice: L (bestiario y recetas)  ·  ? (manual)  ·  Los porteadors de cada ciudad (nombres tipo \"Portero…\") te llevan de una ciudad a otra."
+	}
+}
