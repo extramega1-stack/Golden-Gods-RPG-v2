@@ -191,3 +191,33 @@ opencode -s ses_f2c05d0b4ffeYR21N5g3XQZjzx
 
 Lo que vive **fuera** del repo (Godot 4.7.2, el Blender portable de `~/Tools`, los
 2,6 GB de packs y el `opencode-relay`) está en `handover/ENTORNO.md`.
+
+## Orquestación por agentes (olas 1 a 3)
+
+Se integraron 10 agentes en paralelo, cada uno en su worktree de Orca, con
+propiedad de archivos explícita. Para volver a hacerlo:
+
+- `orca-launch` (en `~/.local/bin`) arranca Orca desde `~/.local/opt/orca-ide`. El
+  AppImage crashea con SIGBUS en esta máquina por su montaje FUSE; extraído a
+  disco normal levanta bien. `orca-ide-refresh` reextrae cuando se actualiza.
+- Un Run por tanda: `orca orchestration run-create`, un worktree por tarea con
+  `orca worktree create`, y un `worker-start` por tarea con `--agent opencode`.
+  Las mutaciones (`worker-start`, `worker-stop`) exigen
+  `--from <coordinator_handle>`; los workers no.
+- `check` devuelve el lote FIFO sin acusar y lo REPLAYEA hasta que se acusa:
+  hay que responder con `orca orchestration reply --id <msg_id>` y después
+  `orca orchestration check --ack <delivery_id>`, o el mismo mensaje vuelve para
+  siempre.
+- Orden: crear el worktree primero, después el worker, y el spec SIEMPRE en un
+  archivo. Con los specs en una variable de shell mal emparejada, tres agentes
+  recibieron el spec equivocado y dos hicieron lo mismo.
+- Los workers corren SIN humano. Si se les abre un diálogo de permisos quedan
+  trabados para siempre: hay que rechazarlo con `orca terminal send` y
+  recordarles que pregunten con `orca orchestration ask`.
+
+### Lo que encontró la orquestación y ninguna suite había visto
+
+Cuatro sistemas escritos, testeados y NO conectados a la partida. Y dos tests
+que CELEBRABAN bugs: uno afirmaba que el equipo flotaba, otro que el reproductor
+"reproducía walk" justo cuando la mezcla no existía. La regla que sale de ahí:
+**un test por sistema no dice nada sobre si el sistema está conectado a nada.**
