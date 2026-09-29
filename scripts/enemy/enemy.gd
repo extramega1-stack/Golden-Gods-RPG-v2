@@ -58,6 +58,12 @@ var estado: Estado:
 var _modelo: Node3D = null
 var _anim: AnimationPlayer = null
 
+## Bloque 69: el muñeco de equipo, para los arquetipos con rig (el bandido).
+## Se crea UNA vez por nodo y lo reutiliza el pool. Sin modelo, el loadout va
+## vacío y no dibuja nada: los 19 arquetipos primitivos siguen siendo una
+## cápsula, sin una sola pieza encima.
+var _paperdoll: PaperDoll = null
+
 ## Clip por estado de la FSM. Los nombres son los de `data/anclajes.json`.
 const CLIP_POR_ESTADO: Dictionary = {
 	Estado.QUIETO: "idle",
@@ -213,7 +219,16 @@ func _preparar_clips() -> void:
 
 ## Quita el modelo y deja la capsula como estaba. La parte que se puede
 ## equivocar (pool), y por eso va al principio de `_aplicar_modelo`.
+##
+## Bloque 69: el muñeco se suelta ANTES de sacar el modelo. Sus piezas y sus
+## `BoneAttachment3D` cuelgan del esqueleto, o sea que mueren con él, pero la
+## caché del `PaperDoll` apuntaría a nodos liberados: sin vaciarla, el
+## siguiente arquetipo que pase por este nodo del pool quedaría anclado a un
+## esqueleto que ya no existe y su equipo caería al offset absoluto para
+## siempre. Es la fuga de la deuda #1 del bloque 67, pero por el pool.
 func _desmontar_modelo() -> void:
+	if _paperdoll != null and is_instance_valid(_paperdoll):
+		_paperdoll.limpiar()
 	if _modelo != null and is_instance_valid(_modelo):
 		# Fuera del arbol en el acto, freeing al final del frame: si solo se
 		# hiciera queue_free(), el pool veria el modelo viejo un frame mas.
@@ -226,6 +241,28 @@ func _desmontar_modelo() -> void:
 		cuerpo.visible = estado != Estado.MUERTO
 		cuerpo.scale = Vector3.ONE
 		cuerpo.material_override = null
+
+
+## Bloque 69: el muñeco de este bicho. Se crea la primera vez y se queda — el
+## pool reutiliza el nodo, así que crearlo en cada `configurar` sería una alloc
+## por respawn. Sin `equipo` en el arquetipo no dibuja nada, que es el caso de
+## los 19 arquetipos que son una cápsula.
+func _asegurar_paperdoll() -> void:
+	if _paperdoll != null and is_instance_valid(_paperdoll):
+		return
+	_paperdoll = PaperDoll.new()
+	_paperdoll.name = "PaperDoll"
+	add_child(_paperdoll)
+	_paperdoll.conectar_entidad(self)
+
+
+## El loadout del arquetipo (`data/enemies.json`, bloque `equipo`: `{slot:
+## item_id}`) se lo pasa al muñeco. Va DESPUÉS de `_aplicar_modelo`, porque el
+## modelo es lo que trae el esqueleto al que se anclan las piezas.
+func _poner_equipo(arquetipo: Dictionary) -> void:
+	_asegurar_paperdoll()
+	if _paperdoll != null:
+		_paperdoll.fijar_loadout(arquetipo.get("equipo", {}))
 
 
 ## Primer `AnimationPlayer` del subarbol del modelo (el importador lo deja en
@@ -324,6 +361,11 @@ func configurar(arquetipo: Dictionary) -> void:
 	# lo trae, se vuelve a la cápsula (el pool reutiliza el nodo) y se tiñe.
 	if not _aplicar_modelo(arquetipo):
 		_tintar(arquetipo.get("color", [0.8, 0.25, 0.25]))
+	# Bloque 69: el equipo del arquetipo (`equipo`), que el muñeco ancla a los
+	# huesos del modelo que se acaba de poner. Va después de `_aplicar_modelo`
+	# por eso. Con un arquetipo sin `equipo` el loadout queda vacío y el muñeco
+	# no dibuja nada: es el caso de los 19 arquetipos que no tienen rig.
+	_poner_equipo(arquetipo)
 	# Fase 52: el bloque `jefe` se lee AL FINAL, con el StatBlock ya
 	# construido: multiplica su vida_max y deja los multiplicadores de fase.
 	# Si se leyera antes, `stats` sería el del uso anterior del nodo (el
