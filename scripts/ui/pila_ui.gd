@@ -35,19 +35,32 @@ static func _arbol_vivo() -> SceneTree:
 static func abrir(panel: CanvasLayer) -> void:
 	if panel == null or not is_instance_valid(panel):
 		return
-	_cerrar(panel)
+	_sacar(panel)
 	_pila.append(panel)
 
 
 ## Desregistra. Idempotente.
 static func cerrar(panel: CanvasLayer) -> void:
-	_cerrar(panel)
+	_sacar(panel)
 
 
-static func _cerrar(panel: CanvasLayer) -> void:
+## Saca UN panel de la pila.
+static func _sacar(panel: CanvasLayer) -> void:
+	if panel == null:
+		return
+	_purgar()
 	for i in range(_pila.size() - 1, -1, -1):
-		var p: CanvasLayer = _pila[i]
-		# Un panel liberado (cambio de escena) sale de la pila solo.
+		if _pila[i] == panel:
+			_pila.remove_at(i)
+
+
+## Saca los paneles MUERTOS (los de la escena anterior, al cambiar de escena).
+static func _purgar() -> void:
+	for i in range(_pila.size() - 1, -1, -1):
+		# Sin tipar a propósito: una referencia liberada no es asignable a un
+		# `CanvasLayer` tipado sin quejarse en GDScript, y el chequeo de vida es
+		# lo único que importa acá.
+		var p = _pila[i]
 		if p == null or not is_instance_valid(p):
 			_pila.remove_at(i)
 
@@ -65,10 +78,6 @@ static func cima() -> CanvasLayer:
 	return _pila[_pila.size() - 1]
 
 
-static func _purgar() -> void:
-	_cerrar(null)
-
-
 ## ¿Está este panel en la cima? Un panel que NO lo está no debe reaccionar al
 ## ESC: si el de arriba está abierto, el de abajo espera.
 static func es_cima(panel: CanvasLayer) -> bool:
@@ -80,15 +89,16 @@ static func es_cima(panel: CanvasLayer) -> bool:
 ## cerrarse (un submenú que cierra su padre), y eso tiene que verse al
 ## siguiente intento, no al siguiente frame.
 static func al_esc() -> bool:
-	for intento in range(_pila.size()):
-		var c: CanvasLayer = cima()
-		if c == null:
+	for _intento in range(_pila.size()):
+		_purgar()
+		if _pila.is_empty():
 			return false
+		var c: CanvasLayer = _pila[_pila.size() - 1]
 		if _cerrar_via(c):
 			return true
-		# El panel no se cerró (no tenía ESC propio): se ignora y se sigue
-		# hacia abajo, para no quedarse atascado.
-		_cerrar(c)
+		# `c` no se dejó cerrar: se lo saca igual, o el próximo ESC vuelve a
+		# pegarle al mismo y el de abajo no llega a cerrarse nunca.
+		_sacar(c)
 	return false
 
 
@@ -100,7 +110,10 @@ static func _cerrar_via(p: CanvasLayer) -> bool:
 		p.call("cerrar")
 	else:
 		p.visible = false
-	_cerrar(p)
+	# Saca el panel de la pila: si no, el ESC siguiente vuelve a pegarle al
+	# mismo y nunca baja al de abajo. Aunque el panel ya se haya desregistrado
+	# solo desde su `cerrar_panel()`, sacarlo otra vez es inofensivo.
+	_sacar(p)
 	return true
 
 
