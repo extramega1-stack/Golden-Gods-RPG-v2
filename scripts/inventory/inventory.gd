@@ -3,8 +3,16 @@ extends RefCounted
 ## Inventario del jugador: 20 slots; los items apilables ocupan un solo slot.
 ##
 ## `entradas` es pública SOLO para lectura de la UI:
-## [{"item_id": String, "cantidad": int}]. Ningún otro sistema la escribe.
-## Los ids se validan contra ItemDB; un id desconocido se rechaza con warning.
+## [{"item_id": String, "cantidad": int, "afijos": Array}]. Ningún otro
+## sistema la escribe. Los ids se validan contra ItemDB; un id desconocido se
+## rechaza con warning.
+##
+## Bloque 69 (afijos): una entrada puede llevar `"afijos"` — la lista que
+## `AfijosLoot` sorteó cuando el item cayó. La clave SIEMPRE existe (vacía si
+## el item no lleva), así que la UI no tiene que preguntar. Un item con afijos
+## NUNCA se fusiona con uno sin afijos del mismo id: son dos objetos distintos.
+## Los afijos solo van a equipables (arma/armadura/accesorio), que además son
+## no-apilables, así que cada uno ocupa su slot.
 
 signal cambiado()
 
@@ -17,7 +25,8 @@ var entradas: Array = []
 
 ## Agrega items. Retorna lo que NO cupo (0 = todo entró).
 ## Si el id no existe en ItemDB: push_warning y retorna `cantidad` intacta.
-func agregar(item_id: String, cantidad: int = 1) -> int:
+## `afijos` es la lista ya sorteada en el drop (vacía = item normal).
+func agregar(item_id: String, cantidad: int = 1, afijos: Array = []) -> int:
 	if cantidad <= 0:
 		return 0
 	if not ItemDB.existe(item_id):
@@ -25,25 +34,32 @@ func agregar(item_id: String, cantidad: int = 1) -> int:
 		return cantidad
 	var item: Dictionary = ItemDB.obtener(item_id)
 	var restante: int = cantidad
-	if bool(item.get("apilable", false)):
+	var lleva_afijos: bool = not afijos.is_empty()
+	if bool(item.get("apilable", false)) and not lleva_afijos:
 		var idx: int = _indice_de(item_id)
 		if idx >= 0:
 			var e: Dictionary = entradas[idx]
 			e["cantidad"] = int(e.get("cantidad", 0)) + restante
 			restante = 0
 		elif entradas.size() < CAPACIDAD:
-			entradas.append({"item_id": item_id, "cantidad": restante})
+			entradas.append({"item_id": item_id, "cantidad": restante, "afijos": []})
 			restante = 0
 	else:
+		# Un item con afijos va SIEMPRE en su propio slot, uno por unidad: dos
+		# dagas del mismo nivel con afijos distintos son dos dagas distintas.
 		while restante > 0 and entradas.size() < CAPACIDAD:
-			entradas.append({"item_id": item_id, "cantidad": 1})
+			entradas.append({
+				"item_id": item_id,
+				"cantidad": 1,
+				"afijos": afijos.duplicate(true),
+			})
 			restante -= 1
 	if restante < cantidad:
 		cambiado.emit()
 	return restante
 
 
-## Lista enriquecida para la UI: [{id, cantidad, item}].
+## Lista enriquecida para la UI: [{id, cantidad, item, afijos}].
 func listar() -> Array:
 	var out: Array = []
 	for e in entradas:
@@ -53,8 +69,34 @@ func listar() -> Array:
 		if iid == "" or not ItemDB.existe(iid):
 			continue
 		out.append({"id": iid, "cantidad": int(e.get("cantidad", 1)),
-			"item": ItemDB.obtener(iid)})
+			"item": ItemDB.obtener(iid),
+			"afijos": afijos_de_entrada(e)})
 	return out
+
+
+## Los afijos de una entrada del inventario, SIEMPRE como Array (vacío si no
+## lleva). Copia profunda: la UI no puede escribir en el inventario por
+## accidente. Única puerta de lectura para el afijo, y es de solo lectura.
+## Estática porque no depende de ESTE inventario: lee la entrada que le pasan.
+static func afijos_de_entrada(entrada: Dictionary) -> Array:
+	var af: Variant = entrada.get("afijos", [])
+	if not (af is Array) or (af as Array).is_empty():
+		return []
+	var limpio: Array = []
+	for a in (af as Array):
+		if a is Dictionary:
+			limpio.append((a as Dictionary).duplicate(true))
+	return limpio
+
+
+## ¿Alguna entrada del inventario lleva afijos? Para la UI: si es false, se
+## dibuja exactamente igual que antes del bloque 69.
+func tiene_afijos() -> bool:
+	for e in entradas:
+		if e is Dictionary and not afijos_de_entrada(e).is_empty():
+			return true
+	return false
+
 
 
 ## Quita items. Retorna false (sin tocar nada) si no hay stock suficiente.
@@ -134,6 +176,10 @@ func _indice_de(item_id: String) -> int:
 
 
 ## Serialización versionada (la usará el save/load).
+## Bloque 69: los afijos viajan con la entrada (sin ellos, un item afijado
+## perdería su identidad al guardar). SAVE_VERSION sigue en 1 a propósito: el
+## campo es aditivo y `from_dict` lo tolera ausente, así que una partida vieja
+## carga igual sin migración manual.
 func to_dict() -> Dictionary:
 	var lista: Array = []
 	for e in entradas:
@@ -143,23 +189,27 @@ func to_dict() -> Dictionary:
 		lista.append({
 			"item_id": str(d.get("item_id", "")),
 			"cantidad": int(d.get("cantidad", 0)),
+			"afijos": afijos_de_entrada(d),
 		})
 	return {"version": SAVE_VERSION, "items": lista}
 
 
-## Reconstruye desde un dict; tolera campos ausentes e ignora ids inválidos.
+## Reconstruye desde un dict; tolera campos ausentes (incluido "afijos", que
+## es lo que hace que un save anterior al bloque 69 cargue sin tocar nada) e
+## ignora ids inválidos.
 static func from_dict(d: Dictionary) -> Inventario:
 	var inv: Inventario = Inventario.new()
 	var lista: Array = d.get("items", [])
 	for e in lista:
 		if not (e is Dictionary):
 			continue
-		var item_id: String = str(e.get("item_id", ""))
-		var cantidad: int = int(e.get("cantidad", 0))
+		var ed: Dictionary = e
+		var item_id: String = str(ed.get("item_id", ""))
+		var cantidad: int = int(ed.get("cantidad", 0))
 		if item_id == "" or cantidad <= 0:
 			continue
 		if not ItemDB.existe(item_id):
 			push_warning("[Inventario] from_dict ignora id desconocido: %s" % item_id)
 			continue
-		inv.agregar(item_id, cantidad)
+		inv.agregar(item_id, cantidad, inv.afijos_de_entrada(ed))
 	return inv
