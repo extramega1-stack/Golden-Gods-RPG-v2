@@ -1602,11 +1602,18 @@ func _monumento(variante: String) -> Node3D:
 ## Pedestal escalonado comun de los monumentos fase 15 (10 u de alto).
 func _pedestal_monumento() -> Node3D:
 	var raiz := Node3D.new()
-	_caja(Vector3(16.0, 2.0, 16.0), _mat(_mx("muro", "piedra")), Vector3(0, 1.0, 0), raiz)
-	_caja(Vector3(12.0, 3.0, 12.0), _mat(_mx("detalle", "piedra_clara")), Vector3(0, 3.5, 0), raiz)
-	_caja(Vector3(8.0, 5.0, 8.0), _mat(_mx("muro", "piedra")), Vector3(0, 7.5, 0), raiz)
-	_caja(Vector3(9.0, 1.0, 9.0), _mat(_mx("acento", "oro")), Vector3(0, 10.5, 0), raiz)
-	_colision(raiz, Vector3(16.0, 12.0, 16.0), Vector3(0, 6.0, 0))
+	# El pedestal apoyaba EXACTAMENTE en y=0, con la base justo tocando el
+	# suelo, mientras que el resto de la ciudad va enterrado 0,42 (el zocalo) y
+	# los props de calle 0,16. Con el suelo plano de la plaza no se nota, pero es
+	# el mismo defecto de forma que se corrigio en la vegetacion: una cosa que solo
+	# ROZA el suelo se ve pegada, no apoyada. Se hunde con el valor del dato, no
+	# con un numero fijo acá.
+	var h: float = DecoracionDB.hundir_borde()
+	_caja(Vector3(16.0, 2.0, 16.0), _mat(_mx("muro", "piedra")), Vector3(0, 1.0 - h, 0), raiz)
+	_caja(Vector3(12.0, 3.0, 12.0), _mat(_mx("detalle", "piedra_clara")), Vector3(0, 3.5 - h, 0), raiz)
+	_caja(Vector3(8.0, 5.0, 8.0), _mat(_mx("muro", "piedra")), Vector3(0, 7.5 - h, 0), raiz)
+	_caja(Vector3(9.0, 1.0, 9.0), _mat(_mx("acento", "oro")), Vector3(0, 10.5 - h, 0), raiz)
+	_colision(raiz, Vector3(16.0, 12.0, 16.0), Vector3(0, 6.0 - h, 0))
 	return raiz
 
 

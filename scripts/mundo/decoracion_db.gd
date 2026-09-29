@@ -363,6 +363,16 @@ static func ciudad_alcance() -> float:
 ## `hundir` de un vegetal y por el mismo motivo: la vereda no es plana (la ciudad
 ## se apoya en el terreno) y un banco que solo roza el suelo tiene la pata de
 ## abajo en el aire. Sale del dato, no del código.
+## Cuánto se hunde en el suelo el zocalo y el pedestal del monumento.
+##
+## El worker de la ola 4 lo dejo pendiente porque `ciudad_luna.gd` no era suyo,
+## y el mismo defecto de forma que se corrigio en la vegetacion (apoyado en vez
+## de enterrado) llegaba al pedestal del monumento y a la puerta de la ciudad.
+static func hundir_borde() -> float:
+	cargar()
+	return maxf(0.0, float(_bordes.get("hundir", 0.42)))
+
+
 static func ciudad_hundir() -> float:
 	cargar()
 	return maxf(0.0, float(_ciudad.get("hundir", 0.16)))
