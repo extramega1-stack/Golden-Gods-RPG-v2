@@ -340,12 +340,28 @@ func _instalar_respawn() -> void:
 func _al_mundo_listo() -> void:
 	# Fase 51.1: el contenedor de sistemas (§9.1). Los sistemas se registran
 	# acá, con su id, en vez de que cada uno ande buscándose por rutas de nodo.
-	# BUG REAL (encontrado jugando): el contenedor se creaba aqui, pero
-	# `_instalar_respawn()` ya corria en el `_ready` del padre y registraba el
+	# BUG REAL (encontrado jugando): el contenedor se creaba aquí, pero
+	# `_instalar_respawn()` ya corría en el `_ready` del padre y registraba el
 	# feed en un `_sistemas` nulo ("Nonexistent function 'registrar' in base
 	# 'Nil'"). Se pide por `_sistemas_de()`, que lo crea la primera vez que hace
-	# falta, y aqui ya solo se reutiliza.
+	# falta, y aquí ya solo se reutiliza.
 	_sistemas_de()
+	#
+	# BUG REAL Y EL MÁS GRAVE QUE HA TENIDO EL JUEGO: la función de abajo
+	# instanciaba SIETE sistemas y NO LA LLAMABA NADIE. Estaba escrita, con sus
+	# siete vars declaradas, sus tests en verde y su commit; y en la partida no
+	# existía: sin `MenuPausa` el ESC no hacía nada, sin `IndicadorVitales` no
+	# había barras de hambre/sed/energía, sin `PromptInteraccion` no aparecía el
+	# "E — Prender fogata", sin `PoolImpacto` no había chispas, y `PanelCocina` y
+	# `PanelConstruccion` tampoco. Fases 63 y 64 enteras más los bloques 65 y 68,
+	# invisibles.
+	#
+	# Por qué ningún test lo cazó: los tests de cada panel lo montan en su
+	# propia escena, y ningún test se preguntaba qué hay realmente dentro de la
+	# partida. Un test verde por sistema no dice nada sobre si el sistema está
+	# conectado. Por eso se agrega `smoke_fase_escena_completa`, que mira la
+	# escena real.
+	_instalar_fase63_64_ui()
 	# El SaveSystem lo crea la demo padre (fase4) en su _ready, que ya
 	# corrió: se registra acá, que es el primer punto donde el contenedor
 	# existe.
