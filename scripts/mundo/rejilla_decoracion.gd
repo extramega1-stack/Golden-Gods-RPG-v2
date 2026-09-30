@@ -59,6 +59,38 @@ static func celdas(centro: Vector2i, paso: float, radio: float) -> Array[Vector2
 	return fuera
 
 
+## El MISMO disco que `celdas()`, pero SOLO los desplazamientos respecto del
+## centro, escritos en dos buffers que reservó el llamador. Devuelve cuántos hay.
+##
+## POR QUÉ EXISTE Y POR QUÉ `celdas()` NO ALCANZA: el anillo sigue al jugador y
+## se vuelve a armar cada vez que él cruza una frontera de celda. Con `celdas()`
+## eso son 317 objetos `Vector2i` boxed en un `Array` nuevo cada replantación,
+## en la ruta caliente, y es exactamente la asignación por frame que §9.5
+## prohíbe. Con el patrón, replantar es sumarle `centro.x` a 317 enteros que ya
+## están en un `PackedInt32Array`: ni una caja, ni una reserva, ni un pico de
+## memoria.
+##
+## EL ORDEN ES EL DE `celdas()` Y TIENE QUE SEGUIR SIÉNDOLO: el índice del
+## patrón es el slot del `MultiMesh`. Si los dos métodos cambiaran de orden, el
+## mismo `(x, z)` del mundo caería en un slot distinto y la vegetación saltaría
+## de metro.
+static func patron(paso: float, radio: float, dx: PackedInt32Array,
+		dz: PackedInt32Array) -> int:
+	var p: float = maxf(1.0, paso)
+	var r: float = maxf(0.0, radio) / p
+	var n: int = int(ceil(r))
+	var total: int = 0
+	for z in range(-n, n + 1):
+		for x in range(-n, n + 1):
+			if float(x * x + z * z) > r * r:
+				continue
+			if total < dx.size():
+				dx[total] = x
+				dz[total] = z
+			total += 1
+	return total
+
+
 ## La celda del mundo que contiene a (x, z). El origen de la grilla es (0, 0)
 ## del mundo, no del jugador: si dependiera del jugador, cruzar una frontera
 ## cambiaría la semilla de todo el anillo y las plantas saltarían de metro.

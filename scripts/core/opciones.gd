@@ -64,6 +64,14 @@ static func catalogo() -> Array:
 		{"id": "escala_render", "tipo": TIPO_ENUM, "def": 3,
 			"etq": "Resolución de render", "grupo": "video",
 			"opciones": ["66 %", "75 %", "85 %", "100 %"]},
+		# El interruptor que apaga la CAUSA del parpadeo al moverse (fase 152),
+		# no un número: con la decoración apagada el anillo entero sale de la
+		# imagen y el sistema deja de escribir en el búfer. Es lo que hace el
+		# diagnóstico ("apagá una cosa a la vez") un ajuste del juego de verdad,
+		# y la respuesta a "todo parpadea cuando me muevo" si el anillo es la
+		# causa: se desactiva y el mundo se ve sin pasto.
+		{"id": "vegetacion", "tipo": TIPO_BOOL, "def": true,
+			"etq": "Vegetación (si parpadea, apagala)", "grupo": "video"},
 		{"id": "vsync", "tipo": TIPO_BOOL, "def": true,
 			"etq": "Sincronización vertical", "grupo": "video"},
 		{"id": "fps_max", "tipo": TIPO_SLIDER, "def": 0.0, "min": 0.0, "max": 240.0,
@@ -210,11 +218,41 @@ static func aplicar_video() -> void:
 			else DisplayServer.VSYNC_DISABLED)
 	var tope: float = flotante("fps_max", 0.0)
 	Engine.max_fps = int(tope) if tope > 0.0 else 0
-	# La calidad la lee el bloque 67 (SSAO, glow, sombras blandas) con
-	# `calidad_nombre()`: no se aplica aquí porque el post-proceso lo arma la
-	# escena, que es la que sabe si tiene Environment.
 	if vp != null:
 		vp.set_meta("calidad_grafica", q)
+	# Y ACÁ ESTÁ LO QUE FALTABA (fase 152): el ajuste de calidad del panel se
+	# guardaba y no le llegaba a nadie. El `meta` de arriba no lo lee ningún
+	# sistema, así que mover el deslizador no apagaba ni el SSAO ni el glow ni
+	# cambiaba una sola sombra: era un número decorativo. Ahora el ajuste se
+	# propaga a los tres que dependen de él, y la calidad BAJA EL TRABAJO DE
+	# VERDAD, que es lo que el encargo pide.
+	aplicar_calidad_al_mundo(vp)
+
+
+## Propaga el ajuste de calidad a lo que la lee. Son tres, y cada uno es
+## opcional (un mundo sin Shader ni sin Vegetación no tiene por qué tenerlos):
+## el post-proceso de cada `WorldEnvironment`, las sombras de cada sol
+## direccional, y los sistemas registrados en `gg_system` que expongan
+## `aplicar_calidad()`.
+##
+## POR QUÉ EL GRUPO Y NO UNA RUTA DE NODO: el proyecto tiene una escena de demo
+## con una cadena de seis niveles de herencia y once rutas `$Player`/`$Terreno`
+## hardcodeadas (§9.1). Un `find_child` más acá sería la séptima. El grupo
+## `gg_system` es el índice que el spec ya definió para esto.
+static func aplicar_calidad_al_mundo(vp: Viewport) -> void:
+	if vp == null or vp.get_tree() == null:
+		return
+	var raiz: Node = vp.get_tree().root
+	if raiz == null:
+		return
+	for n in raiz.find_children("*", "WorldEnvironment", true, false):
+		var env: Environment = (n as WorldEnvironment).environment
+		if env != null:
+			PostProceso.reaplicar_calidad(env)
+	PostProceso.reaplicar_calidad_a_luces(raiz)
+	for s in vp.get_tree().get_nodes_in_group(Systems.GRUPO):
+		if s.has_method("aplicar_calidad"):
+			s.call("aplicar_calidad")
 
 
 static func _raiz() -> Viewport:
