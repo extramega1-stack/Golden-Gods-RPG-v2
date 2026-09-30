@@ -178,9 +178,9 @@ func _oscuro() -> void:
 
 		# --- ambiente casi nulo: la sombra tiene que ser NEGRA ---
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		env.ambient_light_color = Color(0.055, 0.065, 0.090)
+		env.ambient_light_color = Color(0.038, 0.040, 0.048)
 		env.ambient_light_sky_contribution = 0.0
-		env.ambient_light_energy = 0.22
+		env.ambient_light_energy = 0.16
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
 
 		# --- TONEMAP: ACES con la exposicion ABAJO. Este es el numero que mas
@@ -195,9 +195,9 @@ func _oscuro() -> void:
 		# sol atravesando la niebla, y eso es la mitad del look. ---
 		env.fog_enabled = true
 		env.fog_mode = Environment.FOG_MODE_DEPTH
-		env.fog_light_color = Color(0.055, 0.062, 0.085)
+		env.fog_light_color = Color(0.042, 0.046, 0.058)
 		env.fog_light_energy = 0.6
-		env.fog_density = 0.0021
+		env.fog_density = 0.0016
 		env.fog_depth_begin = 45.0
 		env.fog_depth_end = 320.0
 		env.fog_sky_affect = 0.0
@@ -206,7 +206,7 @@ func _oscuro() -> void:
 
 		env.volumetric_fog_enabled = true
 		env.volumetric_fog_density = 0.0022
-		env.volumetric_fog_albedo = Color(0.20, 0.23, 0.30)
+		env.volumetric_fog_albedo = Color(0.16, 0.17, 0.21)
 		env.volumetric_fog_emission = Color(0.030, 0.034, 0.048)
 		env.volumetric_fog_emission_energy = 0.10
 		env.volumetric_fog_gi_inject = 0.0
@@ -274,6 +274,43 @@ func _oscuro() -> void:
 	for n in root.find_children("*", "DirectionalLight3D", true, false):
 		if (n as DirectionalLight3D).name == "Luna":
 			(n as DirectionalLight3D).light_energy = 0.10
+	# LAS ANTORCHAS. Hay 20 en la plaza y estaban a 0,8-1,0 de energia, que es lo
+	# justo para verse de dia. En una escena oscura son la ILUMINACION, no un
+	# detalle: si no iluminan, la escena esta a oscuras y no se ve nada.
+	# Con radio mas grande porque a 0,8 de energia y radio chico iluminan un
+	# metro y el resto de la plaza queda negro.
+	var antorchas := 0
+	for n in root.find_children("*", "OmniLight3D", true, false):
+		var o := n as OmniLight3D
+		if o.light_energy <= 0.0:
+			continue
+		# LA LAMPARA Y EL NODO, no solo la luz. Un OmniLight con el nodo padre
+		# invisible tampoco dibuja nada, y en el diagnostico cinco de las veinte
+		# estaban apagadas por el ciclo de dia.
+		var padre := o.get_parent()
+		while padre != null:
+			if not (padre as Node3D).visible:
+				(padre as Node3D).visible = true
+				break
+			padre = padre.get_parent()
+		o.visible = true
+		if o.omni_range < 8.0:
+			o.omni_range = 16.0
+		o.light_energy = maxf(o.light_energy, 3.2)
+		o.omni_attenuation = 1.3
+		antorchas += 1
+	# Y las llamas, que son las mallas: si la llama no se dibuja, el jugador no
+	# ve de donde sale la luz, y una luz sin fuente visible parece un error.
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		if String(n.name).find("Llama") >= 0 or String(n.name).find("llama") >= 0:
+			(n as Node3D).visible = true
+	print("[LOOK] antorchas encendidas: %d" % antorchas)
+	# El sol deja de ser la fuente principal: es el relleno del cielo.
+	for n in root.find_children("*", "DirectionalLight3D", true, false):
+		var d := n as DirectionalLight3D
+		if d.name == "Sol":
+			d.light_energy = 0.85
+			d.light_color = Color(0.72, 0.74, 0.90)
 
 
 func _brillo(img: Image) -> float:
