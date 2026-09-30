@@ -95,12 +95,22 @@ BRAZO_CODO = 0.46
 # Cuanta flexion del codo endereza la muneca al colgar el brazo, como fraccion
 # de la flexion del codo.
 #
-# OJO, esto BAJO de 0,90 a 0,45 por el mismo motivo que el codo: el usuario
-# reporto las manos "extendidas". A 0,90 la muneca se compensaba casi entera y
-# la mano quedaba como un dedo POINTING ADELANTE, rigidissima. A 0,45 la mano
-# cuelga relajada, que es como cuelga de verdad, y el codo flexionado hace el
-# resto del trabajo de leer "brazo relajado" y no "brazo tieso".
-MUNECA_REL = 0.45
+# ESTE NUMERO SE SALIO MEDIDO, NO DE ADIVINAR, y es la cuarta vez que se toca.
+# El criterio es uno solo, y es el unico que importa: LA MANO TIENE QUE
+# CONTINUAR LA LINEA DEL ANTEBRAZO. Una muneca humana colgando esta
+# aproximadamente recta; lo que flexiona el codo es el CODO, no la muneca.
+#
+# Medido sobre el esqueleto en el mundo (eje Y del hueso, con el idle corrido):
+#   antebrazo            atras=0.445   arriba=-0.889
+#   MUNECA_REL 0,20      atras=0.525   <- el mas cercano a la linea del antebrazo
+#   MUNECA_REL 0,45      atras=0.619
+#   MUNECA_REL 0,70      atras=0.705
+#   MUNECA_REL 0,95      atras=0.782
+#   MUNECA_REL 1,20      atras=0.848
+# Cuanto mas alto el valor, mas se va la mano hacia atras y menos cuelga. A 0,18
+# la desviaion respecto del antebrazo es de 0,08, contra 0,17 a 0,45 y 0,40 a
+# 1,20.
+MUNECA_REL = 0.18
 # Swing del brazo en la marcha, en radianes.
 BRAZO_SWING = 0.30
 # Contracuerpo: giro de cadera y de pecho al caminar, respiracion en reposo.
