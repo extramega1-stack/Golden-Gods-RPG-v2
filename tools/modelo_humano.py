@@ -1352,6 +1352,18 @@ def construir_malla(p: dict, g: float) -> tuple:
         rodilla = Vector((p["pie_x"] * sg, 0.0, p["rodilla_z"]))
         tobillo = Vector((p["pie_x"] * sg, 0.0, p["tobillo_z"]))
         _pierna(m, p, r, g, s, cadera, rodilla, tobillo, inf)
+
+    # ------------------------------------------------------- el pelo y la armadura
+    # ESTAS DOS VAN AL FINAL, y no antes de los brazos como decia la primera
+    # version del contrato. Era una contradiccion mia: decia "una hombrera se
+    # apoya en el hombro, y el hombro lo crea el brazo", y al mismo tiempo las
+    # ponia antes del brazo. Obvio: si el hombro lo crea el brazo, la hombrera
+    # va DESPUES, o se apoya en el aire.
+    #
+    # La cara va aparte, arriba, porque reemplaza a la cabeza de huevo y la
+    # cabeza va antes que todo lo demas.
+    for nombre in ("parte_pelo", "parte_armadura"):
+        _usar_parte(nombre, m, p, g, _v_tex, inf)
     return m, inf
 
 
