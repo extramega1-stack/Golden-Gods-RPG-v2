@@ -31,6 +31,7 @@ extends SceneTree
 const RUTA_MANIFIESTO: String = "res://data/modelos.json"
 const RUTA_ENEMIGOS: String = "res://data/enemies.json"
 const ESCENA_ENEMIGO: PackedScene = preload("res://scenes/enemy/enemigo.tscn")
+const ArbolAnimacion: GDScript = preload("res://scripts/core/arbol_animacion.gd")
 const RUTA_ESTATICA: String = "res://tests/fixtures/estatico.glb"
 const ANCLAJES: Array = ["Chest", "Neck", "Head", "Hand.L", "Hand.R", "Foot.L", "Foot.R"]
 const CLIPS: Array = ["idle", "walk", "attack", "die"]
@@ -236,13 +237,31 @@ func _test_clips() -> void:
 	# que `current_animation` esta vacio (no hay un unico clip activo). Lo que
 	# se comprueba ahora es que la mezcla responde: quieto = idle, persiguiendo
 	# = walk, y el cross-fade es continuo (el blend_amount va de 0 a 1).
+	#
+	# Y AHORA TAMPOCO LOS ESTADOS DE COMBATE. Con el motor UNICO
+	# (`ArbolAnimacion`) el `attack` y el `die` son ESTADOS de la máquina de
+	# estados, no clips que se le gritan al reproductor, así que
+	# `current_animation` está vacío para los CUATRO estados por igual y
+	# `is_playing()` da falso: no es que el clip no suene, es que el que
+	# reproduce es el árbol. Lo que se comprueba ahora es el estado de la
+	# máquina, que es lo que de verdad decide.
 	var orden_combate: Array = [[2, "attack"], [3, "die"]]
 	for par in orden_combate:
 		e.set("estado", int(par[0]))
-		_chk(str(ap.current_animation) == str(par[1]),
-			"e: estado %d reproduce '%s'" % [int(par[0]), str(par[1])],
-			"reproduciendo '%s'" % str(ap.current_animation))
-		_chk(ap.is_playing(), "e: el clip de '%s' suena" % str(par[1]))
+		# El cambio de estado no es instantáneo: se ENCOLA y aterriza en el
+		# siguiente frame en el que se procesa el árbol. Por eso se dan frames
+		# y se mira el resultado, en vez de mirar el mismo frame en el que se
+		# pidió: mirar el mismo frame mide la cola, no el estado.
+		var est: String = ""
+		for i in 30:
+			e.set("velocity", Vector3.ZERO)
+			e.call("_actualizar_mezcla")
+			est = ArbolAnimacion.estado_actual(ap)
+			if est == str(par[1]):
+				break
+		_chk(est == str(par[1]),
+			"e: estado %d entra en el estado '%s'" % [int(par[0]), str(par[1])],
+			"estado=%s  tras 30 frames" % est)
 	# La mezcla de locomocion: quieto y persiguiendo la tiene que poner el
 	# enemigo (ArbolAnimacion), con el blend_amount en los extremos.
 	e.set("estado", 0)
@@ -261,10 +280,20 @@ func _test_clips() -> void:
 	_chk(ap.get_animation("die").loop_mode == Animation.LOOP_NONE,
 		"e: 'die' no cicla")
 	# Setear el mismo estado no reinicia el clip (el pool setea estados).
-	var pos_antes: float = ap.current_animation_position
+	# La posición se lee del ESTADO de la máquina, no del reproductor: con el
+	# árbol mandando, `current_animation_position` del `AnimationPlayer` es
+	# siempre 0 y compararlo no comprobaría nada.
+	var tree_e: AnimationTree = ArbolAnimacion.arbol(ap)
+	var pos_antes: float = 0.0
+	if tree_e != null:
+		pos_antes = float(tree_e.get("parameters/die/current_position"))
 	e.set("estado", 3)
-	_chk(is_equal_approx(ap.current_animation_position, pos_antes),
-		"e: setear el mismo estado no reinicia la animación")
+	if tree_e != null:
+		_chk(is_equal_approx(float(tree_e.get("parameters/die/current_position")),
+				pos_antes),
+			"e: setear el mismo estado no reinicia la animación",
+			"antes=%.3f  despues=%.3f" % [pos_antes,
+				float(tree_e.get("parameters/die/current_position"))])
 
 
 ## (f) Un `.glb` sin piel (los otros 84 del pack) se cuelga igual.

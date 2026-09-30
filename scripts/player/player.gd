@@ -1263,6 +1263,13 @@ func aplicar_modelo(clase_id: String) -> void:
 		_modelo.scale = Vector3(esc, esc, esc)
 	_anim = _buscar_anim(inst)
 	_preparar_clips()
+	# El motor se monta AQUÍ y no en el primer `_actualizar_animacion`, por un
+	# motivo concreto: `ArbolAnimacion` pone el reloj del REPRODUCTOR en manual
+	# para que ningún `play()` de fuera pueda escribir el esqueleto. Si eso
+	# pasara más tarde, entre el montaje y el primer frame habría una ventana en
+	# la que el reproductor todavía corre solo. Con el motor montado aquí, esa
+	# ventana no existe: desde el frame 0 hay un solo conductor.
+	ArbolAnimacion.montar(_anim, str(CLIP_IDLE), str(CLIP_CAMINAR))
 	_poner_clip("idle")
 	if capsula != null:
 		capsula.visible = false
@@ -1316,8 +1323,18 @@ func _poner_clip(nombre: String) -> void:
 	if not _anim.has_animation(nombre):
 		return
 	_clip_actual = nombre
-	ArbolAnimacion.soltar(_anim)
-	_anim.play(nombre)
+	# SIN `play()`. El tajo y la muerte son ESTADOS de la máquina del
+	# AnimationTree, no clips que se le gritan al reproductor: el reproductor
+	# no debe escribir el esqueleto nunca, porque el árbol también lo escribe y
+	# de los dos gana el último (que antes era el `play()` del tajo, y por eso
+	# el muñeco se quedaba clavado en la animación de atacar).
+	#
+	# Y no es "por buena costumbre": el reloj del reproductor está puesto a
+	# manual por `ArbolAnimacion`, así que un `play()` suelto no avanza ni un
+	# milisegundo. Es INERTE. Ver `ArbolAnimacion` (cabecera) y
+	# `tests/test_un_motor_animacion.gd`.
+	ArbolAnimacion.estado_poner(_anim, nombre == str(CLIP_ATAQUE),
+		nombre == str(CLIP_MUERTE))
 
 
 ## Decide el clip con los mismos hechos que usa el movimiento, sin estado
@@ -1334,11 +1351,29 @@ func _poner_clip(nombre: String) -> void:
 ##   esto el personaje se desliza 4,2 veces (ver `ArbolAnimacion.ritmo`).
 func _actualizar_animacion(delta: float) -> void:
 	_t_swing = maxf(_t_swing - delta, 0.0)
+	# El `die` es TERMINAL: `ArbolAnimacion` no lo suelta por mucho que se le
+	# pida locomoción. La única salida es ESTA línea, que corre cada frame: si
+	# el jugador volvió a estar vivo, se abre la puerta. Sin esto, revivir
+	# dejaría al héroe clavado en la pose de cadaver para siempre — que es el
+	# mismo bug del tajo pegado, del mismo modo y por la misma causa: un estado
+	# del que nadie sale.
+	if esta_vivo():
+		ArbolAnimacion.revivir(_anim)
 	if not esta_vivo():
 		_poner_clip(str(CLIP_MUERTE))
+		# El `die` también necesita reloj: los dos relojes están en manual, así
+		# que si aquí no se avanza, el cadaver se queda en el primer frame del
+		# clip para siempre. Es el mismo `avanzar` de siempre; lo que cambió es
+		# que ahora hay UN motor y el tajo no lo interrumpe a mitad.
+		_arbol_reloj(delta, 0.0)
 		return
 	if _t_swing > 0.0:
 		_poner_clip(str(CLIP_ATAQUE))
+		# El tajo se avanza con el MISMO reloj. Antes esto no hacía falta porque
+		# el `play()` del reproductor corría solo; con el reloj en manual, si no
+		# se avanza el attack se queda clavado en t=0 — que es EXACTAMENTE el
+		# síntoma que reportó el usuario, por un camino distinto.
+		_arbol_reloj(delta, 0.0)
 		return
 	var plano: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var v: float = plano.length()
@@ -1353,12 +1388,24 @@ func _actualizar_animacion(delta: float) -> void:
 		# Y el reloj del árbol va al ritmo de la velocidad real: sin esto el clip
 		# de caminar va a 1,4264 u/s con el cuerpo a 6,0 m/s y el pie patina
 		# 492 cm por ciclo (ver `ArbolAnimacion.ritmo`).
-		ArbolAnimacion.avanzar(_anim, delta, v, escala_modelo())
+		_arbol_reloj(delta, v)
 		return
 	if v > UMBRAL_CAMINAR:
 		_poner_clip(str(CLIP_CAMINAR))
 	else:
 		_poner_clip(str(CLIP_IDLE))
+	_arbol_reloj(delta, v)
+
+
+## El reloj del motor UNIQUE. Todo frame que el jugador "haga algo" pasa por
+## acá, porque con los dos relojes en manual el que no avanza, no se mueve.
+## Con una máquina de estados el ritmo de la marcha no se hornea para el tajo:
+## el tajo va a su ritmo natural (velocidad 0 = la cámara lenta no aplica) y
+## es la LOCOMOCIÓN la que acelera el clip para que el pie no patine.
+func _arbol_reloj(delta: float, velocidad_real: float) -> void:
+	if _anim == null or not is_instance_valid(_anim):
+		return
+	ArbolAnimacion.avanzar(_anim, delta, velocidad_real, escala_modelo())
 
 
 
