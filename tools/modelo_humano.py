@@ -1197,6 +1197,56 @@ def _cabe_en_torso(p: dict, z: float) -> tuple:
     return secs[-1][1], secs[-1][2]
 
 
+# ---------------------------------------------------------------------------
+# LAS PARTES. Ver `docs/CONTRATO_PARTES.md`.
+#
+# Cada parte es un modulo con su propio archivo y su propio dueno, para que
+# varias personas puedan trabajar a la vez sin pisarse. El cuerpo va entero
+# aca; las piezas se van aparte.
+#
+# POR QUE LA CARGA ES TOLERANTE y no un `import` directo: una parte a medio
+# escribir no puede impedir que se genere el resto del modelo. Si la parte no
+# esta oTodavia no esta escrita, se avisa y se sigue con la geometria de
+# siempre, y el modelo sale. Un `import` duro tiraria abajo las tres horas de
+# Blender de los otros.
+def _cargar_parte(nombre: str):
+    # POR RUTA DE ARCHIVO y no con `import`: Blender corre este script suelto,
+    # sin que la carpeta `tools/` sea un paquete en el path, y `__import__("tools.x")`
+    # falla con "No module named 'tools'". El archivo se carga con su ruta.
+    try:
+        import importlib.util
+        ruta = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            nombre + ".py")
+        spec = importlib.util.spec_from_file_location(nombre, ruta)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception as exc:  # noqa: BLE001
+        print("[MOD] parte %s no se pudo cargar: %s" % (nombre, exc))
+        return None
+    fn = getattr(mod, "aplicar", None)
+    if fn is None:
+        print("[MOD] parte %s sin funcion aplicar()" % nombre)
+        return None
+    return fn
+
+
+def _usar_parte(nombre: str, m, p, g, vtex, informe: dict) -> bool:
+    fn = _cargar_parte(nombre)
+    if fn is None:
+        return False
+    try:
+        salida = fn(m, p, g, vtex)
+    except NotImplementedError:
+        print("[MOD] parte %s: sin escribir todavia" % nombre)
+        return False
+    except Exception as exc:  # noqa: BLE001
+        print("[MOD] parte %s fallo, se sigue sin ella: %s" % (nombre, exc))
+        return False
+    informe[nombre] = salida
+    print("[MOD] parte %s aplicada" % nombre)
+    return True
+
+
 def construir_malla(p: dict, g: float) -> tuple:
     """Devuelve (Malla, informe). `p` = proporciones en metros, `g` = girth."""
     m = Malla()
@@ -1273,16 +1323,19 @@ def construir_malla(p: dict, g: float) -> tuple:
         (1.805, 0.086, 0.101, -0.014), (1.845, 0.072, 0.086, -0.014),
         (1.872, 0.048, 0.058, -0.012), (1.8889, 0.018, 0.022, -0.010),
     ]
-    prev = None
-    for z, rx, ry, dy in cabeza:
-        anillo = m.anillo(Vector((0.0, dy, z)), Vector((1.0, 0.0, 0.0)),
-                          Vector((0.0, 1.0, 0.0)), r(rx), r(ry), N_TORSO,
-                          {"Head": 1.0}, 2.0,
-                          _v_tex("cabeza", (z - 1.60) / (1.8889 - 1.60)))
-        if prev is not None:
-            m.loftear([prev, anillo])
-        prev = anillo
-    m.tapar(prev, Vector((0.0, -0.010, 1.8925)), {"Head": 1.0}, 0.30, +1)
+    # Si la parte CARA esta escrita, la cabeza la hace ella. Si no, sale el
+    # huevo de siempre, que es lo que se venia viendo.
+    if not _usar_parte("parte_cara", m, p, g, _v_tex, inf):
+        prev = None
+        for z, rx, ry, dy in cabeza:
+            anillo = m.anillo(Vector((0.0, dy, z)), Vector((1.0, 0.0, 0.0)),
+                              Vector((0.0, 1.0, 0.0)), r(rx), r(ry), N_TORSO,
+                              {"Head": 1.0}, 2.0,
+                              _v_tex("cabeza", (z - 1.60) / (1.8889 - 1.60)))
+            if prev is not None:
+                m.loftear([prev, anillo])
+            prev = anillo
+        m.tapar(prev, Vector((0.0, -0.010, 1.8925)), {"Head": 1.0}, 0.30, +1)
 
     # ---------------------------------------------------------------- brazos
     # Se llama a `brazo_pos` y no a una copia: la malla y el esqueleto tienen
