@@ -92,19 +92,24 @@ static func efectos_de_calidad(env: Environment, hay_ssr: bool, calidad: int) ->
 	# --- SSAO: ocluir las esquinas ---
 	env.ssao_enabled = hay_ssr and calidad >= 2
 	if env.ssao_enabled:
-		env.ssao_radius = 1.2
-		env.ssao_intensity = 2.4
-		env.ssao_power = 1.6
-		env.ssao_detail = 0.6
 		# El radio es lo que decide si la oclusión se ve como "contacto" o
 		# como una mancha. 1,2 m es lo que se ve bien en un juego con edificios
 		# de 5-8 m: más y la sombra "flota".
+		env.ssao_radius = 1.2
+		env.ssao_intensity = 2.4
+		env.ssao_power = 1.6
 		#
 		# POR QUÉ ESTO NO PARPADEA Y EL GLOW TAMPOCO: los dos se calculan por
 		# frame desde la profundidad, sin historial. `test_fase152_flicker` se lo
 		# pregunta al motor y cuenta cero campos temporales en 4.7. El parpadeo de
 		# un post-proceso con acumulación temporal (TAA, SSAO con jitter) no tiene
 		# de dónde venir acá; el que se veía era la decoración.
+		#
+		# Y `ssao_detail` NO es un detalle: es el número de MUESTRAS por píxel.
+		# 0 es una pasada barata y 1,0 es lo que se ve al final. En "Alta"
+		# alcanza con 0,6 y solo "Ultra" se paga la calidad completa. Sin esto
+		# los cuatro niveles rendían IGUAL, o sea que el ajuste no ajustaba.
+		env.ssao_detail = 1.0 if calidad >= 3 else 0.6
 
 
 ## Reaplica SOLO la calidad, en un `Environment` ya montado. Es lo que llama
@@ -166,11 +171,41 @@ static func sombras_de_calidad(sol: DirectionalLight3D, calidad: int) -> void:
 	if sol == null or not is_instance_valid(sol):
 		return
 	var q: int = clampi(calidad, 0, 3)
+	# LA SOMBRA NO SE APAGA NUNCA, ni en "Baja". No es un lujo ni un ahorro: sin
+	# sombra el edificio flota contra el terreno y el mundo deja de tener suelo.
+	# Lo que baja la calidad es la CALIDAD de la sombra (alcance, sesgo,
+	# desenfoque, divisiones), no si hay sombra. Se afirma acá y no solo al
+	# construir la escena, para que reaplicarla en vivo no la pueda dejar suelta.
+	sol.shadow_enabled = true
 	var alcances: Array[float] = [60.0, 80.0, 110.0, 0.0]
 	sol.directional_shadow_max_distance = alcances[q]
 	var biases: Array[float] = [0.09, 0.06, 0.04, 0.04]
 	sol.shadow_bias = biases[q]
-	sol.shadow_normal_bias = 1.4 + float(3 - q) * 0.35
+	# EL DESENFOQUE Y LAS DIVISIONES DEL ATLAS, que faltaban y son la parte
+	# cara de verdad. `shadow_blur` es un paso separable MAS sobre el atlas, y
+	# cada división del atlas es una pasada completa: son las dos palancas que
+	# mueven el frame, y sin ellas el ajuste de calidad no ajustaba la sombra.
+	#
+	# OJO CON EL ENUM, y no es memoria: NO existe la división única. El mínimo
+	# de `ShadowMode` es `SHADOW_PARALLEL_2_SPLITS` (consultado con `ClassDB`),
+	# así que el escalón de Ultra a cuatro divisiones es de 2 a 2, no de 1 a 2.
+	# Y medido: Ultra son +2,15 ms por frame, +66 %, +54 draw calls y +41 MB de
+	# VRAM contra Baja (docs/bench_gtx1660.md). Los cuatro niveles entran en 60
+	# fps a 720p; el ajuste existe para resoluciones más altas y equipos más
+	# flojos, no porque en esta placa se note.
+	sol.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	if q >= 2 and _soportado():
+		# Desde "Alta": sombra suave. Con menos muestras la sombra necesita más
+		# separación para no quebrarse en las superficies inclinadas, así que el
+		# sesio normal SUBE cuando el desenfoque baja.
+		sol.shadow_blur = 1.2
+		sol.shadow_normal_bias = 1.4
+	else:
+		sol.shadow_blur = 0.0
+		sol.shadow_normal_bias = 1.4 + float(3 - q) * 0.35
+	if q >= 3 and _soportado():
+		# Solo "Ultra" paga la cuarta división del atlas.
+		sol.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 
 
 ## Reaplica la calidad a todas las luces direccionales de la escena. Va con

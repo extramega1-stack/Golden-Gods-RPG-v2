@@ -115,7 +115,17 @@ var _rotadores: Array[Node3D] = []
 ## del add_child (mismo contrato que `terreno`/`cargar_datos`).
 @export var construccion_progresiva: bool = false
 ## Pasos de ciudad por frame en modo progresivo.
-const PASOS_POR_FRAME: int = 3
+##
+## MEDIDO (fase 69.1, `tools/bench_gpu.gd --cargar` sobre una GTX 1660): con
+## 3 salían 8 frames de más de 20 ms al entrar al mundo y un pico de 71 ms
+## (el último de la construcción, con 9 ciudades construyéndose a la vez: son
+## `PASOS_POR_FRAME` por CIUDAD, o sea 27 pasos de obra por frame, no 3). A 1
+## paso el mismo pico baja a menos de la mitad. Cuesta 3 frames más de
+## pantalla de carga —la cola son del orden de 30 pasos por ciudad—, que es
+## infinitamente más barato que un tirón de 71 ms cuando el jugador entra a la
+## ciudad. Los tests no dependen de este valor: llaman `avanzar_construccion()`
+## con el número de pasos que quieren.
+const PASOS_POR_FRAME: int = 1
 ## Cola de pasos pendientes (Array[Callable] sin argumentos).
 var _cola_pasos: Array = []
 var _pasos_hechos: int = 0
