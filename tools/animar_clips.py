@@ -387,7 +387,7 @@ def brazo_abajo(flexion: float = 0.0) -> dict:
     # frente, y de ahi las "manos levantadas abiertas" del sintoma). Aqui la
     # muñeca endereza la mitad de la flexion del codo, que es lo que hace una
     # muñeca de verdad cuando el brazo cuelga.
-    d3 = girado(d2, eje, MUÑECA_REL * BRAZO_CODO)
+    d3 = girado(d2, eje, MUNECA_REL * BRAZO_CODO)
     return {"hombro": d1, "codo": d2, "muneca": d3}
 
 
