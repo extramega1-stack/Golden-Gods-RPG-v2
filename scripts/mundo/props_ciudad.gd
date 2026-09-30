@@ -126,7 +126,25 @@ func construir(centro: Vector2, radio_muralla: float, plaza_radio: float,
 				if p < 0 or not _slot_de_prop.has(p):
 					continue
 				_colocar(int(_slot_de_prop[p]), p, x, z, wx, wz, semilla)
+	_encender_todas()
 	return puestos
+
+
+## Las capas arrancan INVISIBLES (`PisoDecoracion._init`), porque una capa a
+## medio escribir se ve rota. La vegetación las enciende cuando su anillo queda
+## completo; los props de calle se construyen de una sola pasada, así que el
+## punto de encenderlas es AL FINAL de `construir` y no antes.
+##
+## POR QUÉ ESTO FALTABA Y NADIE LO VIÓ: los props se armaban, se contaban, el
+## test leía `plano()` y `piezas_de_prop()` y daba verde, y las nueve ciudades
+## tenían las farolas y los bancos sentados a oscuras en la calle. Un sistema
+## entero, con sus datos y sus pruebas, invisible en el juego. Es la clase de
+## bug que ningún test de sistema pilla: mide que la geometría esté donde debe,
+## no que alguien la mire.
+func _encender_todas() -> void:
+	for c in _capas:
+		for p in (c as Array):
+			(p as PisoDecoracion).encender()
 
 
 # ---------------------------------------------------------------------------

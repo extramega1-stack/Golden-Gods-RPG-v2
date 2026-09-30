@@ -35,7 +35,6 @@ static func aplicar(env: Environment) -> bool:
 	if env == null:
 		push_warning("[PostProceso] Environment nulo")
 		return false
-	var calidad: int = Opciones.entero("calidad", 2)
 	var hay_ssr: bool = _soportado()
 	# El ambient del cielo es mejor que un color plano: el cielo procedural ya
 	# se genera, y usarlo como ambiente hace que la luz "entonada" tinga las
@@ -44,16 +43,40 @@ static func aplicar(env: Environment) -> bool:
 		else Environment.AMBIENT_SOURCE_COLOR
 
 	# --- tonemapping: el fix del clipping (bug de imagen, no feature) ---
+	_tonemap_y_ajustes(env)
+
+	# --- glow y SSAO: lo único que depende de la calidad ---
+	efectos_de_calidad(env, hay_ssr, Opciones.entero("calidad", 2))
+
+	# --- niebla: la de la fase 16 es 2D y se nota el corte ---
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_light_color = Color(0.55, 0.58, 0.62)
+	env.fog_density = 0.0016
+	env.fog_sky_affect = 0.0  # el cielo se ve, la niebla afecta al terreno
+
+	return hay_ssr
+
+
+## Tonemap y ajustes. NO dependen de la calidad: son el fix del clipping, y
+## apagarlos por rendimiento devolvería el bug de imagen que arreglaron. Se
+## separan del bloque de efectos para que la calidad pueda mover SOLO lo que
+## es efecto.
+static func _tonemap_y_ajustes(env: Environment) -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.0
 	env.tonemap_white = 6.0
-
-	# --- ajustes: el toque final ---
 	env.adjustment_enabled = true
 	env.adjustment_brightness = 1.02
 	env.adjustment_contrast = 1.06
 	env.adjustment_saturation = 1.14  # los materiales planos son grises
 
+
+## Glow y SSAO, que son los dos únicos bloques que la calidad enciende y apaga.
+## Sale en una función propia para que la calidad se pueda cambiar EN VIVO sin
+## volver a armar el `Environment` entero (y sin pisarle la niebla al `Clima`,
+## que es de otro sistema y no se mezcla acá).
+static func efectos_de_calidad(env: Environment, hay_ssr: bool, calidad: int) -> void:
 	# --- glow: solo si el renderer lo soporta ---
 	env.glow_enabled = hay_ssr and calidad >= 1
 	if env.glow_enabled:
@@ -76,14 +99,24 @@ static func aplicar(env: Environment) -> bool:
 		# El radio es lo que decide si la oclusión se ve como "contacto" o
 		# como una mancha. 1,2 m es lo que se ve bien en un juego con edificios
 		# de 5-8 m: más y la sombra "flota".
+		#
+		# POR QUÉ ESTO NO PARPADEA Y EL GLOW TAMPOCO: los dos se calculan por
+		# frame desde la profundidad, sin historial. `test_fase152_flicker` se lo
+		# pregunta al motor y cuenta cero campos temporales en 4.7. El parpadeo de
+		# un post-proceso con acumulación temporal (TAA, SSAO con jitter) no tiene
+		# de dónde venir acá; el que se veía era la decoración.
 
-	# --- niebla: la de la fase 16 es 2D y se nota el corte ---
-	env.fog_enabled = true
-	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(0.55, 0.58, 0.62)
-	env.fog_density = 0.0016
-	env.fog_sky_affect = 0.0  # el cielo se ve, la niebla afecta al terreno
 
+## Reaplica SOLO la calidad, en un `Environment` ya montado. Es lo que llama
+## `Opciones.aplicar_video()` cuando el jugador mueve el deslizador: el
+## tonemap no se toca (no es efecto, es corrección) y la NIEBLA NO SE TOCA
+## (es de `Clima`, y pisarla desde acá le devolvía al mundo una niebla de
+## profundidad fija cada vez que se abría el panel).
+static func reaplicar_calidad(env: Environment) -> bool:
+	if env == null:
+		return false
+	var hay_ssr: bool = _soportado()
+	efectos_de_calidad(env, hay_ssr, Opciones.entero("calidad", 2))
 	return hay_ssr
 
 
@@ -111,3 +144,39 @@ static func afinar_sol(sol: DirectionalLight3D) -> void:
 	sol.shadow_normal_bias = 1.4
 	sol.shadow_blur = 1.2
 	sol.light_angular_distance = 0.6  # sombras algo difusas, como el scattering
+	sombras_de_calidad(sol, Opciones.entero("calidad", 2))
+
+
+## LA PARTE DE LAS SOMBRAS QUE SÍ DEPENDE DE LA CALIDAD, y es la única que
+## toca el movimiento de verdad. El parpadeo del acne no es temporal (el bias
+## es el mismo frame tras frame): es RESOLUCIÓN. El mapa de sombra tiene un
+## tamaño fijo en texels y lo reparte entre el alcance de la luz y la
+## resolución de pantalla, así que a 36.864 u de lado cada texel cubre un
+## montón de piso llano, y una ladera de tierra la resuelve distinta un frame
+## que otro.
+##
+## `directional_shadow_max_distance` es el alcance: bajarlo a 90 m concentra el
+## mapa donde está el jugador y multiplica la resolución efectiva por cuatro.
+## El resto del mundo ya está bajo niebla a esa distancia, así que no se pierde
+## nada de lo que se ve. Y el `shadow_bias` sube un poco con la calidad baja,
+## que es el trueque de siempre: menos resolución se compensa con más
+## separación, y el artefacto se vuelve una sombra separada en vez de una
+## sombra que late.
+static func sombras_de_calidad(sol: DirectionalLight3D, calidad: int) -> void:
+	if sol == null or not is_instance_valid(sol):
+		return
+	var q: int = clampi(calidad, 0, 3)
+	var alcances: Array[float] = [60.0, 80.0, 110.0, 0.0]
+	sol.directional_shadow_max_distance = alcances[q]
+	var biases: Array[float] = [0.09, 0.06, 0.04, 0.04]
+	sol.shadow_bias = biases[q]
+	sol.shadow_normal_bias = 1.4 + float(3 - q) * 0.35
+
+
+## Reaplica la calidad a todas las luces direccionales de la escena. Va con
+## `aplicar_video()` por la misma razón que `reaplicar_calidad`.
+static func reaplicar_calidad_a_luces(raiz: Node) -> void:
+	if raiz == null:
+		return
+	for n in raiz.find_children("*", "DirectionalLight3D", true, false):
+		sombras_de_calidad(n as DirectionalLight3D, Opciones.entero("calidad", 2))
