@@ -345,20 +345,36 @@ func _t_oferta() -> void:
 	_check(q.oferta_para_npc("").is_empty(),
 		"oferta: npc vacío -> {}")
 	# Con la misión activa ya no se ofrece (ni disponible ni lista).
+	# OJO, por qué esto NO afirma que la oferta del NPC quede VACIA. Antes si, y
+	# el assertion era correcto; se rompio cuando el contenido le agrego una
+	# diaria al mismo NPC (data/diarias.json), y el fallo no era del juego sino
+	# del test: la oferta sigue teniendo la diaria, que es lo correcto.
+	# La intencion real es que `goblins_fuera` SALGA de la oferta en cada paso, y
+	# eso es lo que se comprueba. Un assertion que depende de cuantos quest tiene
+	# un NPC se rompe cada vez que se agrega contenido, que es lo que mas se hace.
 	q.aceptar("goblins_fuera")
-	_check(q.oferta_para_npc("ilya").is_empty(),
-		"oferta: con misión activa no hay oferta")
+	_check(not _ofrece(q, "ilya", "goblins_fuera"),
+		"oferta: al aceptar, goblins_fuera sale de la oferta")
 	# Al completarla pasa a modo "entregar".
 	for i in 5:
 		q.registrar_muerte("goblin")
+	_check(_ofrece(q, "ilya", "goblins_fuera"),
+		"oferta: al completarla, vuelve a ofrecerse")
 	var of2: Dictionary = q.oferta_para_npc("ilya")
 	_check(str(of2.get("modo", "")) == "entregar"
 		and str(of2.get("quest_id", "")) == "goblins_fuera",
 		"oferta: lista -> modo entregar")
 	# Entregada: desaparece para siempre.
 	q.entregar("goblins_fuera", _player(Vector3.ZERO))
-	_check(q.oferta_para_npc("ilya").is_empty(),
-		"oferta: entregada -> {}")
+	_check(not _ofrece(q, "ilya", "goblins_fuera"),
+		"oferta: entregada, goblins_fuera ya no se ofrece")
+
+
+## ¿Este NPC tiene ESTA misión en su oferta? Un helper, porque el NPC puede
+## tener varias a la vez (una diaria y una de acto) y el test tiene que preguntar
+## por la que le importa, no por el total.
+func _ofrece(q: QuestLog, npc_id: String, quest_id: String) -> bool:
+	return str(q.oferta_para_npc(npc_id).get("quest_id", "")) == quest_id
 
 
 ## --- señal cambiada ---

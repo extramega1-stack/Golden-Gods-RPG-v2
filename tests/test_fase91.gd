@@ -157,8 +157,15 @@ func _t_marcador_demo() -> void:
 			"el ambiental %s tiene misión: con '!'" % k)
 	var log: QuestLog = demo.get("_misiones")
 	_check(log.aceptar("goblins_fuera") == "ok", "aceptar goblins_fuera → ok", "")
-	_check(not (por_id["ilya"] as NPC).marcador_visible(),
-		"al aceptar, el '!' de Ilya desaparece (ya no está disponible)", "")
+	# OJO: NO se afirma que el marcador de Ilya desaparezca. Antes si, y era
+	# correcto; se rompio cuando el contenido le agrego una DIARIA al mismo NPC
+	# (data/diarias.json). Ilya sigue con la diaria disponible, asi que el '!' esta
+	# bien. Lo que hay que comprobar es que `goblins_fuera` haya salido de lo
+	# disponible, que es lo que el assert queria decir.
+	_check(log.estado("goblins_fuera") == "activa",
+		"al aceptar, goblins_fuera pasa a activa", log.estado("goblins_fuera"))
+	_check(_hay_disponible_de(log, "ilya", "goblins_fuera") == false,
+		"al aceptar, goblins_fuera ya no esta disponible para Ilya", "")
 	_check((por_id["bram"] as NPC).marcador_visible(),
 		"el '!' de Bram sigue (su misión sigue disponible)", "")
 	_check((por_id["sira"] as NPC).marcador_visible(),
@@ -304,3 +311,15 @@ func _t_respawn_demo_real() -> void:
 	_check((demo.get("_lista_enemigos") as Array).size() == 15,
 		"la lista del guardado vuelve a tener 15",
 		"hay %d" % (demo.get("_lista_enemigos") as Array).size())
+
+
+## ¿Este NPC tiene ESTA mision en estado "disponible"? Un helper porque un NPC
+## puede tener varias a la vez (una diaria y una de acto), y preguntar por el
+## marcador entero no dice nada de cual de las dos es.
+func _hay_disponible_de(log: QuestLog, npc_id: String, quest_id: String) -> bool:
+	for qid in QuestDB.ids():
+		var q: Dictionary = QuestDB.obtener(qid)
+		if str(q.get("npc_origen", "")) != npc_id or qid != quest_id:
+			continue
+		return log.estado(qid) == "disponible"
+	return false

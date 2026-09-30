@@ -218,9 +218,19 @@ func _t_signo_interrogacion() -> void:
 	_check(ilya.marcador_tipo() == NPC.TipoMarcador.DISPONIBLE,
 		"al arrancar: '!' (misión disponible)", "")
 	_check(log.aceptar("goblins_fuera") == "ok", "aceptar goblins_fuera → ok", "")
-	_check(ilya.marcador_tipo() == NPC.TipoMarcador.NINGUNO,
-		"misión activa: sin marcador (ni '!' ni '?')", "")
-	_check(not ilya.marcador_visible(), "misión activa: marcador oculto", "")
+	# Tampoco se afirma NINGUNO: con la diaria nueva de Ilya, al aceptar
+	# goblins_fuera el marcador vuelve a ser "!". El assert viejo pedia que
+	# desapareciera y se rompio cuando el contenido agrego la diaria.
+	_check(log.estado("goblins_fuera") == "activa",
+		"al aceptar, goblins_fuera pasa a activa", log.estado("goblins_fuera"))
+	_check(ilya.marcador_tipo() != NPC.TipoMarcador.ENTREGAR,
+		"al aceptar no aparece la '?' todavia (no hay entrega pendiente)",
+		"tipo=%d" % ilya.marcador_tipo())
+	# Con la diaria disponible el marcador esta CORRECTAMENTE visible: lo que no
+	# puede aparecer todavia es la "?" de entrega pendiente.
+	_check(ilya.marcador_tipo() != NPC.TipoMarcador.ENTREGAR,
+		"misión activa: no hay entrega pendiente todavia",
+		"tipo=%d" % ilya.marcador_tipo())
 	for i in range(5):
 		log.registrar_muerte("goblin")
 	_check(log.estado("goblins_fuera") == "lista", "5 muertes → lista", "")
@@ -232,9 +242,16 @@ func _t_signo_interrogacion() -> void:
 	var jugador: Player = demo.get_node("Player") as Player
 	var res: Dictionary = log.entregar("goblins_fuera", jugador)
 	_check(str(res.get("resultado", "")) == "ok", "entregar → ok", "")
-	_check(ilya.marcador_tipo() == NPC.TipoMarcador.NINGUNO,
-		"al entregar: el '?' desaparece", "")
-	_check(not ilya.marcador_visible(), "al entregar: marcador oculto", "")
+	# Tampoco se afirma que el marcador quede en NINGUNO: Ilya tiene una diaria
+	# disponible (data/diarias.json), asi que despues de entregar la '?' tiene que
+	# VOLVER a ser '!'. El assert viejo pedia NINGUNO y se rompio cuando el
+	# contenido le agrego la diaria: el juego estaba bien y el test no.
+	# Lo que se comprueba es que la '?' ya no esta, o sea que la entrega salio de
+	# "lista" para siempre.
+	_check(log.estado("goblins_fuera") == "entregada",
+		"al entregar, goblins_fuera queda entregada", log.estado("goblins_fuera"))
+	_check(ilya.marcador_tipo() != NPC.TipoMarcador.ENTREGAR,
+		"al entregar: la '?' ya no esta", "tipo=%d" % ilya.marcador_tipo())
 
 
 ## (e) Prioridad: la "?" de entrega manda sobre el "!" de disponible.

@@ -223,17 +223,17 @@ func progreso_texto(quest_id: String) -> String:
 func oferta_para_npc(npc_id: String) -> Dictionary:
 	if npc_id == "":
 		return {}
-	for qid in QuestDB.ids():
-		if estado(qid) != "disponible":
-			continue
-		var datos: Dictionary = QuestDB.obtener(qid)
-		if str(datos.get("npc_origen", "")) == npc_id:
-			return {
-				"modo": "disponible",
-				"quest_id": qid,
-				"nombre": str(datos.get("nombre", qid)),
-				"descripcion": str(datos.get("descripcion", "")),
-			}
+	# "lista" (lista para entregar) se busca PRIMERO, y esto no es un detalle de
+	# orden. Antes se buscaba al reves, y al agregar las DIARIAS un NPC con una
+	# diaria disponible tapaba para siempre a su mision de acto ya terminada: el
+	# jugador no podia NUNCA entregarla, porque el dialogo ofrecia siempre la
+	# diaria. Es el mismo esquema de "dato nuevo que llega y nadie revisa el
+	# camino viejo" que se repetiO toda la sesion.
+	#
+	# Ademas es la MISMA regla que ya usa el marcador del NPC: la "?" de entrega
+	# pendiente manda sobre el "!" de mision disponible. Antes el marcador y el
+	# dialogo priorizaban al reves, y se veia un "?" en el mundo con un "!" al
+	# hablar con el NPC. Ahora los dos priorizan igual.
 	for qid in QuestDB.ids():
 		if estado(qid) != "lista":
 			continue
@@ -244,6 +244,18 @@ func oferta_para_npc(npc_id: String) -> Dictionary:
 				"quest_id": qid,
 				"nombre": str(datos.get("nombre", qid)),
 				"descripcion": str(datos.get("descripcion", "")),
+			}
+	# Ahora si, las nuevas.
+	for qid in QuestDB.ids():
+		if estado(qid) != "disponible":
+			continue
+		var datos2: Dictionary = QuestDB.obtener(qid)
+		if str(datos2.get("npc_origen", "")) == npc_id:
+			return {
+				"modo": "disponible",
+				"quest_id": qid,
+				"nombre": str(datos2.get("nombre", qid)),
+				"descripcion": str(datos2.get("descripcion", "")),
 			}
 	return {}
 
