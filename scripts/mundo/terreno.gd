@@ -213,9 +213,48 @@ func dentro(x: float, z: float) -> bool:
 
 
 func _hacer_material() -> StandardMaterial3D:
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	# EL TERRENO NO TENIA TEXTURA. Este material era un StandardMaterial3D
+	# desnudo: albedo blanco, `roughness = 0.95` y nada mas. Todo el aspecto
+	# venia de los colores por vertice del bin.
+	#
+	# MEDIDO, y por eso importa: los 96 chunks (6x6, con sus dos LODs) cubren
+	# 37.748.736 u2 cada uno, y TODOS tenian `albedo_color` blanco, sin
+	# `albedo_texture` y con `normal_enabled = false`. O sea que la mayor
+	# superficie del juego era un blanco liso. Y una superficie lisa no
+	# responde a la luz: no hay nada en que la luz se agarre, y por eso poner
+	# niebla, sol bajo y contraste hacia adelante no cambiaba NADA. No era que
+	# la iluminacion estuviera mal: era que no habia superficie que iluminar.
+	#
+	# Y la conclusion anterior queda al reves: la iluminacion oscura NO era el
+	# problema principal, y por eso el orden correcto es ESTE primero. Con esta
+	# textura, la misma iluminacion que antes salia plana empieza a tener fondo.
+	#
+	# `tierra` sale de `data/materiales.json`, que ya tiene patron, escala,
+	# octavas de ruido, y hornea albedo, normal y ORM. La infraestructura
+	# existia y era buena: el terreno no la estaba usando.
+	var mat: StandardMaterial3D = BibliotecaMateriales.material(
+		"tierra", "tierra", 0, false, 1.06, 1.0)
+	# Los chunks del terreno no tienen UV utilizables (cada uno repetiria la
+	# misma, y en los bordes se veria el salto), asi que la proyeccion va
+	# TRIPLANAR: se elige la cara del mundo segun la normal del vertice. Con
+	# triplanar no hay costura entre chunks ni entre LODs, que es exactamente
+	# el problema que la proyeccion por UV no puede resolver aqui.
+	mat.uv1_triplanar = true
+	mat.uv1_triplanar_sharpness = 1.4
+	# La escala es en unidades de mundo. A 3,0 una textura de 1024 cubre 3 u:
+	# la tierra a esa escala se ve de cerca, que es donde importa.
+	mat.uv1_scale = Vector3(0.34, 0.34, 0.34)
+	# El bin trae el color por vertice (bioma, humedad, altura) y ESO se
+	# conserva: la textura da el detalle fino y el color del vertice da la
+	# variedad de bioma. Los dos se multiplican.
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 0.95
+	# El detalle de la textura tiene que notarse de lejos tambien, asi que el
+	# normal va un poco mas fuerte que en una pared: un suelo se mira en
+	# escorzo, con la luz casi paralela a la superficie, que es la peor
+	# angulacion para un normal map.
+	mat.normal_enabled = true
+	mat.normal_scale = 1.35
 	# Fase 15.1: el winding era el bug del clic. Con (a,c,b) las caras
 	# frontales apuntaban hacia ABAJO (-Y) y los raycasts descendentes del
 	# clic izquierdo del Player atravesaban el terreno (ConcavePolygonShape3D
