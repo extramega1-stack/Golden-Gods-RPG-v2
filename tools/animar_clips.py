@@ -83,12 +83,24 @@ FASE_PISADA = 0.62
 # Brazo en reposo, en radianes. 0,578 baja el brazo del pack de 40 grados a 7
 # (es el `BASE_BRAZO` de `tools/rig.py`, medido en el render).
 BRAZO_BAJAR = 0.578
-# Flexion del codo en reposo: 12,6 grados, natural, no un palo.
-BRAZO_CODO = 0.22
+# Flexion del codo en reposo, en radianes.
+#
+# OJO, esto se subio de 0,22 a 0,46 (12,6 -> 26,4 grados) porque el usuario
+# reporto que "las manos siguen raras, extendidas". Y tenia razon: 12,6 grados de
+# flexion de codo es un PALO, un brazo estirado. Un brazo humano relajado cuelga
+# con 20 a 30 grados de codo, y por debajo de 15 se ve rigido. El test de la 71
+# pone el techo en 30 grados (por encima es "mano de zombi"), asi que 26,4 esta
+# justo por debajo y es lo mas natural que deja sitio al margen.
+BRAZO_CODO = 0.46
 # Cuanta flexion del codo endereza la muneca al colgar el brazo, como fraccion
-# de la flexion del codo. 0,9 deja los dedos mirando al suelo, que es como cuelga
-# una mano; con 0 se quedan doblados hacia delante, que es lo que hacia la
-MUNECA_REL = 0.90
+# de la flexion del codo.
+#
+# OJO, esto BAJO de 0,90 a 0,45 por el mismo motivo que el codo: el usuario
+# reporto las manos "extendidas". A 0,90 la muneca se compensaba casi entera y
+# la mano quedaba como un dedo POINTING ADELANTE, rigidissima. A 0,45 la mano
+# cuelga relajada, que es como cuelga de verdad, y el codo flexionado hace el
+# resto del trabajo de leer "brazo relajado" y no "brazo tieso".
+MUNECA_REL = 0.45
 # Swing del brazo en la marcha, en radianes.
 BRAZO_SWING = 0.30
 # Contracuerpo: giro de cadera y de pecho al caminar, respiracion en reposo.
