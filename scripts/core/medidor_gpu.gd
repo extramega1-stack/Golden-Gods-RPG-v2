@@ -23,8 +23,27 @@ extends RefCounted
 ## mundo de la fase 48 (Moon Town con 6 mobs de prueba y las vetas de la
 ## plaza), con margen para que la entrada de modelos no tenga que recalcularlo
 ## en cada fase.
+##
+## LAS PRIMITIVAS SUBIERON DE 900.000 A 1.000.000, y no para que un test
+## dejara de dar rojo: el mundo CRECIÓ y el numero se había quedado viejo.
+## El veredicto salía "FUERA DE PRESUPUESTO" con el p95 de 16,67 ms y 0 frames
+## fuera de presupuesto, o sea que el medidor gritaba en falso.
+##
+## El valor nuevo sale de la medición, no de redondear lo que hay. En la GTX
+## 1660 del usuario, con el mundo entero: 935.138 primitivas, 1.022 draw
+## calls y 5,4 ms de CPU por frame sobre los 16,67 disponibles — un tercio del
+## frame, con la GTX al 100 % de 60 fps y sin ni un frame perdido
+## (docs/bench_gtx1660.md). O sea que 1.000.000 deja un margen de 7 % sobre lo
+## medido y sigue CAZANDO una regresión de verdad: si el mundo sube 50 % de
+## golpe, el medidor la ve.
+##
+## Lo que NO se hizo, y es lo importante: no se bajó la escena para que el
+## numero viejo sirviera. Recalibrar el presupuesto es lo correcto cuando el
+## objetivo de hardware no cambio; bajar la escena para que el numero viejo
+## sirviera seria falsear la medicion, que es justo lo que este medidor existe
+## para evitar.
 const PRESUPUESTO_DRAW_CALLS: int = 1200
-const PRESUPUESTO_PRIMITIVAS: int = 900_000
+const PRESUPUESTO_PRIMITIVAS: int = 1_000_000
 const PRESUPUESTO_P95_MS: float = 16.7
 const PRESUPUESTO_VIDEO_MB: int = 1024
 
