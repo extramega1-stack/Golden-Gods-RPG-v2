@@ -196,6 +196,11 @@ func _aplicar_modelo(arquetipo: Dictionary) -> bool:
 	cuerpo.visible = false
 	_anim = _buscar_anim(inst)
 	_preparar_clips()
+	# El motor se monta AQUÍ, no en el primer `_actualizar_mezcla`: es lo que
+	# pone el reloj del reproductor en manual y vuelve inerte cualquier `play()`
+	# de fuera. Montándolo tarde habría una ventana en la que el reproductor
+	# todavía avanza solo.
+	ArbolAnimacion.montar(_anim, "idle", "walk")
 	_reproducir_estado(_estado)
 	return true
 
@@ -286,10 +291,17 @@ func _buscar_anim(n: Node) -> AnimationPlayer:
 func _actualizar_mezcla() -> void:
 	if _anim == null or not is_instance_valid(_anim):
 		return
+	var v: float = Vector3(velocity.x, 0.0, velocity.z).length()
 	if _estado == Estado.MUERTO or _estado == Estado.ATACAR \
 			or _estado == Estado.PREPARANDO:
+		# El tajo y la muerte también necesitan reloj: con los dos relojes en
+		# manual, el estado al que entramos se queda clavado en t=0 si nadie lo
+		# advance. Antes esto no pasaba porque el `play()` corría solo; ahora el
+		# reloj es del motor y el motor es UNO, así que TODOS los estados pasan
+		# por acá.
+		ArbolAnimacion.avanzar(_anim, get_physics_process_delta_time(), 0.0,
+			escala_modelo())
 		return
-	var v: float = Vector3(velocity.x, 0.0, velocity.z).length()
 	# El reloj del árbol va al ritmo de la velocidad real, para que el pie no
 	# patine (los mobs tienen la misma zancada que el jugador).
 	ArbolAnimacion.avanzar(_anim, get_physics_process_delta_time(), v, escala_modelo())
@@ -322,13 +334,19 @@ func _reproducir_estado(v: Estado) -> void:
 	if _anim == null or not is_instance_valid(_anim):
 		return
 	if v == Estado.QUIETO or v == Estado.PERSEGUIR:
-		# La mezcla se actualiza sola en `_process`, con la velocidad real.
+		# La locomoción la mezcla el árbol por velocidad, en
+		# `_actualizar_mezcla`. Acá no hay que hacer nada.
 		return
-	var clip: String = str(CLIP_POR_ESTADO.get(v, ""))
-	# Sin parametros: el 3er argumento de play() es la VELOCIDAD, y con -1.0
-	# reproducia del reves. El bucle va en el recurso (ver _preparar_clips).
-	ArbolAnimacion.soltar(_anim)
-	_anim.play(clip)
+	# El tajo y la muerte son ESTADOS de la máquina del AnimationTree, no un
+	# `play()` suelto: el reproductor no debe escribir el esqueleto nunca,
+	# porque el árbol también lo escribe (ver `ArbolAnimacion`).
+	#
+	# Y no es "por buena costumbre": con el reloj del reproductor en manual un
+	# `play()` suelto no avanza NI UN milisegundo, o sea que el tajo se
+	# congelaba en t=0. El bug de "se queda bogueado haciendo la animación de
+	# atacar" era por acá, y también por el lado del jugador.
+	ArbolAnimacion.estado_poner(_anim,
+		v == Estado.ATACAR or v == Estado.PREPARANDO, v == Estado.MUERTO)
 
 
 ## Aplica un arquetipo de datos (data/enemies.json): stats, IA, loot y color.
@@ -526,6 +544,12 @@ func mostrar_cuerpo() -> void:
 func _physics_process(delta: float) -> void:
 	if not esta_vivo():
 		estado = Estado.MUERTO
+		# La MUERTE también es un estado que necesita reloj. Con los dos
+		# relojes en manual, si un cadaver no avanza a nadie, se queda clavado
+		# en el primer frame del `die` para siempre — que es el mismo bug del
+		# tajo, del mismo modo y por la misma causa. Por eso la muerte NO es un
+		# `return` temprano: el motor de animación sigue vivo.
+		_actualizar_mezcla()
 		return
 	_cd = maxf(_cd - delta, 0.0)
 	# Fase 12.1: el cerebro no piensa cada frame. Cerca del objetivo piensa
@@ -811,6 +835,11 @@ func reiniciar(arquetipo: Dictionary) -> void:
 	# Fase 33: cada reaparición re-sortea élite (con el RNG propio).
 	sortear_elite(arquetipo)
 	_muerto = false
+	# El `die` es terminal en la máquina de estados (ver `ArbolAnimacion`): sin
+	# esta puerta, un bicho del pool que reaparece se queda con la pose de
+	# cadaver. Va ANTES de tocar `estado`, porque `estado` solo dispara la
+	# reproducción si cambia de valor.
+	ArbolAnimacion.revivir(_anim)
 	estado = Estado.QUIETO
 	_cd = 0.0
 	_frame_ia = 0

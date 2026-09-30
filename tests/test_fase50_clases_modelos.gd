@@ -53,6 +53,7 @@ func _test_frente() -> void:
 const RUTA_CLASES: String = "res://data/clases.json"
 const RUTA_MANIFIESTO: String = "res://data/modelos.json"
 const PL: GDScript = preload("res://scripts/player/player.gd")
+const ArbolAnimacion: GDScript = preload("res://scripts/core/arbol_animacion.gd")
 const ANCLAJES: GDScript = preload("res://scripts/player/anclajes_db.gd")
 const CLIPS: Array = ["idle", "walk", "attack", "die"]
 ## La capsula del jugador (scenes/demo/fase14_demo.tscn) mide 1,7 m.
@@ -166,10 +167,21 @@ func _test_clips() -> void:
 		_chk(false, "c: hay reproductor que mirar")
 		return
 	# quieto: sin velocidad
+	#
+	# OJO, Y ESTA ES LA REGLA DE ORO DE ESTE ARCHIVO: con el motor UNICO
+	# (`ArbolAnimacion`) el clip ya NO lo elige el `AnimationPlayer`, lo conduce
+	# el árbol. `current_animation` está vacío para los CUATRO estados por igual
+	# y `is_playing()` da falso. No es que el clip no suene: es que quien suena
+	# es el árbol. Por eso lo que se compara es el ESTADO de la máquina. Antes
+	# este test afirmaba `current_animation == "idle"` y "== attack" y pasaba,
+	# porque comparaba el nombre que el propio código acababa de escribir con
+	# `play()`: una tautología, no una medición.
 	p.velocity = Vector3.ZERO
-	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "idle", "c: quieto reproduce 'idle'",
-		"reproduciendo '%s'" % str(ap.current_animation))
+	for i in 30:
+		p.call("_actualizar_animacion", 0.016)
+	_chk(ArbolAnimacion.estado_actual(ap) == "locomocion",
+		"c: quieto esta en locomocion (la mezcla es idle)",
+		"estado=%s" % ArbolAnimacion.estado_actual(ap))
 	# caminando: velocidad horizontal
 	p.velocity = Vector3(4.0, 0.0, 0.0)
 	p.call("_actualizar_animacion", 0.016)
@@ -239,19 +251,26 @@ func _test_clips() -> void:
 	# tajo: el timer que deja el ataque
 	p.velocity = Vector3.ZERO
 	p.set("_t_swing", 0.3)
-	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "attack", "c: el tajo reproduce 'attack'",
-		"reproduciendo '%s'" % str(ap.current_animation))
+	var entro_tajo: bool = false
+	for i in 30:
+		p.call("_actualizar_animacion", 0.016)
+		if ArbolAnimacion.estado_actual(ap) == "attack":
+			entro_tajo = true
+			break
+	_chk(entro_tajo, "c: el tajo entra en el estado 'attack'",
+		"estado=%s" % ArbolAnimacion.estado_actual(ap))
 	# muerto
 	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "attack", "c: el tajo aguanta su tiempo")
+	_chk(ArbolAnimacion.estado_actual(ap) == "attack", "c: el tajo aguanta su tiempo",
+		"estado=%s" % ArbolAnimacion.estado_actual(ap))
 	# `esta_vivo()` mira el flag `_muerto` de Entity, no la vida: se mata por
 	# la via publica.
 	p.die()
 	_chk(not p.esta_vivo(), "c: el jugador esta muerto de verdad")
-	p.call("_actualizar_animacion", 0.016)
-	_chk(str(ap.current_animation) == "die", "c: muerto reproduce 'die'",
-		"reproduciendo '%s'" % str(ap.current_animation))
+	for i in 30:
+		p.call("_actualizar_animacion", 0.016)
+	_chk(ArbolAnimacion.estado_actual(ap) == "die", "c: muerto entra en el estado 'die'",
+		"estado=%s" % ArbolAnimacion.estado_actual(ap))
 	# el bucle: idle/walk/attack ciclan, die no
 	for c in ["idle", "walk", "attack"]:
 		_chk(ap.get_animation(str(c)).loop_mode == Animation.LOOP_LINEAR, "c: '%s' cicla" % str(c))

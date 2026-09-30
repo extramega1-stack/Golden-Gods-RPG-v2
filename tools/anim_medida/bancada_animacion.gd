@@ -246,7 +246,14 @@ func _con_jugador_real(velocidad: float) -> Dictionary:
 		if bool(ritmos.get("ok", false)):
 			barrido["tres_ritmos"] = ritmos["muestras"]
 	p.queue_free()
-	ARBOL.limpiar_cache()
+	# `ARBOL.limpiar_cache()` ya NO EXISTE: el `static var _trees` que
+	# justificaba se quitó de `ArbolAnimacion` porque era una FUGA (el pool de
+	# enemigos liberaba los nodos y el diccionario se quedaba apuntándolos).
+	# La llamada se quedó colgando, y `limpiar_cache` no existía: la excepción
+	# se comía el `return` de abajo, así que la corrida terminaba sin
+	# `clips`/`blend` y el informe salía con "no se pudo levantar el jugador
+	# real" y los `blend_position` en blanco. MEDIDO: con la línea, los tres
+	# `blend_position` salían "—"; sin ella, 0.189 / 0.568 / 1.000.
 	return {"clips": clips, "blend": barrido}
 
 

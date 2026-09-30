@@ -371,10 +371,25 @@ func _test_enemigo_tras_crecer(e: Node3D) -> void:
 	e.queue_free()
 
 
-## (6) El tajo tiene que SOBREVIVIR al arbol. Con el árbol activo es él el que
-## escribe las pistas del esqueleto, así que si no se suelta, el `play()` del
-## tajo lo pisa la mezcla al frame siguiente y el tajo no se ve. Esto ya estaba
-## roto y ningún test lo miraba.
+## (6) El tajo tiene que SOBREVIVIR al árbol, y el árbol no se puede apagar.
+##
+## ESTE TEST CAMBIÓ DE IDEA, y está aquí escrito por qué, porque el cambio no
+## es cosmético.
+##
+## La versión anterior pedía dos cosas: que el `play("attack")` sonara
+## (`current_animation == "attack"`) y que el árbol SE SUELTARA mientras dura el
+## tajo (`not tree.active`). Ese par de condiciones NO es una prueba: es la
+## arquitectura que|USA el bug. Dos conductores escribiendo el mismo esqueleto,
+## con el apagado del primero como red de seguridad. El usuario reportó que al
+## matar a un enemigo el muñeco se quedaba "hace tiempo la animación de atacar".
+##
+## Lo que se comprueba ahora es lo contrario y es lo que importa:
+##   - el tajo es un ESTADO de la máquina, no un clip gritado;
+##   - el árbol NUNCA se apaga (si se apaga, el tajo se congela, porque el
+##     reloj del reproductor está en manual y no avanza solo);
+##   - y el tajo se suelta solo al acabar el clip, sin que nadie lo ordene.
+## La medición del hueso (Σ|Δpose|, que es lo que se ve) vive en
+## `tests/test_un_motor_animacion.gd`, porque este archivo mide PIES, no manos.
 func _test_tajo() -> void:
 	var p: Player = _jugador()
 	if p == null:
@@ -393,22 +408,33 @@ func _test_tajo() -> void:
 		_chk(false, "e: hay arbol antes del tajo")
 		return
 	_chk(tree.active, "e: caminando el arbol manda")
+	_chk(ArbolAnimacion.estado_actual(ap) == str(ArbolAnimacion.ESTADO_LOCOMOCION),
+		"e: caminando el estado es locomocion", "estado=%s"
+		% ArbolAnimacion.estado_actual(ap))
 	# Ahora el tajo.
 	p.set("_t_swing", 0.3)
 	p.call("_actualizar_animacion", 1.0 / 60.0)
-	_chk(str(ap.current_animation) == "attack",
-		"e: el tajo se reproduce (el arbol no lo pisa)", "reproduciendo '%s'"
-		% str(ap.current_animation))
-	_chk(not tree.active, "e: y el arbol se suelta mientras dura el tajo")
-	# Al volver a caminar, el tajo puede volver a dispararse.
-	p.set("_t_swing", 0.0)
-	p.velocity = Vector3(VEL_JUEGO, 0.0, 0.0)
-	p.call("_actualizar_animacion", 1.0 / 60.0)
-	_chk(tree.active, "e: al volver a caminar el arbol vuelve a mandar")
+	_chk(ArbolAnimacion.estado_actual(ap) == str(ArbolAnimacion.ESTADO_ATAQUE),
+		"e: el tajo entra por su ESTADO (no con un play() suelto)", "estado=%s"
+		% ArbolAnimacion.estado_actual(ap))
+	# Y ESTA es la que daba la vuelta: el árbol NO se suelta nunca. Con los dos
+	# relojes en manual, apagar el árbol deja el tajo clavado en t=0.
+	_chk(tree.active,
+		"e: el arbol NUNCA se apaga durante el tajo (si se apaga, el tajo se congela)")
+	# Al volver a caminar, el tajo puede volver a dispararse: y el estado tiene
+	# que haber vuelto a locomoción, que es el síntoma textual del usuario.
+	for i in 60:
+		p.set("_t_swing", 0.0)
+		p.velocity = Vector3(VEL_JUEGO, 0.0, 0.0)
+		p.call("_actualizar_animacion", 1.0 / 60.0)
+	_chk(ArbolAnimacion.estado_actual(ap) == str(ArbolAnimacion.ESTADO_LOCOMOCION),
+		"e: tras el tajo vuelve a locomocion solo (el bug del usuario)",
+		"estado=%s" % ArbolAnimacion.estado_actual(ap))
 	p.set("_t_swing", 0.3)
 	p.call("_actualizar_animacion", 1.0 / 60.0)
-	_chk(str(ap.current_animation) == "attack",
-		"e: y el tajo se puede repetir (no se queda clavado)")
+	_chk(ArbolAnimacion.estado_actual(ap) == str(ArbolAnimacion.ESTADO_ATAQUE),
+		"e: y el tajo se puede repetir (no se queda clavado)", "estado=%s"
+		% ArbolAnimacion.estado_actual(ap))
 
 
 ## Los mismos numeros que pide el informe de animación, calculados aquí desde
@@ -558,8 +584,18 @@ func _tiquera_arbol(ap: AnimationPlayer, sk: Skeleton3D) -> Dictionary:
 	# apunta al clip a ritmo, que es `factor` veces más corto. Medir un ciclo
 	# del crudo sobre un clip horneado mete 4,75 ciclos en la "ventana", la
 	# ventana se come casi un ciclo entero y el signo del `dz` sale sin sentido.
-	var bs: AnimationNodeBlendSpace1D = (tree.tree_root as AnimationNodeBlendTree
-			).get_node("locomocion") as AnimationNodeBlendSpace1D
+	#
+	# El BlendSpace1D vive DENTRO del estado `locomocion` de la máquina de
+	# estados (`ArbolAnimacion` la montó así para no perder ni la mezcla ni la
+	# ruta del parámetro). Por eso el `get_node("locomocion")` de antes ahora
+	# pasa por la máquina: el nombre del nodo es el mismo, la plugs cambia.
+	var sm: AnimationNodeStateMachine = tree.tree_root as AnimationNodeStateMachine
+	if sm == null:
+		return {}
+	var bs: AnimationNodeBlendSpace1D = sm.get_node(
+			str(ArbolAnimacion.ESTADO_LOCOMOCION)) as AnimationNodeBlendSpace1D
+	if bs == null:
+		return {}
 	var nodo: AnimationNodeAnimation = bs.get_blend_point_node(1) as AnimationNodeAnimation
 	if nodo == null or not ap.has_animation(nodo.animation):
 		return {}
