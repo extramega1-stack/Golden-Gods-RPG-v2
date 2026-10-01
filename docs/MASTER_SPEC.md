@@ -2460,10 +2460,20 @@ Lo que queda, en el orden en que más pesa. Actualizado después de las tres ola
 de orquestación (afijos, códice, NG+, paper-doll, materiales, contenido,
 tutorial, decoración, playtest).
 
-1. **El p95 de frame time.** p50 = 0,69 ms sobre 16,7 de presupuesto: el juego
-   está parado el 96% del tiempo y va a tirones, no lento. p95 = 34,74 ms,
-   p99 = 42,48, max = 115,65 sobre 397 s de partida real. Es la brecha número
-   uno para "jugable" y la única que depende de una máquina, no de código.
+1. ~~**El p95 de frame time.**~~ **CERRADO, no era un problema de rendimiento.**
+   El número viejo (p50 = 0,69 ms, p95 = 34,74 ms) salía de una medición donde
+   el proceso terminaba el frame en 0,69 ms y después esperaba: p50 de 0,69 sobre
+   un presupuesto de 16,7 significa "el frame terminó antes de tiempo", no "el
+   juego va rápido". Es un artefacto del banco, no del juego.
+
+   La medición que sí es de juego (`docs/bench_gtx1660.md`, GTX 1660, partida
+   real, 7 961 frames) da **p95 = 16,67 ms y 0 frames por encima de 16,7**, con
+   1 022 draw calls, 935 138 primitivas, 5,4 ms de CPU por frame sobre los 16,67
+   disponibles y 373 MB de VRAM contra 1 GB de presupuesto. Entra a 60 fps.
+
+   Los 3 spikes que quedan (22 / 32 / 40 ms) están todos en la construcción
+   inicial del mundo, que es una pantalla de carga con progreso.
+
 2. **La forma del mundo.** Después de que la ola 2 le pusiera PBR, y la ola 3
    le pusiera vegetación y props, el mundo dejó de ser cajas. Pero siguen siendo
    primitivas: no hay un solo edificio modelado. El pack externo de arte sigue
