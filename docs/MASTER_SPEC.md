@@ -2492,6 +2492,18 @@ tutorial, decoración, playtest).
    item dropeado quedaron sin verificar, y el prestigio de NG+ necesita nivel 70
    que el playtest no alcanza en su tiempo. No están rotos: no están probados.
 
+  7. **No hay forma de ganar ni de perder** (Fase 72A). Se pueden entregar las
+     dos misiones finales —pagan 600 oro y 1500 XP— y el juego sigue exactamente
+     igual: ninguna pantalla de final, ningun game over. Es lo unico que impide
+     que el juego sea "completo y jugable de principio a fin".
+  8. **Progresion desconectada** (Fase 72B). La tala da item pero no sube la
+     habilidad Tala; la habilidad `recoleccion` nunca gana XP; 4 Hechos no tienen
+     consumidor; `PanelNgPlus` no se instancia, y con el caen 12 trofeos y 13
+     diarias; el escalado de afijos de botin va a cero.
+  9. **Huecos de audio** (Fase 72C). La pantalla de titulo es muda; 15 de 36
+     sonidos nunca se disparan (entre ellos talar, minar y construir, que son
+     mecanicas que ya existen); 7 de 8 sonidos de UI estan muertos; el bus
+     `Ambiente` se crea y no tiene ni un player.
 ### Lo que se cerró y conviene no repetir
 
 Cuatro veces en una sesión apareció el MISMO bug: un sistema escrito, con sus
