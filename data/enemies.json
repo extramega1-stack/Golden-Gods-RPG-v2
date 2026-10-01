@@ -369,7 +369,8 @@
           }
         ]
       },
-      "mult_vida": 0.8
+      "mult_vida": 0.8,
+      "vel_mov": 4.2
     },
     "lobo": {
       "color": [

@@ -16,3 +16,17 @@ build/
 # Python (retopologia Blender)
 __pycache__/
 *.pyc
+
+# Los FBX que baja el usuario de Mixamo: son fuente, no producto. Van al
+# repo los clips CONVERTIDOS (anim/clips/), que son los que usa el juego.
+anim/fuente/
+
+# Artefactos de sesion: Mallas soldadas en prueba, capturas y diagnosticos.
+# Los .glb buenos viven en ~/.local/share/ggv2/, no en el repo.
+models/_prueba_*
+models/_sw_*
+models/_pelo_test_*
+models/_pose_*
+tools/_*
+anim/fuente/
+anim/clips/convertir.log

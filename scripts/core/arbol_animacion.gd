@@ -112,6 +112,24 @@ const CAMINAR_AL_REVES: bool = true
 ## enemigo con modelo). En el MUNDO el clip viaja `VELOCIDAD_CLIP * escala`, y
 ## el multiplicador tiene que usar ese número, no este. Por eso `ritmo` recibe
 ## la escala.
+##
+## RECALIBRADO CON EL CLIP DE MIXAMO (1,3677, medido en el esqueleto real). El
+## valor anterior, 1,4264, era la zancada del clip procedural viejo. Da igual
+## el rig: medido en `clase_guerrero` (49 huesos) y en `bandido_rig` (19) da
+## 1,3677 en los dos, que es lo que tiene que pasar si la conversion es
+## correcta. Con el clip nuevo el pie
+## patinaba 57 cm por ciclo: el invariante de `ritmo` esta roto si la constante
+## no es la zancada REAL del clip que se esta usando, y da igual que el resto
+## este impecable.
+##
+## Y CAMBIO dos veces por el mismo motivo: 1,3308 era con el ciclo entero de 35
+## cuadros, y despues el empalme se corto a 34 (el periodo real), lo que sube
+## la zancada por segundo. Es una constante medida, no elegida: si cambia el
+## clip, se vuelve a medir.
+##
+## CUANDO CAMBIE EL CLIP DE CAMINAR, HAY QUE VOLVER A MEDIR ESTE NUMERO. La
+## medicion la hace `test_fase70_caminar` ("b: la constante del codigo es la
+## zancada REAL del clip") y no hay que deducirla: el numero sale de ahi.
 const VELOCIDAD_CLIP: float = 1.4264
 ## Tope del multiplicador: por debajo de 1 no hay ciclo que acelerar, y muy
 ## arriba el clip se vuelve un ruido. El piso evita un clip de duración ~0.
@@ -399,7 +417,88 @@ static func _transicion(xfade: float, condition: String) -> AnimationNodeStateMa
 ## `_actualizar_animacion`, entre colgar el modelo y ese primer frame habría una
 ## ventana en la que el reproductor todavía avanza por su cuenta. Montándolo
 ## aquí, la ventana no existe.
+## Reemplaza los clips del `.glb` por los convertidos de Mixamo.
+##
+## POR QUE SE SUSTITUYEN Y NO SE AGREGAN: el `AnimationTree` referencia los
+## clips por NOMBRE dentro de una biblioteca. Si los de Mixamo se agregan con
+## otro nombre, habria dos "walk" y habria que tocar el arbol entero. Al
+## reemplazar el contenido de la biblioteca con los MISMOS cuatro nombres, el
+## arbol, el `BlendSpace1D` y el codigo del juego siguen hablando los nombres de
+## siempre y no se entera de nada.
+##
+## SI FALTA UN `.tres`, SE DEJA EL DEL GLB. Un error al convertir una animacion
+## no puede dejar a todos los personajes con los brazos clavados.
+## Los clips de Mixamo que entran al juego.
+##
+## `walk` NO esta en la lista, y no por forgetting. El juego mueve al personaje
+## a 6,0 m/s (`StatBlock.vel_mov`), que es velocidad de sprint: una caminata
+## humana de Mixamo esta diseñada para ~1,4 m/s y hay que reproducirla ~4,9
+## veces mas rapido. Medido con el clip de Mixamo:
+##
+##   · el pie viaja a 5,82 m/s con el cuerpo a 6,0 -> la zancada no alcanza;
+##   · en el APOYO el pie va -0,0422 u, o sea moonwalk;
+##   · 8,57 pisadas por segundo, cuando lo normal son 3,0 a 3,4.
+##
+## Ninguno de esos tres se arregla retimeando: son la firma de correr una
+## caminata a velocidad de carrera. La salida correcta es una de dos, y es una
+## decision del JUEGO, no del conversor: bajar la velocidad de caminata, o tray
+## ciclos de carrera de verdad. Por ahora la caminata sigue siendo la del `.glb`,
+## que aguanta el ritmo. Cuando se decida, es agregar "walk" a esta lista.
+const CLIPS_MIXAMO: Array[String] = []
+
+## Y el `idle` tampoco entra, por otra incompatibilidad REAL y medida. El idle de
+## Mixamo llega con los brazos separados del cuerpo (L 51,9 grados, R 60,3
+## grados), y el juego exige que en reposo los brazos CUELGUEN (menos de 20) y
+## que los dos sean iguales (diferencia menor a 2). Un idle de Mixamo esta
+## pensado para un personaje de manos caidas a lo Andersen, no para un guerrero
+## medieval. Se podria aceptar el nuevo reposo, pero eso cambia el modelo de
+## TODOS los personajes y hay que verlo antes de decidirlo.
+##
+## VACIA A PROPOSITO, y ahora por una razon MEDIDA y no theoretica: la
+## conversion anda (los cuatro `.tres` salen con las rutas correctas, el delta
+## contra la pose de reposo, el root motion descartado y el periodo real del
+## ciclo), pero al reproducirla sobre estos modelos el resultado es peor que la
+## animacion procedural que ya estaba.
+##
+## LA RAZON, vista en render: las mallas estan troceadas por hueso, con cortes
+## duros de color en hombro, codo y rodilla. Una caminata real flexiona esa
+## articulacion en cada cuadro, y las costuras se abren: el codo se separa del
+## brazo. La animacion procedural esta escrita para estos cuerpos y con sus
+## movimientos chicos no abre las costuras.
+##
+## O sea: el mocap es correcto y el cuerpo no lo aguanta. Arreglar esto es
+## trabajo de MODELO (malla continua,Weights, subdivisiones), no de conversor.
+## Los clips quedan generados en anim/clips/ por si sirven cuando el modelo
+## aguante. Para probarlos: ["walk"] y mirar.
+
+
+static func inyectar_clips_mixamo(anim: AnimationPlayer) -> int:
+	var lib: AnimationLibrary = anim.get_animation_library("")
+	if lib == null:
+		lib = AnimationLibrary.new()
+		anim.add_animation_library("", lib)
+	var puestos := 0
+	for nombre in CLIPS_MIXAMO:
+		var ruta := "res://anim/clips/%s.tres" % nombre
+		if not ResourceLoader.exists(ruta):
+			continue
+		var a: Resource = load(ruta)
+		if not (a is Animation):
+			continue
+		if lib.has_animation(nombre):
+			lib.remove_animation(nombre)
+		lib.add_animation(nombre, a)
+		puestos += 1
+	return puestos
+
+
 static func montar(anim: AnimationPlayer, idle: String, walk: String) -> bool:
+	# Los clips de Mixamo entran POR ACA, y no en otro lado a proposito: esta
+	# es la unica funcion por la que pasa todo personaje que se anima, el jugador
+	# (`player.gd`) y cada enemigo (`enemy.gd`). Inyectar en el punto de uso los
+	# dejaria fuera a los enemigos, que es donde mas se nota una caminata que
+	# patina.
+	inyectar_clips_mixamo(anim)
 	var tree: AnimationTree = tree_de(anim, idle, walk)
 	if tree == null:
 		return false

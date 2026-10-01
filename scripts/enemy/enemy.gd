@@ -366,6 +366,20 @@ func configurar(arquetipo: Dictionary) -> void:
 	# Fase 42: los mobs dañan con su stat principal (STR por defecto; un
 	# arquetipo puede declarar "stat_daño" para mobs de finesse/arcana).
 	stats.set_stat_daño(str(arquetipo.get("stat_daño", "fuerza")))
+	# Un arquetipo puede declarar su propia velocidad de movimiento.
+	#
+	# POR QUÉ: `vel_mov` era PLANA a 6,0 m/s para todos (§7.2 deja la velocidad
+	# igual por diseño), pero el ritmo del pie lo fija `ArbolAnimacion.ritmo(v,
+	# escala)` y la escala del modelo va por arquetipo. El goblin cuelga a 0,62 y
+	# los personajes de clase a 0,9: con la MISMA velocidad de cuerpo, el bicho
+	# chico necesita el doble de pisadas por segundo, y medido daba 8,00 pisadas
+	# por segundo — un trote espasmódico, y 4,00 zancadas contra las 3,0–3,4 que
+	# el esqueleto sostiene. Medido, no supuesto: `test_fase71_clips`.
+	#
+	# Un goblin que corre a la velocidad de un hombre de 4 metros es el mismo
+	# error de escala que andar a 6 m/s: la velocidad es del bicho, no del mundo.
+	if arquetipo.has("vel_mov"):
+		stats.vel_mov = float(arquetipo["vel_mov"])
 	vida_actual = stats.vida_max
 	mana_actual = stats.mana_max
 	radio_aggro = float(arquetipo.get("radio_aggro", 10.0))

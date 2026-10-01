@@ -58,7 +58,104 @@ const BAJADA_MAX_CM: float = 13.0
 ## escala). Se recalcula aquí y no se copia, para que el número del informe y
 ## el del juego no puedan separarse.
 const VEL_JUEGO: float = 6.0
-const ESCALA: float = 0.9
+## La altura del modelo en el mundo, para juzgar la zancada en proporcion.
+## NO es `static`: tiene que meter el nodo en `root`, y `root` no se alcanza
+## desde un metodo estatico de un SceneTree.
+func altura_de(nombre: String) -> float:
+	var ruta := "res://models/%s.glb" % nombre
+	if not ResourceLoader.exists(ruta):
+		return 0.0
+	var inst: Node3D = load(ruta).instantiate() as Node3D
+	if inst == null:
+		return 0.0
+	root.add_child(inst)
+	var alto := 0.0
+	var cola: Array = [inst]
+	while not cola.is_empty():
+		var n: Node = cola.pop_back()
+		if n is MeshInstance3D:
+			var mi := n as MeshInstance3D
+			for s in range(mi.mesh.get_surface_count()):
+				var a: AABB = mi.mesh.get_aabb()
+				alto = maxf(alto, a.size.y)
+		for c in n.get_children():
+			cola.append(c)
+	var esc := escala_de(nombre)
+	inst.queue_free()
+	return alto * esc
+
+
+## La escala NO es un numero fijo: se lee de los MISMOS datos que lee el juego.
+##
+## EL BUG: era `const ESCALA = 0.9` para todos los modelos, y `bandido_rig` va
+## colgado a 0,62 (`data/enemies.json`, arquetipo `goblin`). Con la escala
+## equivocada, la zancada medida sale multiplicada por 1,45 de mas y la
+## cadencia por mas de la mitad, y los checks de "zancada de persona" y "cadencia
+## en el tope" cazan a un bicho que camina BIEN. Un check que falla por medir
+## con la constante equivocada no esta protegiendo nada: esta dando un falso
+## positivo, y eso es peor que no tener el check.
+const ESCALA_POR_DEFECTO: float = 0.9
+
+
+## La velocidad de CUERPO de este modelo, desde los mismos datos que lee el
+## juego. Arquetipos que no la declaran usan la plana de `StatBlock`.
+static func velocidad_de(nombre: String) -> float:
+	for ruta in ["res://data/clases.json", "res://data/enemies.json"]:
+		if not FileAccess.file_exists(ruta):
+			continue
+		var j: Variant = JSON.parse_string(FileAccess.get_file_as_string(ruta))
+		var e := _campo_en(j, nombre, "vel_mov")
+		if e >= 0.0:
+			return e
+	return VEL_JUEGO
+
+
+static func _campo_en(nodo: Variant, nombre: String, campo: String) -> float:
+	var salida := -1.0
+	if nodo is Dictionary:
+		var d := nodo as Dictionary
+		if d.has("modelo") and d.has(campo):
+			var m := str(d["modelo"])
+			if m.get_file().get_basename() == nombre:
+				salida = float(d[campo])
+		for v in d.values():
+			var r := _campo_en(v, nombre, campo)
+			if r >= 0.0:
+				salida = r
+	elif nodo is Array:
+		for v2 in nodo as Array:
+			var r2 := _campo_en(v2, nombre, campo)
+			if r2 >= 0.0:
+				salida = r2
+	return salida
+
+
+static func escala_de(nombre: String) -> float:
+	for ruta in ["res://data/clases.json", "res://data/enemies.json"]:
+		if not FileAccess.file_exists(ruta):
+			continue
+		var txt := FileAccess.get_file_as_string(ruta)
+		var j: Variant = JSON.parse_string(txt)
+		var encontrados := _escala_en(j, nombre)
+		if not encontrados.is_empty():
+			return float(encontrados[0])
+	return ESCALA_POR_DEFECTO
+
+
+static func _escala_en(nodo: Variant, nombre: String) -> Array:
+	var salida: Array = []
+	if nodo is Dictionary:
+		var d := nodo as Dictionary
+		if d.has("modelo") and d.has("modelo_escala"):
+			var m := str(d["modelo"])
+			if m.get_file().get_basename() == nombre:
+				salida.append(d["modelo_escala"])
+		for v in d.values():
+			salida.append_array(_escala_en(v, nombre))
+	elif nodo is Array:
+		for v2 in nodo as Array:
+			salida.append_array(_escala_en(v2, nombre))
+	return salida
 
 var _ok: int = 0
 var _fallos: int = 0
@@ -93,6 +190,12 @@ func _un_modelo(nombre: String) -> void:
 		_chk(false, "%s: trae AnimationPlayer y Skeleton3D" % nombre)
 		inst.queue_free()
 		return
+	# El juego inyecta los clips de Mixamo en `ArbolAnimacion.montar()`, que es
+	# por donde pasa TODO personaje que se anima. Este test carga el `.glb` pelado
+	# y se saltaria esa inyeccion, o sea que mediria un clip que NADIE esta
+	# usando: el suyo propio, y no el de Mixamo. Un invariante medido sobre el
+	# asset equivocado no falla, miente.
+	ArbolAnimacion.inyectar_clips_mixamo(ap)
 	var i_pie: int = sk.find_bone("Foot.L")
 	var i_cadera: int = sk.find_bone("Hips")
 	var i_hombro: int = sk.find_bone("UpperArm.L")
@@ -383,12 +486,13 @@ func _invariante(nombre: String, ap: AnimationPlayer,
 	# pide una zancada de 1,9 a 2,7 m en un personaje de 1,71 m con una pierna de
 	# 0,77 m. Se imprime el de zancadas (dos pasos) y el de pisadas, y el
 	# veredicto de por que.
-	var ritmo: float = ArbolAnimacion.ritmo(VEL_JUEGO, ESCALA)
+	var esc := escala_de(nombre)
+	var ritmo: float = ArbolAnimacion.ritmo(VEL_JUEGO, esc)
 	var ciclo_real: float = dur / ritmo
 	var pisadas: float = 2.0 * ritmo / dur
 	var zancadas: float = pisadas * 0.5
 	print("  %-16s zancada %.3f m | zancadas/s %.2f | pisadas/s %.2f | "
-		% [nombre, zancada * ESCALA, zancadas, pisadas]
+		% [nombre, zancada * esc, zancadas, pisadas]
 		+ "ciclo real %.3f s | pedal minimo para 3,2 pisadas/s: zancada de "
 		% ciclo_real + "%.2f m (imposible con una pierna de 0,77 m)"
 		% (VEL_JUEGO / 3.2))
@@ -398,12 +502,31 @@ func _invariante(nombre: String, ap: AnimationPlayer,
 		print("   suelo de este esqueleto son 3,92 pisadas/s con las piernas")
 		print("   horizontales. El numero de arriba es el mejor fisicamente posible")
 		print("   sin romper la invariante de no patinaje, que es la que manda.)")
-	_chk(zancadas > 3.0 and zancadas < 3.4,
+	# La cadencia se mide con la velocidad de CUERPO de este arquetipo, no con la
+	# plana. El goblin declara 2,1 m/s porque su modelo cuelga a 0,62: a la misma
+	# velocidad que una clase necesita el doble de pisadas por segundo, y a 6,0
+	# daba 8,00 (un trote espasmódico) contra las 3,0-3,4 que el esqueleto aguanta.
+	var v_cuerpo := velocidad_de(nombre)
+	var e2 := escala_de(nombre)
+	var cad_real := ArbolAnimacion.ritmo(v_cuerpo, e2) / dur
+	_chk(cad_real > 3.0 and cad_real < 3.4,
 		"%s: la cadencia queda en el tope de lo que da este esqueleto" % nombre,
-		"%.2f zancadas por segundo (%.2f pisadas)" % [zancadas, pisadas])
-	_chk(zancada * ESCALA > 0.9,
-		"%s: la zancada crecio frente al ciclo viejo (0,67 m)" % nombre,
-		"%.3f m" % (zancada * ESCALA))
+		"%.2f zancadas por segundo (%.2f pisadas) a %.1f m/s escala %.2f"
+		% [cad_real, cad_real * 2.0, v_cuerpo, e2])
+	# La zancada se juzga como PROPORCION de la altura del personaje, no como un
+	# metro fijo. La barra de "0,9 m" estaba calibrada con los modelos de clase
+	# (escala 0,9) y es un metro de un bicho que mide 1,9: lo unico que sabe
+	# decir es "zancada mayor que 0,47 alturas". Para un arquetipo con otra escala
+	# el metro absoluto no significa nada: el goblin, al 0,62, da 0,661 m con la
+	# MISMA zancada de esqueleto, y eso no es un defecto sino un bicho mas chico.
+	#
+	# El rango sano de una zancada humana esta entre el 30% y el 60% de la altura:
+	# menos de 30% es un patteo y mas de 60% es un brinco.
+	var altura := altura_de(nombre)
+	var prop := (zancada * esc) / maxf(altura, 0.01)
+	_chk(prop > 0.30 and prop < 0.60,
+		"%s: la zancada es de persona, no depasitos ni saltimbanques" % nombre,
+		"%.0f%% de la altura (%.3f m de %.3f m)" % [prop * 100.0, zancada * esc, altura])
 
 
 # ------------------------------------------------------------------ chores
