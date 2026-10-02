@@ -262,13 +262,28 @@ func _afijos_de(prestigio: int) -> int:
 ## vacío daría "0 misiones entregadas" sin distinction entre "no hay
 ## misiones" y "no me las pasaron".
 func contexto_actual(misiones: QuestLog = null) -> Dictionary:
-	var estado: EstadoNgPlus = SaveSystem.estado_ngplus()
+	return contexto_de(SaveSystem.estado_ngplus(), misiones)
+
+
+## El mismo contexto pero con un `EstadoNgPlus` que el llamante YA TIENE, sin
+## ir a buscarlo al disco.
+##
+## POR QUÉ EXISTE LA SEGUNDA FORMA: `SaveSystem.guardar()` la usa, y ahí el
+## estado que manda es el VIVO, no el de la última vez que se guardó. Peor:
+## `SaveSystem.estado_ngplus()` es un estático que PUBLICA el ciclo y el
+## prestigio que lee (`EstadoNgPlus.desde_dict`), así que llamarlo desde el
+## guardado pisaría con el valor del disco el NG+ que el jugador acababa de
+## prestigiar en memoria. El loot leería el margen de afijos de la vuelta
+## anterior durante toda la partida.
+func contexto_de(estado: EstadoNgPlus, misiones: QuestLog = null) -> Dictionary:
+	if estado == null or not is_instance_valid(estado):
+		estado = EstadoNgPlus.new()
 	var entregadas: Array = []
 	if misiones != null:
 		entregadas = misiones.entregadas()
 	return {
-		CTX_CICLO: estado.ciclo,
-		CTX_PRESTIGIO: estado.prestigio,
+		CTX_CICLO: maxi(0, estado.ciclo),
+		CTX_PRESTIGIO: maxi(0, estado.prestigio),
 		CTX_MISIONES: _cuenta_ngplus(entregadas),
 		CTX_MISIONES_ENTREGADAS: entregadas,
 	}

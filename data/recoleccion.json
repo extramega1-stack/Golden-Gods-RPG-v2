@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "nota": "Fase 72. El XP de la habilidad `recoleccion` se ganaba SOLO desde tests/test_fase59_hechos.gd:165: nadie lo daba jugando, y sus dos Hechos (sed_ausente, hambre_ausente) quedaban bloqueados para siempre. Este archivo es el DATO que decide cuánto da juntar algo del suelo, para que el número no viva en el codigo. Los otros tres ejes (tala, mineria, cocina) dan su XP con el del recurso, porque el recurso es el evento; la recoleccion no tiene recurso propio: su evento es AGARRAR, y agarra desde el botin de cada mob, de cada veta y de cada cofre.",
+  "habilidad": "recoleccion",
+  "xp_item": 1,
+  "oro_por_xp": 60
+}

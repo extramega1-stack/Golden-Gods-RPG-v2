@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "nota": "Fase 59. Talentos de Habilidad: a diferencia de los talentos por clase (fase 28, que suman stats), estos TRANSFORMAN la recoleccion. Es la mejor idea de Dragonwilds: subir Tala no te da +5%, te da un hechizo que tala tres arboles. Los efectos de stat van como MODS del StatBlock (fuente 'hecho:<id>'); los de comportamiento son banderas que leen los sistemas de recoleccion.",
+  "nota": "Fase 59. Talentos de Habilidad: a diferencia de los talentos por clase (fase 28, que suman stats), estos TRANSFORMAN la recoleccion. Es la mejor idea de Dragonwilds: subir Tala no te da +5%, te da un hechizo que tala tres arboles. Los efectos de stat van como MODS del StatBlock (fuente 'hecho:<id>'); los de comportamiento son banderas que leen los sistemas de recoleccion. FASE 72: `parametros` es el numero que el Hecho le pasa a su consumidor (cuantos usos deja la veta, quantas veces mas rapido reaparece, quantas raciones, quanta lena). Los que antes no los leia nadie son veta_persistente (lo lee Mineria), doble_yacimiento (lo lee GestorVetas -> Veta.tick), cocina_lote (lo lee Cocina.cocinar) y fogata_perenne (lo lee Fogata._process). Un Hecho sin consumidor es una recompensa que el jugador no puede ganar.",
   "hechos": [
     {
       "id": "tala_area",
@@ -27,7 +27,10 @@
       "tramo": 2,
       "tipo": "bandera",
       "flag": "veta_persistente",
-      "descripcion": "Las vetas nunca se agotan del todo."
+      "descripcion": "Las vetas nunca se agotan del todo. (Fase 72: ya lo lee un sistema.)",
+      "parametros": {
+        "usos_min": 1
+      }
     },
     {
       "id": "doble_yacimiento",
@@ -36,7 +39,10 @@
       "tramo": 3,
       "tipo": "bandera",
       "flag": "doble_respawn",
-      "descripcion": "Las vetas reaparecen el doble de rapido."
+      "descripcion": "Las vetas reaparecen el doble de rapido. (Fase 72: ya lo lee un sistema.)",
+      "parametros": {
+        "factor_respawn": 2.0
+      }
     },
     {
       "id": "mena_rapida",
@@ -55,7 +61,10 @@
       "tramo": 2,
       "tipo": "bandera",
       "flag": "cocina_lote",
-      "descripcion": "Cocina 2 raciones por vez."
+      "descripcion": "Cocina 2 raciones por vez. (Fase 72: ya lo lee un sistema.)",
+      "parametros": {
+        "multiplicador_cantidad": 2
+      }
     },
     {
       "id": "fogata_perenne",
@@ -64,7 +73,10 @@
       "tramo": 4,
       "tipo": "bandera",
       "flag": "fogata_perenne",
-      "descripcion": "La fogata se vuelve a encender sola."
+      "descripcion": "La fogata se vuelve a encender sola. (Fase 72: ya lo lee un sistema.)",
+      "parametros": {
+        "lena_minima": 45.0
+      }
     },
     {
       "id": "sed_ausente",

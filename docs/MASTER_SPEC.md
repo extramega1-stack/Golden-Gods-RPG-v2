@@ -1,6 +1,6 @@
 # GOLDEN GODS RPG — REMAKE · Documento Maestro de Especificación
 
-**Versión del documento:** 3.55 — Fase 70: la FORMA del mundo (2026-09-29)
+**Versión del documento:** 3.56 — Fase 72: la progresión que estaba escrita y era inalcanzable (2026-10-01)
 **Motor:** Godot 4.7.2 · **Idioma del juego:** español
 **Alcance:** este documento es la especificación oficial del rewrite limpio.
 Todo lo que se reimplemente debe salir de aquí; lo que no esté aquí no existe.
@@ -2602,3 +2602,86 @@ que lo atan. Verificado: quitar la llamada pone el test en 6 fallos, quitar el
 
 El NG+ reinicia el personaje con `_partida_para_ngplus()`, que no escribe el
 bloque `"resultado"`: la vuelta nueva arranca sin final, que es lo correcto.
+
+## Fase 72 — Conectar la progresión que estaba escrita y era inalcanzable
+
+Cuatro sistemas de progresión estaban escritos, testeados y NO se podían tocar
+jugando. El más grave no era que faltara un panel: era que **dos ejes de
+habilidad nunca daban experiencia**, así que sus desbloqueos eran
+permanentemente imposibles.
+
+### Los cinco fallos
+
+1. **La tala NO subía la habilidad Tala.** YA ESTÁ ARREGLADO (hotfix 62.1):
+   `Veta.habilidad_id` la declara el nodo y `Mineria.minar` da el XP con esa
+   habilidad, así que talar sube `tala` y minar sube `mineria`. La fase 72 lo
+   convierte en un chequeo permanente en vez de dejar que se vuelva a romper.
+2. **La habilidad `recoleccion` no subía nunca.** `habilidades.ganar(
+   "recoleccion", ...)` aparecía en UN lugar de todo el repositorio: un test.
+   Sus dos Hechos ("Sed ausente" y "Hambre ausente") eran inalcanzables.
+3. **Cuatro Hechos sin consumidor**: `veta_persistente`, `doble_yacimiento`,
+   `cocina_lote` y `fogata_perenne`. Se calculaban, se guardaban y se mostraban,
+   y ningún sistema los leía. Eran recompensas que el jugador no podía ganar.
+4. **`PanelNgPlus` nunca se instanciaba.** Con el panel invisible se perdían los
+   12 trofeos de `data/ngplus_trofeos.json` y la lista de encargos del día.
+5. **El escalado de afijos de botín iba a CERO.** `DropTable` leía `nivel` y
+   `afijos_extra` de la tabla y los arquetipos no los declaraban: todos los bots
+   del mundo soltaban el mismo afijo para siempre, sin importar el nivel.
+
+### Lo que se hizo
+
+- **Recolección** (fichero nuevo `scripts/progresion/recoleccion.gd` +
+  `data/recoleccion.json`): el XP de juntar algo del suelo, enganchado en
+  `Pickup._revisar_recogida()`. Ese es EL punto por el que pasa todo lo que
+  llega al inventario desde el mundo, así que engancharlo ahí hace imposible que
+  algo llegue sin sumar su XP. Va en `Pickup` y no en la escena a propósito:
+  quien tira botín no tiene que acordarse de sumar nada.
+- **Los cuatro Hechos huérfanos**, cada uno en el sistema que le corresponde:
+  `veta_persistente` en `Mineria` (deja la veta con usos), `doble_yacimiento` en
+  `GestorVetas` → `Veta.tick` (la cuenta del respawn corre al doble),
+  `cocina_lote` en `Cocina.cocinar` (2 raciones) y `fogata_perenne` en
+  `Fogata._process` (se reencciende sola). Sus NÚMEROS viven en
+  `data/hechos.json` (`parametros`), leídos con `Hechos.parametro()`.
+- **`PanelNgPlus` en la partida**, registrado en `gg_system` como
+  `panel_ngplus`, en `_al_mundo_listo()` de `fase14_demo` (NO en
+  `_instalar_fase63_64_ui()`, que no llama nadie), con la tecla `N` en el Input
+  Map (`abrir_ngplus`). `alternar()` ahora resuelve el estado él mismo: antes
+  hacía `abrir(_estado)` con `_estado == null`, o sea que no había forma de
+  abrirlo por primera vez.
+- **Los trofeos se guardan.** `Trofeos` tenía `to_dict()`/`cargar_estado()`
+  escritos y nadie los llamaba: el set de ganados vivía solo en RAM. Se
+  evaluan y se serializan en el bloque `"trofeos"` del save.
+- **`nivel` y `afijos_extra` en los 20 arquetipos** de `data/enemies.json`. El
+  `nivel` es la mediana del `nivel` de sus spawns (medido, no inventado) y el
+  margen del NG+ se suma en la tirada desde el estado vivo.
+- **`AFIXOS_POR_RAREZA` subió a `[1, 1, 3, 4, 4]`.** Era idéntica a
+  `tope_por_rareza`, así que el margen del NG+ no podía NUNCA agregar un afijo:
+  el tope del loot ya era el techo de la rareza. 4 es el máximo posible igual
+  (solo hay 4 stats, y dos afijos del mismo stat en un item es ruido). **El
+  juego base no cambia**: sin prestigio el tope sigue mandando.
+
+### La regla que sale de acá, y que queda escrita en el código
+
+**Todo Hecho de tipo `bandera` tiene que ser leído por un sistema.** La fase 72
+es la cuarta vez que aparece el mismo bug (sistemas escritos, testeados y no
+conectados), y `tests/test_fase72_progresion_conectada.gd` incluye el chequeo
+GENÉRICO que lo atrapa: recorre `data/hechos.json` y, por cada bandera, pregunta
+si algún archivo de `scripts/` la menciona — excluyendo el archivo donde se
+declara, o se encontraría a sí misma. Añadir un Hecho sin consumidor es, a
+partir de ahora, un test en rojo.
+
+El test tiene las dos mitades que hacen falta: **movimientos reales** (se tala, se
+junta, se agota una veta, se digna el NG+ y se mira qué cambió) y **chequeos de
+call site** sobre el código de la partida. Un test que solo mueve datos en
+aislamiento pasa con el sistema desconectado; uno que solo grepea no comprueba
+que el sistema haga nada. Y las nueve sabotajes que se hicieron a mano para
+comprobarlo (desregistrar el panel, borrar el `Recoleccion.otorgar`, anular cada
+bandera, quitar el margen del NG+, vaciar `nivel` del JSON, agregar un Hecho
+inventado) fellan el test.
+
+### Verificación
+
+`--check-only` limpio en los 15 scripts tocados, y la suite completa con
+`--smokes` en verde salvo `test_contenido_ngplus`, que **ya estaba en rojo en
+`main` antes de esta fase** (5 checks del catálogo de misiones, en
+`scripts/quests/**`, fuera de la propiedad de la 72B).

@@ -32,6 +32,9 @@ signal cocinar_solicitado
 var lena: float = 0.0
 ## Cuánto falta para volver a intentar encenderse sola.
 var _espera: float = 0.0
+## FASE 72: los `Hechos` del jugador que usa esta fogata. Los deja
+## `interactuar_jugador`; sin ellos, "Fogata perenne" no hace nada.
+var _hechos: Hechos = null
 var _fuego: OmniLight3D = null
 var _llama: MeshInstance3D = null
 var _particulas: GPUParticles3D = null
@@ -160,8 +163,40 @@ func _process(delta: float) -> void:
 	# Se apaga sola tras un rato sin leña: una fogata muerta no debe quedarse
 	# pegando permanente.
 	_espera -= delta
-	if _espera <= 0.0:
-		_espera = INTERVALO_SEG
+	if _espera > 0.0:
+		return
+	_espera = INTERVALO_SEG
+	_reencender_perenne()
+
+
+## FASE 72: el Hecho "Fogata perenne" (cocina, tramo 4) se calculaba, se
+## guardaba y NINGÚN sistema lo consultaba. Esta es su única forma de existir.
+##
+## Qué significa "perenne": la fogata se vuelve a ENCENDER SOLA cuando se queda
+## sin leña, con una carga mínima. Antes la cuenta atrás de `_espera` hacía
+## exactamente nada: bajaba, se recargaba, y la fogata se quedaba muerta hasta
+## el jugador trajera un tronco. La cuenta atrás ya estaba ahí, esperando.
+##
+## La carga mínima sale de `data/hechos.json` (`parametros.lena_minima`), no de
+## una constante acá, así que el Hecho se reequilibra tocando el dato.
+##
+## POR QUÉ LOS HECHOS LLEGAN POR `interactuar_jugador` Y NO POR UNA BÚSQUEDA:
+## la fogata es un `Node3D` del mundo y no tiene ni debe tener referencia al
+## jugador. La E es el único momento en que un jugador y una fogata se conocen,
+## y para entonces la fogata ya está encontrada a mano. Cachear el `Hechos` del
+## primer jugador que la use es correcto para un juego local de un jugador
+## (§7.1), y un `null` aquí solo significa "sin Hechos", o sea el
+## comportamiento de siempre.
+func _reencender_perenne() -> void:
+	var hechos: Hechos = _hechos
+	if hechos == null or not is_instance_valid(hechos):
+		return
+	if not hechos.tiene(Hechos.FLAG_FOGATA_PERENNE):
+		return
+	var carga: float = hechos.parametro(Hechos.ID_FOGATA_PERENNE, "lena_minima",
+		LENA_POR_TRONCO)
+	cargar_lena(carga)
+	llama_encendida.emit()
 
 
 # ---------------------------------------------- fase 64: interacción ---
@@ -190,6 +225,10 @@ func texto_interaccion(j: Player) -> String:
 func interactuar_jugador(j: Player) -> String:
 	if j == null or not is_instance_valid(j):
 		return "sin_jugador"
+	# FASE 72: este es el momento en que la fogata y el jugador se conocen, así
+	# que es donde se cachean los `Hechos`. Ver `_reencender_perenne`.
+	if j.hechos != null:
+		_hechos = j.hechos
 	if encendida():
 		# Ya arde: la E pide el panel, no vuelve a prenderla. Es la misma tecla
 		# para las dos cosas y el estado de la fogata decide cuál.

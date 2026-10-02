@@ -217,6 +217,10 @@ func actualizar() -> void:
 	if _jugador == null or not is_instance_valid(_jugador):
 		return
 	var jp: Vector3 = _jugador.global_position
+	# FASE 72: un solo número para todas las vetas, porque depende solo de las
+	# banderas del jugador y no de la veta. Leerlo una vez por barrido (y no
+	# por veta) es lo que lo deja sin coste: 12 vetas, cada 0,5 s.
+	var ritmo: float = factor_respawn_actual()
 	for r in _registros:
 		var rd: Dictionary = r
 		var nodo: Veta = _nodo_de(rd)
@@ -224,7 +228,8 @@ func actualizar() -> void:
 		var d: float = _dist_plana(jp, origen)
 		if nodo == null:
 			if d <= RADIO_ALTA:
-				rd["nodo"] = instanciar(str(rd.get("id", "")), origen)
+				nodo = instanciar(str(rd.get("id", "")), origen)
+				rd["nodo"] = nodo
 		elif d > RADIO_BAJA:
 			# Antes de liberar se guarda SIEMPRE su estado: si no, una veta
 			# a la que le quedaban usos (sin estar agotada) volvería llena al
@@ -232,9 +237,38 @@ func actualizar() -> void:
 			_lejanas[nodo.veta_id] = nodo.to_dict()
 			nodo.queue_free()
 			rd["nodo"] = null
+			nodo = null
+		if nodo != null:
+			nodo.factor_respawn = ritmo
 	# Una veta recién instanciada puede tener estado pendiente (estaba lejos
 	# cuando se cargó la partida, o se liberó con usos gastados).
 	aplicar_estado_lejano()
+
+
+## FASE 72: qué tan rápido reaparecen las vetas con lo que el jugador tiene
+## desbloqueado. 1.0 = el `respawn_s` del dato; el Hecho "Doble yacimiento"
+## (minería, tramo 3) lo DOBLA.
+##
+## OJO con el signo: `factor_respawn` es una VELOCIDAD, no una fracción. La
+## cuenta atrás de `Veta.tick` es `restante -= delta * factor`, así que 0.5
+## haría la veta MÁS LENTA. El Hecho dice "reaparecen el doble de rápido", y
+## "el doble" es 2.0.
+##
+## POR QUÉ ACÁ Y NO EN LA VETA: la veta es un nodo del mundo y no tiene ni debe
+## tener referencia al jugador —"quién puede minar y qué entrega lo decide
+## `Mineria`"—, así que el número se le ESCRIBE. El gestor es el único que ve
+## a la vez las vetas y al jugador, y ya los recorre cada medio segundo.
+## El factor sale de `data/hechos.json` (`parametros.factor_respawn`), no de
+## una constante acá. El tope de 8x es de seguridad: un factor absurdo en el
+## dato haría aparecer las 126 vetas del mundo de golpe.
+func factor_respawn_actual() -> float:
+	if _jugador == null or not is_instance_valid(_jugador):
+		return 1.0
+	var h: Hechos = _jugador.hechos
+	if h == null or not h.tiene(Hechos.FLAG_DOBLE_RESPAWN):
+		return 1.0
+	var f: float = h.parametro(Hechos.ID_DOBLE_YACIMIENTO, "factor_respawn", 2.0)
+	return clampf(f, 0.05, 8.0)
 
 
 ## El jugador llegó a una veta y/minó (o, si estaba lejos, ya caminó hasta

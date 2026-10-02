@@ -44,6 +44,11 @@ var _cocina: PanelCocina = null
 var _construccion: PanelConstruccion = null
 ## Bloque 68: el CÓDICE / bestiario (capa 35). Nace cerrado y lo abre la tecla L.
 var _codice: PanelCodice = null
+## FASE 72: el panel del NG+ (capa 36), que existía desde el bloque 68 con sus
+## tests en verde y NO estaba en la partida. Con él invisible se perdían los 12
+## trofeos de `data/ngplus_trofeos.json` y la lista de encargos del día de
+## `data/diarias.json`. Lo abre la tecla N.
+var _ngplus: PanelNgPlus = null
 ## Bloque 65: pausa y opciones.
 var _pausa: MenuPausa = null
 ## Bloque 68: los efectos que hacen que un golpe se sienta.
@@ -559,6 +564,19 @@ func _al_mundo_listo() -> void:
 	_codice.name = "PanelCodice"
 	add_child(_codice)
 	_sistemas_de().registrar(_codice, &"panel_codice")
+	# FASE 72: y el panel del NG+, por el mismo motivo y en el mismo lugar. Es
+	# el CUARTO sistema escrito, testeado y no conectado (los otros tres
+	# estaban en `_instalar_fase63_64_ui()`, que no llama nadie).
+	#
+	# No sale de una ESCENA porque no tiene una: `PanelNgPlus` se construye
+	# entero en su `_init()` (capa, cierre, botón, lista de encargos y de
+	# trofeos) y no necesita un `.tscn` para correr suelto, que es como lo
+	# montan sus propios tests. Va AQUÍ, en `_al_mundo_listo()`, que es donde
+	# vive el resto de la UI que sí se ve.
+	_ngplus = PanelNgPlus.new()
+	_ngplus.name = "PanelNgPlus"
+	add_child(_ngplus)
+	_sistemas_de().registrar(_ngplus, &"panel_ngplus")
 	super._al_mundo_listo()
 	# Fase 45.2: con el mundo ya construido, la pantalla de carga fuera y el
 	# jugador colocado en su punto, arranca el tutorial (nueva partida). Es el

@@ -20,6 +20,27 @@ const RUTA: String = "res://data/hechos.json"
 ## de clase (`talento:<id>`) y de los efectos temporales (`buff:<id>`).
 const FUENTE: String = "hecho:"
 
+## FASE 72 — los Hechos que hasta ahora NINGÚN sistema consultaba. Cuatro
+## recompensas que el juego calculaba, guardaba y mostraba, y que no se podían
+## ganar.
+##
+## POR QUÉ HAY DOS CONSTANTES POR HECHO (`ID_` y `FLAG_`) Y POR QUÉ LA DE LA
+## BANDERA SIGUE LA REGLA MECÁNICA `FLAG_<FLAGS EN MAYÚSCULAS>`: el `id` es lo
+## que nombra al Hecho en `data/hechos.json` (y lo usan `parametros`), y la
+## bandera es lo que la respuesta dice (`"veta_persistente"`,
+## `"doble_respawn"`). Que la bandera tenga el nombre derivable del valor es lo
+## que permite el test genérico de "todo Hecho tiene consumidor", que la fase 72
+## escribió para que esta clase de fallo no vuelva a hacer falta una fase para
+## descubrirla.
+const ID_VETA_PERSISTENTE: String = "veta_persistente"
+const FLAG_VETA_PERSISTENTE: String = "veta_persistente"
+const ID_DOBLE_YACIMIENTO: String = "doble_yacimiento"
+const FLAG_DOBLE_RESPAWN: String = "doble_respawn"
+const ID_COCINA_LOTE: String = "cocina_lote"
+const FLAG_COCINA_LOTE: String = "cocina_lote"
+const ID_FOGATA_PERENNE: String = "fogata_perenne"
+const FLAG_FOGATA_PERENNE: String = "fogata_perenne"
+
 ## Emitida cuando un hecho se desbloquea. La UI la escucha.
 signal hecho_desbloqueado(hecho_id: String)
 
@@ -131,6 +152,31 @@ func flag_de(id: String) -> String:
 	if str(h.get("tipo", "")) != "bandera":
 		return ""
 	return str(h.get("flag", ""))
+
+
+## Un número de `hecho(id).parametros`, o `por_defecto` si el Hecho no existe,
+## no lo tiene, o el valor no es un número.
+##
+## POR QUÉ EXISTE: los Hechos que antes no los leía nadie necesitan
+## números (cuántos usos deja la veta, por cuánto se acelera el respawn, cuántas
+## raciones sale, cuánta leña se reencende), y esos números son DATO. Sin esta
+## función cada consumidor haría su propio `hecho(id).get("parametros", {}).get(
+## "x", 7)` con un default escrito a mano en el código, que es exactamente el
+## número quemado que §9.4 prohíbe.
+func parametro(id: String, clave: String, por_defecto: float = 0.0) -> float:
+	var h: Dictionary = hecho(id)
+	if h.is_empty():
+		return por_defecto
+	var p: Variant = h.get("parametros", {})
+	if not (p is Dictionary):
+		return por_defecto
+	return float((p as Dictionary).get(clave, por_defecto))
+
+
+## El mismo número, entero. `maxi(0, ...)` porque un parámetro negativo en un
+## multiplicador de usos o de raciones es un dato roto, no un caso de uso.
+func parametro_int(id: String, clave: String, por_defecto: int = 0) -> int:
+	return maxi(0, int(roundf(parametro(id, clave, float(por_defecto)))))
 
 
 func fijar_habilidades(h: Habilidades) -> void:

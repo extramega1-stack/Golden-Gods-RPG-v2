@@ -1,6 +1,7 @@
 {
   "arquetipos": {
     "aullido_pico": {
+      "afijos_extra": 1,
       "color": [
         0.75,
         0.8,
@@ -28,6 +29,7 @@
           }
         ]
       },
+      "nivel": 9,
       "nombre": "Aullido del Pico",
       "oro_max": 200,
       "oro_min": 120,
@@ -60,6 +62,7 @@
       }
     },
     "campeon_caido": {
+      "afijos_extra": 1,
       "color": [
         0.6,
         0.15,
@@ -87,6 +90,7 @@
           }
         ]
       },
+      "nivel": 10,
       "nombre": "Campeón Caído",
       "oro_max": 300,
       "oro_min": 200,
@@ -119,6 +123,7 @@
       }
     },
     "devorador_dunas": {
+      "afijos_extra": 1,
       "color": [
         0.85,
         0.7,
@@ -146,6 +151,7 @@
           }
         ]
       },
+      "nivel": 9,
       "nombre": "Devorador de las Dunas",
       "oro_max": 250,
       "oro_min": 150,
@@ -178,6 +184,7 @@
       }
     },
     "eco_cristal": {
+      "afijos_extra": 1,
       "color": [
         0.55,
         0.4,
@@ -205,6 +212,7 @@
           }
         ]
       },
+      "nivel": 9,
       "nombre": "Eco del Cristal",
       "oro_max": 250,
       "oro_min": 150,
@@ -237,6 +245,7 @@
       }
     },
     "fundidor_antiguo": {
+      "afijos_extra": 1,
       "color": [
         0.5,
         0.12,
@@ -264,6 +273,7 @@
           }
         ]
       },
+      "nivel": 9,
       "nombre": "Fundidor Anciano",
       "oro_max": 250,
       "oro_min": 150,
@@ -296,6 +306,7 @@
       }
     },
     "goblin": {
+      "afijos_extra": 0,
       "color": [
         0.35,
         0.75,
@@ -335,6 +346,7 @@
           }
         ]
       },
+      "nivel": 7,
       "nombre": "Goblin",
       "oro_max": 15,
       "oro_min": 5,
@@ -373,6 +385,7 @@
       "vel_mov": 4.2
     },
     "lobo": {
+      "afijos_extra": 0,
       "color": [
         0.55,
         0.55,
@@ -400,6 +413,7 @@
           }
         ]
       },
+      "nivel": 31,
       "nombre": "Lobo salvaje",
       "oro_max": 8,
       "oro_min": 0,
@@ -437,6 +451,7 @@
       "mult_vida": 0.8
     },
     "ogro": {
+      "afijos_extra": 0,
       "color": [
         0.72,
         0.42,
@@ -471,6 +486,7 @@
           }
         ]
       },
+      "nivel": 31,
       "nombre": "Ogro",
       "oro_max": 45,
       "oro_min": 20,
@@ -515,6 +531,7 @@
       "mult_vida": 0.8
     },
     "susurro_umbral": {
+      "afijos_extra": 1,
       "color": [
         0.15,
         0.1,
@@ -542,6 +559,7 @@
           }
         ]
       },
+      "nivel": 10,
       "nombre": "Susurro del Umbral",
       "oro_max": 280,
       "oro_min": 180,
@@ -574,6 +592,8 @@
       }
     },
     "escorpion_dunas": {
+      "afijos_extra": 0,
+      "nivel": 9,
       "nombre": "Escorpión de las Dunas",
       "color": [
         0.85,
@@ -623,6 +643,8 @@
       }
     },
     "slog_volcan": {
+      "afijos_extra": 0,
+      "nivel": 14,
       "nombre": "Slog de Ceniza",
       "color": [
         0.7,
@@ -672,6 +694,8 @@
       }
     },
     "golem_ascua": {
+      "afijos_extra": 0,
+      "nivel": 15,
       "nombre": "Gólem de Ascua",
       "color": [
         0.8,
@@ -721,6 +745,8 @@
       }
     },
     "yeti_hielo": {
+      "afijos_extra": 0,
+      "nivel": 17,
       "nombre": "Yetí de Hielo",
       "color": [
         0.7,
@@ -770,6 +796,8 @@
       }
     },
     "arana_sombra": {
+      "afijos_extra": 0,
+      "nivel": 17,
       "nombre": "Araña del Velo",
       "color": [
         0.45,
@@ -820,6 +848,8 @@
       "stat_daño": "inteligencia"
     },
     "espectro_velo": {
+      "afijos_extra": 0,
+      "nivel": 31,
       "nombre": "Espectro del Velo",
       "color": [
         0.5,
@@ -870,6 +900,8 @@
       "stat_daño": "inteligencia"
     },
     "carnicoro_rio": {
+      "afijos_extra": 0,
+      "nivel": 31,
       "nombre": "Carnicoro del Abismo",
       "color": [
         0.4,
@@ -919,6 +951,8 @@
       }
     },
     "mimo_hoja": {
+      "afijos_extra": 0,
+      "nivel": 37,
       "nombre": "Mimo de la Costa",
       "color": [
         0.6,
@@ -968,6 +1002,8 @@
       }
     },
     "centinela_oro": {
+      "afijos_extra": 0,
+      "nivel": 45,
       "nombre": "Centinela Dorada",
       "color": [
         0.95,
@@ -1017,6 +1053,8 @@
       }
     },
     "sombra_vacia": {
+      "afijos_extra": 0,
+      "nivel": 57,
       "nombre": "Sombra Vacía",
       "color": [
         0.2,
@@ -1067,6 +1105,8 @@
       "stat_daño": "inteligencia"
     },
     "titan_acecho": {
+      "afijos_extra": 2,
+      "nivel": 19,
       "nombre": "Titán Acecho",
       "color": [
         0.62,
@@ -1126,6 +1166,6 @@
       }
     }
   },
-  "nota": "Arquetipos de enemigos de la fase 4. Data-driven: un enemigo nuevo = editar este archivo, no código.",
+  "nota": "Arquetipos de enemigos de la fase 4. Data-driven: un enemigo nuevo = editar este archivo, no código. FASE 72: cada arquetipo declara `nivel` (el nivel de referencia del bicho, medido como la mediana del `nivel` de sus spawns en data/spawns.json; el ogro toma la banda de la arena, que es donde vive) y `afijos_extra` (margen de afijos PROPIO del arquetipo: 0 en el mob normal, 1 en los jefes de fragmento y 2 en el titan). Los dos viajaban a 0 en `DropTable.roll_drops`, asi que todos los bots del mundo soltaban el mismo afijo para siempre. `nivel` escala el VALOR del afijo y `afijos_extra` su CANTIDAD; el margen del NG+ se suma encima en tiempo de tirada (`EstadoNgPlus.afijos_extra_en_juego`).",
   "version": 1
 }

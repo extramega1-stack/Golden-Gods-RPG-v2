@@ -13,14 +13,27 @@ extends CanvasLayer
 ##   basta: hay que mover el estado y ver el label cambiar.
 ## - Nace cerrado (`visible = false` al construir, lección 11).
 ##
-## Lo abre la pantalla de título o, jugando, la línea de wiring que registra
-## este panel en `fase14_demo._instalar_fase63_64_ui`. `alternar()` +
-## `actual` están para eso: un panel que nadie puede abrir no existe.
+## Lo abre la pantalla de título o, jugando, la tecla `abrir_ngplus` (N). Ese
+## atajo y el registro en `Systems` los pone `fase14_demo._al_mundo_listo()`:
+## `alternar()` + `actual` están para eso, y un panel que nadie puede abrir no
+## existe.
+##
+## FASE 72 — POR QUÉ ESTE ARCHIVO ESTABABA CON SU PROPIA TECLA Y NO LA TENÍA:
+## `alternar()` hacía `abrir(_estado)`, y `_estado` es null hasta la PRIMERA
+## vez que alguien llama a `abrir(estado)`. O sea que la función de alternar no
+## tenía forma de abrir el panel por primera vez, y no existía ningún call site
+## en toda la partida. Con el panel invisible se perdían los 12 trofeos de
+## `data/ngplus_trofeos.json` y la lista de encargos del día. Por eso `abrir()`
+## y `alternar()` ahora resuelven el estado solos (`estado_de_la_partida`), y la
+## tecla va en `_unhandled_input`, que es donde la pone `PanelCodice`.
 
 const CAPA: int = UiLayers.PANEL_NGPLUS
 
 ## §9.1
 var system_id: StringName = &"panel_ngplus"
+
+## La acción del Input Map (§9.3: acciones en español, atajos en el mapa).
+const ACCION: String = "abrir_ngplus"
 
 ## La instancia viva, para el atajo de teclado y para el test. Es estática
 ## por el mismo motivo que `Systems.actual`: un panel colgado de un
@@ -160,12 +173,44 @@ func abrir(estado: EstadoNgPlus) -> bool:
 	return true
 
 
-## Abre/cierra. Lo llama el atajo de teclado desde la escena.
+## Abre/cierre. Lo llama la tecla.
 func alternar() -> bool:
 	if visible:
 		cerrar_panel()
 		return false
-	return abrir(_estado)
+	return abrir(estado_de_la_partida())
+
+
+## El `EstadoNgPlus` vivo de la partida, o uno en cero si no hay partida.
+##
+## Se busca por el REGISTRO de sistemas (§9.1) y no por una ruta de nodo: es la
+## forma de preguntar "quién es el dueño de esto" sin que este panel sepa cómo
+## se llama la escena. `SaveSystem` es quien tiene el estado, porque el prestigio
+## vive en el save y no en memoria.
+func estado_de_la_partida() -> EstadoNgPlus:
+	if Systems.actual != null:
+		var save = Systems.actual.obtener(&"save_system")
+		if save is SaveSystem:
+			var e: EstadoNgPlus = (save as SaveSystem).ngplus
+			if e != null and is_instance_valid(e):
+				return e
+	return EstadoNgPlus.new()
+
+
+## La tecla `N` abre y cierra. NO se comprueba `visible` para abrir: un
+## `CanvasLayer` oculto sigue recibiendo `_unhandled_input` (es lo que hacen el
+## resto de paneles con su tecla), y con la guarda el panel no abriría nunca.
+## El ESC lo lleva la PILA (`PilaUI`), no este archivo, para que el orden de
+## cierre entre paneles apilados sea el correcto.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed(ACCION):
+		alternar()
+		get_viewport().set_input_as_handled()
+		return
+	if visible and PilaUI.es_cima(self) \
+			and event.is_action_pressed("cancelar_seleccion"):
+		cerrar_panel()
+		get_viewport().set_input_as_handled()
 
 
 ## Cierra y se desuscribe. Desuscribirse al cerrar (y no solo al morir el

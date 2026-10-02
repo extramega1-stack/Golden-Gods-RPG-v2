@@ -103,6 +103,17 @@ func guardar() -> bool:
 	if jugador == null:
 		push_warning("[SaveSystem] sin jugador asignado; no se guarda")
 		return false
+	# FASE 72: los trofeos del NG+ se EVALÚAN antes de serializar, no cuando
+	# el jugador abre el panel. Antes el panel era el único evaluador, así que
+	# un trofeo que se cumplía y se ganaba se perdía si el jugador no abría la
+	# pantalla y guardaba después. Acá el guardado es el que cierra el trato:
+	# si el trofeo se cumple, entra en este mismo archivo.
+	#
+	# `contexto_de(ngplus, ...)` y NO `contexto_actual(...)`: el estado que
+	# manda al guardar es el VIVO, y `contexto_actual` lo lee del DISCO (y de
+	# paso publicaría un NG+ viejo sobre el que el jugador acaba de prestigiar).
+	var trofeos: Trofeos = Trofeos.instancia()
+	trofeos.evaluar(trofeos.contexto_de(ngplus, misiones))
 	var datos: Dictionary = {
 		"version": SAVE_VERSION,
 		"jugador": {
@@ -146,6 +157,12 @@ func guardar() -> bool:
 		# la única forma de que "continuar" no pierda un final, y de que el
 		# número de muertes sobreviva al reinicio.
 		"resultado": resultado.to_dict(),
+		# FASE 72: los trofeos del NG+. `Trofeos` ya tenía `to_dict()` y
+		# `cargar_estado()` escritos desde el bloque 68 y NADIE los llamaba: el
+		# set de ganados vivía solo en RAM y se perdía en cada F10. Con el panel
+		# del NG+ ahora en la partida, ganarlos es jugable —y un trofeo que se
+		# pierde al guardar es peor que no tenerlo, como dice el propio Trofeos.
+		"trofeos": Trofeos.instancia().to_dict(),
 	}
 	# Bloque 65: escritura ATÓMICA. Antes se escribía directamente sobre
 	# `partida.json`: un corte de luz (o un crash, o cerrar la laptop) a mitad
@@ -324,6 +341,18 @@ func cargar() -> bool:
 	# depende de nadie (ni del StatBlock ni del NG+), y `cargar_estado` es
 	# tolerante: un guardado sin el bloque es una partida en curso.
 	_cargar_resultado(datos.get("resultado", {}))
+	# FASE 72: los trofeos del NG+ se cargan acá y no junto al bloque "ngplus"
+	# porque su CONDICIÓN sale de ese bloque (ciclo, prestigio, misiones
+	# entregadas) pero el set de ganados se GUARDA: no se puede recalcular, o
+	# el trofeo saltaría de nuevo en cada carga.
+	#
+	# Con guarda: un save viejo no tiene el bloque, y `Trofeos.cargar_estado`
+	# avisa por version distinta que no puede pasar. Un `push_warning` en
+	# CADA carga de una partida vieja es ruido, y el patrón de todo este archivo
+	# es "bloque ausente = se arranca vacío, en silencio".
+	var bloque_trofeos: Dictionary = _dicto(datos.get("trofeos", {}))
+	if not bloque_trofeos.is_empty():
+		Trofeos.instancia().cargar_estado(bloque_trofeos)
 	# BUG REAL (lo encontró el playtest de la ola 3): `cargar()` corre en el
 	# `_ready` de la demo, y los refugios se crean DESPUÉS, en `_al_mundo_listo`.
 	# O sea que `_cargar_arboles` y `_cargar_refugios` iteran listas vacías y no
