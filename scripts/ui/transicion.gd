@@ -122,6 +122,15 @@ func _fundir(hacia: float) -> void:
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(_panel, "color:a", hacia, FADE_SEG)
 	await tween.finished
+	_caja_terminada(hacia)
+
+
+## Lo que queda cuando el fundido ACABÓ. Va en su propio método para que el
+## test lo pueda llamar sin correr el tween: lo que se prueba aquí es el
+## contrato de la pila, no la animación.
+func _caja_terminada(hacia: float = 0.0) -> void:
+	if _panel == null:
+		return
 	# Al terminar de irse a negro, se queda invisible: un rectángulo negro
 	# transparente sigue costando compositing aunque no se vea.
 	_panel.color.a = hacia
@@ -129,6 +138,13 @@ func _fundir(hacia: float) -> void:
 	# solo `ColorRect` transparente encima del mundo sigue costando un frame de
 	# composición por nada.
 	visible = hacia > 0.0
+	# Y sale de la pila de paneles, que es el CONTRATO de la pila: se entra al
+	# abrir y se sale al cerrar. Sin esta línea el fundido se quedaba arriba
+	# para siempre, y como la cima es la que recibe el ESC, ningún panel podía
+	# volver a apilarse: la mochila, el equipo, el códice, todo. Lo encontró la
+	# partida completa (`tools/jugar.sh`, P11), donde los diez paneles dieron
+	# "no se abre con su tecla" uno tras otro con la pila en 1.
+	PilaUI.cerrar(self)
 
 
 ## Un fundido suelto sin cambiar de escena: para tapar un guardado o un

@@ -31,6 +31,7 @@ func _process(_delta: float) -> bool:
 	_test_se_anade_al_arbol()
 	_test_captura_el_arbol_antes_del_await()
 	_test_no_depende_de_si_mismo()
+	_test_sale_de_la_pila()
 	print("[TEST] transicion: %d ok, %d fallos" % [_ok, _fallos])
 	quit(_fallos)
 	return true
@@ -115,3 +116,40 @@ func _test_no_depende_de_si_mismo() -> void:
 	# sin colgar: el llamador la usa para el fade y degrada si no puede).
 	_chk(Transicion.CAPA > 0, "la clase es utilizable", "")
 	t.free()
+
+
+## EL BUG, encontrado por la partida completa (`tools/jugar.sh`, P11): la
+## transición se metía en `PilaUI` con `abrir()` y NUNCA salía. Se quedaba de
+## cima para siempre, y como la cima es la única que recibe el ESC, ningún
+## panel podía volver a apilarse: los diez del catálogo dieron "no se abre con
+## su tecla", uno detrás de otro, con la pila en 1.
+##
+## El contrato de `PilaUI` es de una línea por panel: entrar al abrir, SALIR
+## al cerrar. El fundido no es un panel, pero se apila para bloquear el input
+## mientras tapa la pantalla, así que tiene que salir cuando termina.
+func _test_sale_de_la_pila() -> void:
+	var t: Transicion = Transicion.asegurar()
+	_chk(t != null, "hay una transición para la prueba", "")
+	if t == null:
+		return
+	PilaUI.limpiar()
+	# Durante el fundido tiene que ESTAR en la pila (si no, el ESC de un
+	# jugador llega al panel que hay debajo mientras la pantalla está a negro).
+	t._fundir(1.0)
+	_chk(PilaUI.cima() == t,
+		"durante el fundido, la transición es la cima de la pila",
+		"cima=%s" % str(PilaUI.cima()))
+	# Y al terminar tiene que HABER SALIDO. Se fuerza el final del fundido con
+	# el mismo efecto que tiene el tween terminado (el `alpha` a 0 deja la capa
+	# invisible), que es exactamente la línea de la que se trata.
+	t._caja_terminada()
+	_chk(PilaUI.cima() != t,
+		"al terminar el fundido, la transición SALE de la pila",
+		"cima=%s" % str(PilaUI.cima()))
+	_chk(PilaUI.abierta() == 0,
+		"y la pila queda vacía para que el próximo panel pueda apilarse",
+		"pila=%d" % PilaUI.abierta())
+	t.queue_free()
+
+
+
