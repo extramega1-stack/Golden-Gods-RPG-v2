@@ -211,6 +211,28 @@ func progreso_texto(quest_id: String) -> String:
 	return "\n".join(lineas)
 
 
+## Los objetivos de una misión con su estado actual: un array de
+## diccionarios `{tipo, cantidad, actual, texto, ...}` en el MISMO orden que
+## `data/quests.json`. `{}` si la misión no existe.
+##
+## POR QUÉ EXISTE: `progreso_texto()` da el texto ya formateado, que es lo que
+## quiere la UI, pero no sirve para saber QUÉ objetivo falta: hay que volver a
+## parsear la cadena. Esto es lo que le deja al juego —y a la partida
+## completa— preguntar "¿qué me falta?" sin interpretar español.
+func objetivos_con_progreso(quest_id: String) -> Array:
+	var salida: Array = []
+	if not QuestDB.existe(quest_id):
+		return salida
+	var objetivos: Array = _objetivos_de(quest_id)
+	var prog: Array = _progreso.get(quest_id, [])
+	for i in range(objetivos.size()):
+		var o: Dictionary = (objetivos[i] as Dictionary).duplicate()
+		o["actual"] = int(prog[i]) if i < prog.size() else 0
+		o["meta"] = maxi(1, int(o.get("cantidad", 1)))
+		salida.append(o)
+	return salida
+
+
 ## Oferta de misión para un NPC: la primera "disponible" cuyo npc_origen
 ## sea él, o la primera "lista" para entregar cuyo npc_origen sea él.
 ## {} si no hay nada que ofrecer.
