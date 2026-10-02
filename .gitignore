@@ -30,3 +30,7 @@ models/_pose_*
 tools/_*
 anim/fuente/
 anim/clips/convertir.log
+
+# Los parches de traspaso son respaldo, no producto: el trabajo vive en las
+# ramas. En el repo solo estan para que no se pierda si se limpian los worktrees.
+handover/fase72-patches/
