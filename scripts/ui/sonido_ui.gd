@@ -45,3 +45,23 @@ static func hecho() -> void:
 ## este es grave y propio, porque lo recibe el jugador y tiene que distinguirlo.
 static func jugador_danio() -> void:
 	AudioJuego.reproducir("dano_recibido")
+
+
+## El mismo "clic", pero de una vez: Conecta el sonido al botón y lo devuelve,
+## para poder escribir `caja.add_child(SonidoUI.boton(Button.new()))` sin que
+## el panel tenga que acordarse del `pressed.connect`.
+##
+## POR QUÉ ES UN HELPER Y NO UNA REGLA GLOBAL: Godot no tiene "clic de botón"
+## global (un `Theme` no emite señales), así que sin esto hay 42 botones
+## repartidos en 20 archivos y la mitad se olvidaría. Con esto hay UN lugar
+## donde se enchufa y el resto del panel no se entera.
+static func boton(b: Button) -> Button:
+	if b == null:
+		return b
+	if not b.pressed.is_connected(_clic_al_presionar):
+		b.pressed.connect(_clic_al_presionar)
+	return b
+
+
+static func _clic_al_presionar() -> void:
+	clic()

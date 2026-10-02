@@ -201,6 +201,10 @@ func interactuar_jugador(j: Player) -> String:
 	if not j.inventario.quitar(tronco, 1):
 		return "sin_lena"
 	cargar_lena(LENA_POR_TRONCO)
+	# Fase 72: prender el fuego es un sonido POSICIONAL y va en la fogata, no
+	# en el jugador: una fogata a 30 m tiene que crujir a 30 m. Existía desde
+	# el bloque 66 sin un solo call site.
+	AudioJuego.al_fogata(self)
 	llama_encendida.emit()
 	return "ok"
 

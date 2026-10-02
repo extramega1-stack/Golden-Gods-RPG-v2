@@ -91,6 +91,10 @@ func _boton(texto: String, accion: Callable) -> void:
 	b.text = texto
 	b.custom_minimum_size = Vector2(0, 40.0)
 	b.pressed.connect(accion)
+	# Fase 72: el clic. Esta factory es la UNICA vía por la que el menú crea
+	# botones, así que un `SonidoUI.boton()` acá cubre los cinco sin que cada
+	# uno se acuerde.
+	SonidoUI.boton(b)
 	_caja.add_child(b)
 
 

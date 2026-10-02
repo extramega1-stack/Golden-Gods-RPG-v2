@@ -259,6 +259,24 @@ func _instalar_fase63_64_ui() -> void:
 	add_child(_pool_impacto)
 	_sistemas_de().registrar(_pool_impacto, &"pool_impacto")
 
+	# Fase 72: el ambiente por zona y los avisos del jugador.
+	#
+	# Los dos son sistemas que se SUSCRIBEN a señales de la sesión, y por eso
+	# se crean aquí (que es donde la sesión ya está construida) y no dentro de
+	# `Player`: `scripts/player/player.gd` no es de esta fase. Sin ellos el bus
+	# `Ambiente` seguía sin un solo player y el hambre, la sed, la
+	# enfermedad, subir de nivel y desbloquear un Hecho seguían mudos.
+	var ambiente := AmbienteZona.new()
+	ambiente.name = "AmbienteZona"
+	add_child(ambiente)
+	ambiente.vigilar(_jugador)
+	_sistemas_de().registrar(ambiente, &"ambiente_zona")
+	var avisos := AvisosJugador.new()
+	avisos.name = "AvisosJugador"
+	add_child(avisos)
+	avisos.vigilar(_jugador)
+	_sistemas_de().registrar(avisos, &"avisos_jugador")
+
 	# Bloque 65: el menú de pausa y el panel de opciones. Se instalan AL FINAL
 	# y por encima de todo, y son los únicos que registran el árbol como
 	# pausado. La pausa es dueña de la pila de paneles.

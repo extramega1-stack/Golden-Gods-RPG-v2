@@ -126,7 +126,11 @@ func _celda_slot(slot: String) -> VBoxContainer:
 func _al_quitar(slot: String) -> void:
 	if _jugador == null or not is_instance_valid(_jugador):
 		return
-	_jugador.equipo.desequipar(slot, _jugador.stats, _jugador.inventario)
+	# Fase 72: quitar algo que no se puede quitar tiene que sonar a error. El
+	# sonido va en el botón, no en `Equipment.desequipar()`: la lógica también
+	# devuelve false al cargar un guardado, y eso no es un error del jugador.
+	if not _jugador.equipo.desequipar(slot, _jugador.stats, _jugador.inventario):
+		SonidoUI.error()
 
 
 func _actualizar_stats() -> void:

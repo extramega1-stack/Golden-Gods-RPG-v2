@@ -37,6 +37,17 @@ static func abrir(panel: CanvasLayer) -> void:
 		return
 	_sacar(panel)
 	_pila.append(panel)
+	# Fase 72: el "abre" de abrir panel. AQUÍ y no en cada panel, porque esta
+	# es la ÚNICA vía por la que un panel se registra: los 13 llaman a
+	# `PilaUI.abrir`, y por eso el sonido estaba muerto desde el bloque 66
+	# (`SonidoUI.abrir_panel()` no tenía ni un call site) sin que faltara un
+	# sonido: faltaba el enchufe.
+	# El fundido a negro también pasa por acá y NO es un panel: sin esta guarda
+	# el "abre" sonaría en cada cambio de escena, por encima del fundido. Se
+	# lee la marca por propiedad y no por `is Transicion` a propósito: `Transicion`
+	# ya llama a `PilaUI`, y nombrarlo acá sería una dependencia circular.
+	if panel.get("es_fundido") != true:
+		SonidoUI.abrir_panel()
 
 
 ## Desregistra. Idempotente.

@@ -26,6 +26,12 @@ const FADE_SEG: float = 0.22
 ## escena (cambiar durante el fade al uncover rompe el proceso).
 signal cubiertos
 
+## Fase 72: el fundido se registra en la pila de paneles (para que el ESC no
+## lo ignore) pero NO es un panel. `PilaUI.abrir()` lo lee para no poner el
+## "abre de panel" en cada cambio de escena: si sonara, la transición
+## cantaría por ENCIMA del fundido a negro, que es justo lo que tapa el corte.
+var es_fundido: bool = true
+
 static var _instancia: Transicion = null
 
 var _panel: ColorRect = null

@@ -260,20 +260,32 @@ func _actualizar_barra() -> void:
 func _al_usar() -> void:
 	if _sel_id == "" or _jugador == null or not is_instance_valid(_jugador):
 		return
-	_jugador.inventario.usar(_sel_id, _jugador)
+	# Fase 72: el "no se pudo" suena, y solo cuando el jugador PULSÓ un botón
+	# que no podía hacer. Por eso va en el panel y no en `Inventario.usar()`:
+	# ahí también devuelve false cuando un test o la carga piden usar algo
+	# que no es consumible, y eso no es un error del jugador.
+	if not _jugador.inventario.usar(_sel_id, _jugador):
+		SonidoUI.error()
 
 
 func _al_equipar() -> void:
 	if _sel_id == "" or _jugador == null or not is_instance_valid(_jugador):
 		return
-	_jugador.equipo.equipar(_sel_id, _jugador.stats, _jugador.inventario)
+	if not _jugador.equipo.equipar(_sel_id, _jugador.stats, _jugador.inventario):
+		SonidoUI.error()
 
 
 ## I alterna el inventario.
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("abrir_inventario"):
 		visible = not visible
+		# Fase 72: el inventario se abre y se cierra con una tecla, sin pasar
+		# por `PilaUI.abrir()`, así que el "abre de panel" —que vive en la
+		# pila para los otros doce— hay que ponerlo acá también. El
+		# inventario es el panel que más se abre del juego: si este sonido
+		# faltara, parecería que los demás tampoco suenan.
 		if visible:
+			SonidoUI.abrir_panel()
 			_reconstruir()
 		get_viewport().set_input_as_handled()
 

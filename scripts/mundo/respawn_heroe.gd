@@ -191,6 +191,12 @@ func _al_morir(_fuente: Entity) -> void:
 	if _jugador == null or not is_instance_valid(_jugador):
 		return
 
+	# Fase 72: la muerte del jugador suena AQUÍ y no en `Entity.die()`. Este
+	# es el sistema de mundo que reacciona a `jugador.murio`, y ponerlo acá
+	# garantiza que suene una vez y solo en la partida (en la arena la resuelve
+	# la arena). Es distinto del `muerte` de los mobs: caída larga y grave.
+	AudioJuego.al_morir_jugador()
+
 	# El ancla pudo venir de `data/viaje_rapido.json` (nunca: ver arriba) o
 	# de una llamada manual. En cualquier caso se refresca contra las plazas
 	# conocidas, y si no hay ninguna se usa la del jugador.

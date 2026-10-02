@@ -249,7 +249,38 @@ func _al_minar_solicitado(v: Veta) -> void:
 
 
 func _al_minado(veta_id: String, item_id: String, cantidad: int, xp: int) -> void:
+	_sonar_minado(veta_id)
 	minado.emit(veta_id, item_id, cantidad, xp)
+
+
+## Fase 72: el golpe que abre una veta (o tala un árbol) suena POSICIONAL, en
+## el nodo. Antes no sonaba nada: se minaba y se talaba en silencio, que es la
+## mitad de los quince huecos.
+##
+## El nodo puede faltar (la veta se liberó por streaming entre el golpe y la
+## señal), y entonces el sonido cae a 2D: peor que no sonar es que suene
+## "lejos" cuando lo tenías al lado.
+func _sonar_minado(veta_id: String) -> void:
+	var arbol: bool = _es_arbol(veta_id)
+	var v: Veta = veta(veta_id)
+	if arbol:
+		AudioJuego.al_talar(v)
+	else:
+		AudioJuego.al_minar(v)
+	# El ÚLTIMO golpe de una veta suena distinto: no es otro pico, es el
+	# bloque que se parte y el hueco que deja.
+	if v != null and not v.esta_minable():
+		AudioJuego.al_romper(v)
+
+
+## ¿Este id es un árbol? Del nodo si está en el mapa, y de `ArbolDB` si ya
+## se liberó por streaming. `Arbol` y `Veta` comparten la clase base, así que
+## el `is` alcanza justo el caso que queremos sin tocar `Mineria`.
+func _es_arbol(veta_id: String) -> bool:
+	var v: Veta = veta(veta_id)
+	if v != null:
+		return v is Arbol
+	return ArbolDB.existe(veta_id)
 
 
 func _al_veta_agotada(veta_id: String) -> void:

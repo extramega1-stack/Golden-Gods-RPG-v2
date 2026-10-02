@@ -209,6 +209,20 @@ func estado() -> int:
 	return _estado
 
 
+## Fase 72: baja TODAS las capas a silencio en `seg` segundos. Lo usa el
+## menú antes de cambiar de escena: sin esto la música se corta en seco en
+## pleno fundido a negro, y el corte se oye POR ENCIMA del fundido.
+##
+## No cambia el estado a propósito: `estado()` sigue diciendo qué tema había,
+## que es lo que el test y el director necesitan saber.
+func silenciar(seg: float = 0.35) -> void:
+	var dur: float = maxf(seg, 0.05)
+	for p in _players:
+		var tween: Tween = create_tween()
+		tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		tween.tween_property(p, "volume_db", DB_SILENCIO, dur)
+
+
 ## Cambia de "escena" musical. Es lo que hace la música adaptativa: el juego
 ## va cambiando de estado (explorando, luchando, en un jefe) y la música sigue.
 func cambiar_estado(estado: int) -> void:

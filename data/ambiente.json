@@ -1,0 +1,60 @@
+{
+ "version": 1,
+ "nota": "Fase 72. El ambiente por zona: las CAPAS (lo que suena siempre, cruzadas entre sí) y la MEZCLA de cada región (qué capas y a cuántos dB). Todo se sintetiza con Sintetizador.generar_bucle() al arrancar, no hay un solo asset. Las claves de 'capas' fijan el orden de los players, así que el índice de una capa es estable. Los ids de 'mezclas' son los de data/regiones.json, y 'default' es la red para una región sin entrada. dB, no lineal: -60 es el silencio de Godot.",
+ "capas": {
+  "viento": {
+   "forma": "ruido",
+   "freq_ini": 420.0,
+   "freq_fin": 260.0,
+   "volumen": 0.5,
+   "ruido_corte": 0.045,
+   "ruido_ataque": 1.1,
+   "ruido_release": 1.2,
+   "nota": "Ruido con un pasabajos muy cerrado (0.045). Cerrado = graves = viento. Si el corte sube, se vuelve un siseo."
+  },
+  "agua": {
+   "forma": "agua",
+   "freq_ini": 300.0,
+   "freq_fin": 150.0,
+   "volumen": 0.42,
+   "ruido_corte": 0.12,
+   "ruido_ataque": 0.7,
+   "ruido_release": 0.9,
+   "nota": "Ruido de banda (cascada de dos pasabajos) + burbujeo de seno modulado. El bubbling es lo que el oído lee como agua y no como aire."
+  },
+  "selva": {
+   "forma": "ruido",
+   "freq_ini": 900.0,
+   "freq_fin": 520.0,
+   "volumen": 0.3,
+   "ruido_corte": 0.09,
+   "ruido_ataque": 0.9,
+   "ruido_release": 1.0,
+   "nota": "Crujido de hoja: mismo ruido que el viento pero con el pasabajos más abierto, para que sisee en las agudas."
+  },
+  "fuego": {
+   "forma": "ruido",
+   "freq_ini": 160.0,
+   "freq_fin": 110.0,
+   "volumen": 0.26,
+   "ruido_corte": 0.03,
+   "ruido_ataque": 0.6,
+   "ruido_release": 0.7,
+   "nota": "Grave y cerrado: el crepitar de una hoguera. A -26 dB solo se oye cerca de una fogata, que es donde tiene que estar."
+  }
+ },
+ "mezclas": {
+  "moon_town": {"viento": -30.0, "agua": -60.0, "selva": -60.0, "fuego": -34.0},
+  "tierras_francas": {"viento": -17.0, "agua": -60.0, "selva": -60.0, "fuego": -60.0},
+  "ceniza_forja": {"viento": -24.0, "agua": -60.0, "selva": -60.0, "fuego": -20.0},
+  "tierras_trueno": {"viento": -15.0, "agua": -60.0, "selva": -60.0, "fuego": -60.0},
+  "bosque_hondo": {"viento": -22.0, "agua": -60.0, "selva": -18.0, "fuego": -60.0},
+  "umbral_ladon": {"viento": -19.0, "agua": -60.0, "selva": -30.0, "fuego": -60.0},
+  "abismo_lloroso": {"viento": -23.0, "agua": -60.0, "selva": -60.0, "fuego": -60.0},
+  "costa_lamento": {"viento": -21.0, "agua": -16.0, "selva": -60.0, "fuego": -60.0},
+  "corona_quebrada": {"viento": -16.0, "agua": -60.0, "selva": -60.0, "fuego": -60.0},
+  "velo": {"viento": -26.0, "agua": -60.0, "selva": -24.0, "fuego": -60.0},
+  "default": {"viento": -21.0, "agua": -60.0, "selva": -60.0, "fuego": -60.0},
+  "titulo": {"viento": -19.0, "agua": -60.0, "selva": -60.0, "fuego": -30.0}
+ }
+}

@@ -128,6 +128,123 @@ static func generar(receta: Dictionary, variante: int = 0) -> AudioStreamWAV:
 	return stream
 
 
+## Genera un LOOP de ambiente. `duracion` en segundos (la receta lo ignora:
+## un bed de viento son 6 s, no 0,3).
+##
+## POR QUÉ NO PUEDE SER `generar()` CON `loop_mode`: un loop que empieza y
+## termina en el mismo sample se oye como un corte cada 6 segundos, y con
+## ruido eso es un "clic" de siseo. El truco es el CRUCE DE EXTREMOS: los
+## últimos FUNDIDO muestras se mezclan con las primeras y el bucle
+## `loop_end` cae ANTES del tramo ya mezclado. Lo que se repite es una curva
+## que ya entra y sale sola.
+##
+## Además el ruido tiene que ir filtrado y con la envolvente MUY lenta
+## (ruido_ataque de 0,5 s o más). Con el ADSR de un golpe (5 ms) un loop de
+## ruido suena a un siseo que se corta, no a viento.
+static func generar_bucle(receta: Dictionary, duracion: float = 6.0) -> AudioStreamWAV:
+	var seg: float = maxf(duracion, 0.5)
+	var n: int = int(TASA * seg)
+	if n < TASA / 2:
+		n = TASA / 2
+	var fundido: int = clampi(n / 8, 256, TASA / 2)
+	var loop_end: int = maxi(n - fundido, fundido)
+
+	var f0: float = float(receta.get("freq_ini", 300.0))
+	var f1: float = float(receta.get("freq_fin", f0))
+	var vol: float = clampf(float(receta.get("volumen", 0.3)), 0.0, 1.0)
+	var forma: String = str(receta.get("forma", "ruido"))
+	# Envolvente LENTA a propósito: es lo que separa "viento" de "siseo".
+	var atk: float = clampf(float(receta.get("ruido_ataque", 0.8)), 0.05, seg * 0.45)
+	var rel: float = clampf(float(receta.get("ruido_release", 0.8)), 0.05, seg * 0.45)
+	var corte: float = clampf(float(receta.get("ruido_corte", 0.06)), 0.002, 1.0)
+
+	var datos := PackedByteArray()
+	datos.resize(n * 4)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = SEMILLA_RUIDO + 9173
+
+	var lp: float = 0.0
+	var fase: float = 0.0
+	for i in range(n):
+		var t: float = float(i) / float(TASA)
+		var ff: float = lerpf(f0, f1, t / seg)
+		fase += TAU * ff / float(TASA)
+		if fase > TAU:
+			fase -= TAU
+
+		# --- el cuerpo del sonido ---
+		var s: float = 0.0
+		match forma:
+			"agua":
+				# Agua: ruido de banda (dos pasabajos en cascada, uno abierto y
+				# otro cerrado) + un "burbujeo" de seno grave modulado. La
+				# diferencia con el viento es el bubbling: es lo que el oído lee
+				# como agua y no como aire en movimiento.
+				var lp2: float = lp
+				var blanco: float = rng.randf_range(-1.0, 1.0)
+				lp = lerpf(lp, blanco, corte)
+				lp2 = lerpf(lp2, lp, corte * 0.5)
+				var burbuja: float = sin(TAU * maxf(f1, 40.0) * t
+					+ sin(TAU * 0.35 * t) * 2.2) * 0.35
+				s = (lp - lp2) * 2.4 + burbuja
+			"ruido":
+				var blanco2: float = rng.randf_range(-1.0, 1.0)
+				lp = lerpf(lp, blanco2, corte)
+				s = lp * 2.0
+			_:
+				for g in [0, 7, 12]:
+					s += sin(fase + TAU * float(g) / 12.0) / 3.0
+
+		# --- envolvente lenta: entra, sostiene, sale ---
+		var env: float = 0.0
+		var t_a: float = atk / seg
+		var t_r: float = maxf(1.0 - rel / seg, t_a + 0.05)
+		if t < t_a:
+			env = t / maxf(t_a, 0.0001)
+		elif t < t_r:
+			env = 1.0
+		else:
+			env = maxf(1.0 - (t - t_r) / maxf(1.0 - t_r, 0.0001), 0.0)
+		# Un pulso lentísimo de volumen (0,07 Hz) es lo que hace que el viento
+		# "respire" en vez de ser un muro de ruido constante.
+		var respiro: float = 0.75 + 0.25 * sin(TAU * 0.07 * t)
+
+		var amp: float = clampf(s * vol * env * respiro, -1.0, 1.0)
+		_escribir(datos, i, amp, amp)
+
+	# --- el cruce de extremos: lo que hace que el bucle no se oiga ---
+	for k in range(fundido):
+		var a: float = float(k) / float(fundido)
+		var i_ini: int = k
+		var i_fin: int = loop_end + k
+		if i_fin >= n:
+			break
+		_mezclar(datos, i_fin, datos[i_ini * 4], datos[i_ini * 4 + 1],
+			datos[i_ini * 4 + 2], datos[i_ini * 4 + 3], a)
+
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = TASA
+	stream.stereo = true
+	stream.data = datos
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = loop_end
+	return stream
+
+
+## Mezcla el sample `idx` con los bytes del sample `fuente` (4 bytes: LI,LD,
+## RI,RD) con peso `peso` (0 = solo el original, 1 = solo la fuente).
+static func _mezclar(buf: PackedByteArray, idx: int, li: int, ld: int,
+		ri: int, rd: int, peso: float) -> void:
+	var w: float = clampf(peso, 0.0, 1.0)
+	var base: int = idx * 4
+	buf[base] = int(lerpf(float(buf[base]), float(li & 0xFF), w)) & 0xFF
+	buf[base + 1] = int(lerpf(float(buf[base + 1]), float(li >> 8), w)) & 0xFF
+	buf[base + 2] = int(lerpf(float(buf[base + 2]), float(ri & 0xFF), w)) & 0xFF
+	buf[base + 3] = int(lerpf(float(buf[base + 3]), float(ri >> 8), w)) & 0xFF
+
+
 ## Escribe un sample estéreo de 16 bits con signo en el buffer, en little-endian
 ## (que es como Godot guarda FORMAT_16_BITS). Manual, no con `encode_s16`,
 ## porque se escribe en un `PackedByteArray` ya dimensionado y `encode_s16`
