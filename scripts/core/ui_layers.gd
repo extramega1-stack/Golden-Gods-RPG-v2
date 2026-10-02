@@ -44,6 +44,15 @@ const TRANSICION: int = 98
 ## ENCIMA de la pausa, como settings dentro de un menú).
 const MENU_PAUSA: int = 96
 const PANEL_OPCIONES: int = 97
+## Fase 72: la pantalla de FIN DE PARTIDA. Modal crítico (90–99) y por DEBAJO
+## de la pausa (96) a propósito: el final se muestra sobre el mundo, con la
+## pausa cerrada, y no como un submenú de la pausa.
+const PANEL_FINAL: int = 92
+## Fase 72: la pantalla de DERROTA. Capa pegada a la del final porque las dos
+## son "la partida se terminó por un motivo" y tienen que verse iguales de
+## cerca: si una quedara debajo de un panel del mundo y la otra no, parecerían
+## dos juegos distintos.
+const PANEL_DERROTA: int = 93
 ## Bloque 65: cinemática a pantalla completa. Por debajo de la transición (98)
 ## y por encima de todo lo demás.
 const CINEMATICA: int = 99

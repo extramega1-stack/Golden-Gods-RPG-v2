@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "_nota": "Fase 72. Condiciones de victoria y derrota COMO DATOS (§9.4). Ni el porcentaje de oro que se pierde al morir, ni la fracción del XP del nivel, ni los textos de los dos finales viven en el código: viven acá. Para cambiar la economía de la muerte o el tono del final se toca este archivo.",
+  "_alcance": "El archivo se llama derrota.json y también lleva la victoria: es el único dato de la fase 72, y los dos finales son las dos caras de la misma moneda, qué pasa cuando terminás la partida.",
+  "derrota": {
+    "_nota": "La muerte tiene coste desde la fase 72. Antes era sin penalidad (decisión de Juan Diego, fase 51) y esa decisión ya no aplica: el juego no tenía forma de ganar ni de perder, y morir no costaba nada. El coste sale de acá, y tests/test_fase72_victoria_derrota.gd falla si el código deja de leerlo.",
+    "porcentaje_oro": 0.1,
+    "porcentaje_xp_nivel": 1.0,
+    "_xp": "'porcentaje_xp_nivel' es la fracción del XP acumulado DENTRO del nivel actual que se pierde. Nunca baja de nivel: el piso es el XP que ya cuesta el nivel (Formulas.xp_for_level(nivel)), así que morir castiga el progreso del nivel, nunca retrocede. 1.0 = volvés al principio del nivel en el que estabas.",
+    "_oro": "'porcentaje_oro' es la fracción del oro que llevás. 0.1 = perdés una de cada diez monedas. Nunca queda en negativo: se toma lo que haya."
+  },
+  "victoria": {
+    "_nota": "Las dos sendas del canon (MASTER_SPEC §3, punto 4). El juego no se gana con una bandera: se gana cuando ENTREGÁS una de estas dos misiones finales. q_final_sello es la canónica (Liberty), q_final_espada la del Arma.",
+    "sendas": {
+      "liberty": "q_final_sello",
+      "arma": "q_final_espada"
+    },
+    "finales": {
+      "liberty": {
+        "titulo": "LIBERTY",
+        "subtitulo": "Senda canónica · el Sello",
+        "cuerpo": "El ritual de Elthar cerró la grieta. Los dioses y los titanes quedaron fuera del mundo mortal, y la magia —su aliento— se fue con ellos.\n\nLiberty es ahora un pueblo de mortales tercos: sin magia, sin dioses que los usen, sin titanes a los que temer. La guerra terminó como se terminan las guerras de verdad: no ganando, sino dejando de pelear.",
+        "cierre": "El Verdugo cuelga inerte en Piedraceniza y ya no le corta el cuello a nadie. Ilya no dice nada, que es su forma de aprobación.",
+        "epigrafe": "El canon de Liberty no pide sangre: pide renuncia."
+      },
+      "arma": {
+        "titulo": "EL ARMA",
+        "subtitulo": "Senda final · la Espada",
+        "cuerpo": "El Campeón Caído respiraba todavía. Le sacaste el aire y clavaste la espada en el corazón de la grieta.\n\nGanaste la guerra. El ciclo sigue corriendo: cada titán que mates con el filo enseñará a cien a temerte, y a los muertos de Liberty no los devuelve nadie. No hay renuncia esta vez, y la elegiste con el Volante en la mano.",
+        "cierre": "Ilya te lo ofreció, no te lo ordenó. Eso es lo peor: que la oferta fuera de ella.",
+        "epigrafe": "Victoria amarga: el ciclo continúa."
+      }
+    }
+  }
+}

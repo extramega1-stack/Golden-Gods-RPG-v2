@@ -76,6 +76,9 @@ func _revisar() -> void:
 		&"panel_codice": "PanelCodice (tecla L, ola 1)",
 		&"feed_avisos": "FeedAvisos (el log de avisos en pantalla)",
 		&"panel_tutorial": "PanelTutorial (el objetivo del tutorial, tecla T)",
+		&"resultado_partida": "ResultadoPartida (fase 72: victoria y derrota)",
+		&"panel_final": "PanelFinal (fase 72: la pantalla de fin, capa 92)",
+		&"panel_derrota": "PanelDerrota (fase 72: la pantalla de derrota, capa 93)",
 	}
 	for id in esperados.keys():
 		_chk(registrados.has(id),
@@ -83,18 +86,55 @@ func _revisar() -> void:
 			"falta. Hay: %s" % str(registrados.keys()))
 
 	# Lo que el usuario más nota: que ESC tenga algo que cerrar.
-	var pausa: Node = _por_id(_demo, &"menu_pausa")
+	var pausa: Object = _por_id(_demo, &"menu_pausa")
 	if pausa != null:
 		_chk(pausa.has_method("cerrar_panel") or pausa.has_method("cerrar"),
 			"el MenuPausa responde al ESC", "")
 		_chk(pausa.is_inside_tree(), "y cuelga del árbol de la partida", "")
-		_chk(pausa.visible == false, "y nace cerrado (lección 11)", "")
+		_chk(not pausa.get("visible"), "y nace cerrado (lección 11)", "")
 
 	# Y que el pool de impactos exista de verdad, que sin él el bloque 68 fue
 	# medio bloque.
-	var pool: Node = _por_id(_demo, &"pool_impacto")
+	var pool: Object = _por_id(_demo, &"pool_impacto")
 	if pool != null:
-		_chk(pool.is_inside_tree(), "el PoolImpacto cuelga del árbol", "")
+		_chk(bool(pool.call("is_inside_tree")), "el PoolImpacto cuelga del árbol", "")
+
+	# Fase 72: los dos finales de partida tienen que estar EN LA PARTIDA y
+	# SUSCRITOS al sistema, no solo registrados. El bug que esto previene es el
+	# quinto de la serie: un sistema escrito, testeado y no conectado. Acá se
+	# comprueba la suscripción mirando el resultado, que es lo único que no se
+	# puede fingir: si el panel no está suscrito a la señal, `aperturas()` se
+	# queda en 0 después de que el sistema declares la victoria.
+	var res: Object = _por_id(_demo, &"resultado_partida")
+	var pf: Object = _por_id(_demo, &"panel_final")
+	var pd: Object = _por_id(_demo, &"panel_derrota")
+	_chk(res != null, "el sistema de resultado de partida está en la partida", "")
+	_chk(pf != null, "el PanelFinal está en la partida", "")
+	_chk(pd != null, "el PanelDerrota está en la partida", "")
+	if res != null and pf != null and pd != null:
+		_chk(not pf.get("visible"), "el PanelFinal nace cerrado (lección 11)", "")
+		_chk(not pd.get("visible"), "el PanelDerrota nace cerrado (lección 11)", "")
+		_chk(int(pf.get("process_mode")) == int(Node.PROCESS_MODE_ALWAYS),
+			"el PanelFinal corre con el árbol pausado",
+			"process_mode=%d" % int(pf.get("process_mode")))
+		_chk(int(pd.get("process_mode")) == int(Node.PROCESS_MODE_ALWAYS),
+			"el PanelDerrota corre con el árbol pausado",
+			"process_mode=%d" % int(pd.get("process_mode")))
+		# La suscripción DE VERDAD: se fuerza una victoria por la API que el
+		# juego no usa (los tests la usan para no entregar 5 actos) y se mira
+		# que el panel se haya abierto. Un panel registrado pero no suscrito
+		# deja `aperturas()` en 0, que es exactamente el fallo.
+		var antes: int = int(pf.call("aperturas"))
+		res.call("forzar_victoria", "liberty")
+		_chk(int(pf.call("aperturas")) == antes + 1,
+			"el PanelFinal se abre cuando el sistema declara la victoria",
+			"aperturas %d -> %d" % [antes, int(pf.call("aperturas"))])
+		_chk(bool(pf.get("visible")), "y queda visible", "")
+		pf.call("cerrar")
+		_chk(not bool(pf.get("visible")), "y cerrar() lo esconde", "")
+		# Y que el NG+ no se ofrezca con un nivel de por medio.
+		_chk(not pf.call("ngplus_disponible"),
+			"el NG+ no se ofrece en una partida recien empezada", "")
 
 	print("[SMOKE] sistemas registrados en la partida: %d" % registrados.size())
 
@@ -142,7 +182,17 @@ func _contenedor(n: Node) -> Systems:
 	return null
 
 
-func _por_id(n: Node, id: StringName) -> Node:
+## El sistema con esa `system_id`. Primero por el CONTENEDOR y después por los
+## nodos: `ResultadoPartida` (fase 72) es un `RefCounted` y no cuelga del
+## árbol, así que una búsqueda solo por nodos lo declararía ausente de la
+## partida estando registrado — el mismo falso negativo que ya corrigió
+## `_ids_registrados` en este archivo.
+func _por_id(n: Node, id: StringName) -> Object:
+	var cont: Systems = _contenedor(n)
+	if cont != null:
+		var por_id: Variant = cont.obtener(id)
+		if por_id != null and is_instance_valid(por_id):
+			return por_id
 	for hijo in _todos(n):
 		if "system_id" in hijo and hijo.get("system_id") == id:
 			return hijo
