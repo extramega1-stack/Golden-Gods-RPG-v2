@@ -59,6 +59,9 @@ func _process(_delta: float) -> bool:
 	_test_datos_apuntan_a_lo_real()
 	_test_la_ui_se_mueve()
 	_test_la_pocion_no_ata()
+	_test_cerrar_manda_sobre_la_senal()
+	_test_el_esc_no_es_del_tutorial()
+	_test_la_tecla_reabre()
 	_test_la_distancia_mueve_la_etiqueta()
 	_test_la_marca_y_el_minimapa()
 	_test_los_botones()
@@ -335,6 +338,97 @@ func _test_la_pocion_no_ata() -> void:
 	_avanzar_hasta(p2, kit2["m"], t2, 3)
 	_chk(p2.inventario.contar("pocion_vida") == 1,
 		"poción: solo regala una (no inunda la mochila)", "")
+
+
+# --- 3b) cerrar a mano MANDA sobre la señal que reabre -------------------
+
+## EL BUG, medido por la partida completa (`tools/jugar.sh`, P11): la caja se
+## cerraba y una señal del tutorial la volvía a abrir en el mismo frame. El
+## paso «cerrar con ESC» se quedaba 9001 frames sin terminar: no es que el ESC
+## no llegara, es que la caja ganaba siempre.
+##
+## La regla que sale: **cerrar a mano manda**. Una señal puede ABRIR la caja
+## (el jugador no pidió un tutorial y le sirve saber qué hacer), pero no puede
+## REABRIR lo que el jugador acaba de cerrar.
+##
+## Y el ESC NO es de esta caja: lo Runs el menú de pausa. Ver
+## `_test_el_esc_no_es_del_tutorial`.
+func _test_cerrar_manda_sobre_la_senal() -> void:
+	var kit: Dictionary = _kit()
+	var p: Player = kit["p"]
+	var t: Tutorial = kit["t"]
+	var panel: PanelTutorial = kit["panel"]
+	t.empezar()
+	_chk(panel.esta_visible(), "cerrar: la caja se abre al arrancar el tutorial")
+	panel._cerrar_por_esc()
+	_chk(not panel.esta_visible(), "cerrar: se cerró")
+	# El tutorial avanza (una señal que antes la re-abría).
+	p.global_position += Vector3(3.0, 0.0, 0.0)
+	t._process(0.016)
+	_chk(t.paso_actual() == 1, "cerrar: el paso avanzó de verdad", str(t.paso_actual()))
+	_chk(not panel.esta_visible(),
+		"cerrar: cambiar de paso NO reabre lo que el jugador cerró")
+	p.intencion_atacar.emit(null)
+	_chk(not panel.esta_visible(), "cerrar: un segundo cambio tampoco")
+
+
+## EL ESC NO ES DE ESTA CAJA, y antes lo era. El `PanelTutorial` se cuelga
+## antes en el orden del árbol que el `MenuPausa`, así que su
+## `set_input_as_handled()` se quedaba con el ESC y el menú de pausa NUNCA lo
+## veía: con un ESC solo, en una partida recién creada, el primero no abría la
+## pausa y el segundo sí.
+##
+## El menú de pausa es modal y global —tiene que funcionar SIEMPRE—. Esta caja
+## tiene tres salidas propias (tecla 0, pestaña T, botón "Saltar"), así que no
+## necesita el ESC para no ser una trampa. Cederlo además elimina dos dueños de
+## la misma tecla, que es la causa de la clase entera de bugs.
+func _test_el_esc_no_es_del_tutorial() -> void:
+	var kit: Dictionary = _kit()
+	var t: Tutorial = kit["t"]
+	var panel: PanelTutorial = kit["panel"]
+	t.empezar()
+	_chk(panel.esta_visible(), "esc: la caja está abierta para la prueba")
+	# Con la caja abierta y NADA apilado, el ESC no se lo queda la caja.
+	panel._unhandled_input(_evento_esc())
+	_chk(panel.esta_visible(),
+		"esc: la caja NO se queda con el ESC (es del menú de pausa)")
+	# Y con un panel apilado tampoco lo tocaba, que es lo de siempre.
+	_chk(PilaUI.abierta() == 0, "esc: no hay nada apilado en esta prueba", "")
+
+
+## LA TECLA QUE NO EXISTÍA. `abrir_tutorial` estaba declarada en el Input Map
+## y nadie la escuchaba: la tecla 0 no abría nada. La partida completa la pedía
+## como uno de los diez paneles con tecla de apertura, y con razón fallaba.
+func _test_la_tecla_reabre() -> void:
+	var kit: Dictionary = _kit()
+	var t: Tutorial = kit["t"]
+	var panel: PanelTutorial = kit["panel"]
+	_chk(InputMap.has_action("abrir_tutorial"),
+		"tecla: la acción «abrir_tutorial» está en el Input Map", "")
+	t.empezar()
+	_chk(panel.esta_visible(), "tecla: la caja se abre al arrancar el tutorial")
+	# Cerrar y reabrir con la tecla, que es el ciclo del jugador.
+	panel._cerrar_por_esc()
+	_chk(not panel.esta_visible(), "tecla: se cerró")
+	panel._unhandled_input(_evento_tecla())
+	_chk(panel.esta_visible(), "tecla: la tecla la volvió a abrir")
+	# Y alterna, como la pestaña.
+	panel._unhandled_input(_evento_tecla())
+	_chk(not panel.esta_visible(), "tecla: la tecla alterna (la segunda la cierra)")
+
+
+func _evento_esc() -> InputEventKey:
+	var e := InputEventKey.new()
+	e.physical_keycode = KEY_ESCAPE
+	e.pressed = true
+	return e
+
+
+func _evento_tecla() -> InputEventKey:
+	var e := InputEventKey.new()
+	e.physical_keycode = KEY_0
+	e.pressed = true
+	return e
 
 
 # --- 4) los metros mueven la etiqueta (señal, no poll) -----------------

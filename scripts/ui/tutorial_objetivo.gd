@@ -58,6 +58,20 @@ var _tutorial: Tutorial = null
 ## true mientras el jugador lo dejó abierto a mano (aunque el tutorial esté
 ## terminado): es el "volver a abrir" del enunciado.
 var _abierto_manual: bool = false
+## El jugador cerró la caja con ESC y todavía no pidió volver a abrirla.
+##
+## SIN ESTE FLAG la caja era imposible de cerrar, y no por un bug de evento:
+## cada señal del tutorial (`paso_cambiado`, `completado`, `saltado`) llama a
+## `_abrir()`, así que la caja se cerraba y se reabría en el mismo frame.
+## Medido por la partida completa (`tools/jugar.sh`, P11): el paso «el ESC
+## cierra lo que hay abierto» se quedaba 9001 frames (150 s de partida) sin
+## terminar, y el resumen lo atribuía a que "el ESC no cerraba el tutorial".
+##
+## La regla: **cerrar a mano manda**. Una señal SÍ puede abrir la caja —el
+## jugador no pidió un tutorial y le sirve saber qué hacer—, pero no puede
+## reabrir lo que él acaba de cerrar. Se levanta el flag cuando el jugador
+## vuelve a abrirla (la pestaña, o `reabrir()` del tutorial).
+var _cerrado_por_el_jugador: bool = false
 
 
 func _ready() -> void:
@@ -273,6 +287,9 @@ func _al_saltado() -> void:
 
 func _al_reanudado() -> void:
 	_abierto_manual = true
+	# `reanudado` ES el gesto de "vuelve a mostrarse el tutorial": si el
+	# jugador lo pidió, el cierre por ESC deja de mandar.
+	_cerrado_por_el_jugador = false
 	_abrir()
 
 
@@ -289,14 +306,26 @@ func _al_destacado(texto: String) -> void:
 ##
 ## PERO ESO DEJABA UN AGUJERO REAL, y lo cazó la partida completa
 ## (`tools/jugar.sh`, P11): el tutorial abre una CAJA visible y el ESC no la
-## cerraba. La unica salida era la pestana de 30 px. Un modal sin salida con ESC
-## no es un HUD persistente: es una trampa.
+## cerraba. La unica salida era la pestana de 30 px. Un modal sin salida no es
+## un HUD persistente: es una trampa.
 ##
-## Lo que se hace es cerrar la caja con ESC CUANDO NO HAY NADA APILADO encima,
-## que es justo el caso en el que el jugador espera que ESC la cierre. Si hay
-## otro panel abierto, el ESC es de ese panel y esta caja no lo toca: la
-## exclusion de `PilaUI` sigue valiendo.
+## EL ESC, ADEMÁS, NO ES DE ESTA CAJA: es del menú de pausa, que es global.
+## La caja tiene TRES salidas propias —la tecla 0, la pestaña y "Saltar"—, así
+## que no necesita el ESC para no ser una trampa. Ver el comentario del
+## `_unhandled_input` de abajo: quedarse con el ESC rompía el menú de pausa.
 func _unhandled_input(evento: InputEvent) -> void:
+	# La tecla del tutorial. `abrir_tutorial` estaba declarada en el Input Map
+	# (project.godot) y NADIE la escuchaba: la tecla 0 no abría nada. Es el
+	# mismo bug de siempre del repo — un atajo declarado, un panel que lo
+	# espera, y el puente sin construir — y lo cazó la partida completa
+	# (`tools/jugar.sh`, P11), que la pedía como los otros nueve paneles.
+	#
+	# Va PRIMERO y sin mirar si la caja está visible: la tecla tiene que
+	# alternar, como la pestaña.
+	if evento.is_action_pressed("abrir_tutorial"):
+		get_viewport().set_input_as_handled()
+		_al_pulsar_pestana()
+		return
 	if not _caja.visible:
 		return
 	if not evento.is_action_pressed("cancelar_seleccion"):
@@ -304,15 +333,37 @@ func _unhandled_input(evento: InputEvent) -> void:
 	# `abierta()` devuelve un INT (cuantos paneles hay), no un bool.
 	if PilaUI.abierta() > 0:
 		return
-	get_viewport().set_input_as_handled()
-	_cerrar_caja()
+	# EL ESC ES DEL MENÚ DE PAUSA, Y ESTA CAJA NO LO TOCA.
+	#
+	# No es una preferencia: es un bug medido. `PanelTutorial` se cuelga antes
+	# en el orden del árbol, así que su `set_input_as_handled()` se quedaba con
+	# el ESC y el `MenuPausa._unhandled_input` NUNCA lo veía. Con un ESC solo,
+	# en una partida recién creada, el primero no abría la pausa y el segundo
+	# sí: el menú de pausa era inalcanzable con una sola tecla.
+	#
+	# El menú de pausa es modal y global, tiene que funcionar SIEMPRE. Esta caja
+	# es un HUD con TRES salidas propias —la tecla 0, la pestaña T y el botón
+	# "Saltar"—, así que no le hace falta el ESC para no ser una trampa. Cederlo
+	# es lo correcto, y además deja de haber dos Dueños de la misma tecla.
+	return
 
 
 func _abrir() -> void:
+	# Una señal puede abrir la caja, pero no reabrir la que el jugador acaba de
+	# cerrar con ESC. Ver `_cerrado_por_el_jugador`.
+	if _cerrado_por_el_jugador:
+		return
 	_caja.visible = true
 
 
 func _cerrar_caja() -> void:
+	_caja.visible = false
+
+
+## El jugador la cerró a propósito: hasta que vuelva a pedirla, ninguna
+## señal la reabre.
+func _cerrar_por_esc() -> void:
+	_cerrado_por_el_jugador = true
 	_caja.visible = false
 
 
@@ -323,9 +374,12 @@ func _cerrar_caja() -> void:
 ## volver a abrir el tutorial cuando quiera.
 func _al_pulsar_pestana() -> void:
 	if _caja.visible:
-		_cerrar_caja()
+		_cerrar_por_esc()
 	else:
 		_abierto_manual = true
+		# Volver a pedir la caja es el gesto que levanta el cierre: el jugador
+		# la quiere de vuelta, así que las señales vuelven a poder abrirla.
+		_cerrado_por_el_jugador = false
 		if _tutorial != null and is_instance_valid(_tutorial):
 			_tutorial.mostrar_resumen()
 		_abrir()

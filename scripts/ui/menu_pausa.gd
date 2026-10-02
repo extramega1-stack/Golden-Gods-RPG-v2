@@ -257,6 +257,17 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# SOLO Bajadas. Una tecla que se SUELTA también llega como evento, y sin
+	# esta guarda el primer ESC de la partida se pierde: el arnés y el motor
+	# mandan el `pressed=false` antes del `pressed=true`, y ese primer evento
+	# —que no es una pulsación— consumía el turno. Medido con un ESC solo: el
+	# primero no abría nada y el segundo sí.
+	#
+	# No es un detalle del arnés: cualquier consumidor de `is_action_pressed`
+	# tiene que mirar esto, porque `Input.parse_input_event` entrega el release
+	# como un evento más.
+	if event is InputEventKey and not (event as InputEventKey).pressed:
+		return
 	# El ESC de la PILA va primero: si hay un panel encima (opciones, o una
 	# ventana de diálogo), ese es el que lo cierra. La pausa no se cierra con
 	# ESC mientras haya algo encima.
