@@ -2682,6 +2682,162 @@ inventado) fellan el test.
 ### Verificación
 
 `--check-only` limpio en los 15 scripts tocados, y la suite completa con
-`--smokes` en verde salvo `test_contenido_ngplus`, que **ya estaba en rojo en
-`main` antes de esta fase** (5 checks del catálogo de misiones, en
-`scripts/quests/**`, fuera de la propiedad de la 72B).
+`--smokes` en verde. El `test_contenido_ngplus` que el worker había reportado
+en rojo **ya no lo está**: se resolvió al integrar, y el rojo era del estado
+anterior de `main`, no del trabajo de la 72B.
+
+---
+
+## Fase 73 — Integrar la 72 y que la partida pase de punta a punta (2026-10-02)
+
+### Por qué existe
+
+La Fase 72 dejó tres frentes escritos en ramas de Orca y **ninguno integrado**.
+72 archivos, 5.353 líneas, sin verificar por el coordinador. El handover
+(`handover/TRASPASO-FASE72.md`) lo dejó como paso 1 y como lo único que
+bloqueaba todo lo demás.
+
+Y al integrarlos apareció lo de siempre, en otra forma: **la partida completa
+daba 4 pasos en rojo**, y el juego ya se ganaba.
+
+### La integración
+
+| Frente | Qué trae | Rama |
+|---|---|---|
+| 72A | Se gana (las dos sendas) y se pierde, con coste | `victoria-derrota` |
+| 72B | Progresión que estaba escrita y era inalcanzable | `progresion-desconectada` |
+| 72C | Los huecos del sintetizador y del bus `Ambiente` | `audio-huecos` |
+
+Se integran **uno a uno, con la suite en verde entre medio**, porque los tres
+tocan `fase14_demo.gd` y `project.godot`. Salieron tres conflictos, y los tres
+en los archivos que el handover decía que se tocarían:
+
+- **`save_system.gd`**: los dos agregaban un bloque al guardado (`resultado` la
+  72A, `trofeos` la 72B). Los dos se conservan: son disjuntos.
+- **`MASTER_SPEC.md`**: dos secciones de Fase 72. Se conservan las dos, la 72A
+  primero.
+- **`panel_inventario.gd`**: la 72C_traía un comentario de sonido y el fix de
+  la pila de la 72A. Se conservan los dos, y el comentario se corrige: la pila
+  **no** es "la vía del sonido", es la del estado.
+
+De 116 a **124 tests**.
+
+### Tres bugs de UI de verdad, que ningún test por sistema había visto
+
+Esta es la parte que importa, y es la quinta vez que aparece la misma clase de
+bug: **algo escrito, testeado, y que en la partida no funciona.**
+
+#### 1. El fundido se quedaba en la pila de paneles para siempre
+
+`Transicion._fundir()` llamaba a `PilaUI.abrir(self)` y **nunca llamaba a
+`cerrar()`**. El fundido no es un panel, pero se apila a propósito para bloquear
+el input mientras tapa la pantalla.
+
+El problema: la cima de la pila es la única que recibe el ESC **y la única que
+puede apilarse encima**. Un fundido de carga dejaba el juego **sin un solo
+panel abrible**: mochila, equipo, códice, opciones. Todo, después de un cambio
+de escena.
+
+Lo cazó la partida completa, con los diez paneles del catálogo dando "no se
+abre con su tecla" uno detrás de otro y `PilaUI.abierta()` en 1.
+
+El arreglo es el contrato de la pila, que es de una línea por panel: **entrar
+al abrir, salir al cerrar**.
+
+#### 2. El menú de pausa no abría con una tecla
+
+`PanelTutorial` se cuelga **antes** en el orden del árbol, así que su
+`set_input_as_handled()` se quedaba con el ESC y el `MenuPausa._unhandled_input`
+**nunca lo veía**. Medido con un ESC solo, en una partida recién creada: el
+primero no abría nada y el segundo sí.
+
+El menú de pausa es modal y global: tiene que funcionar **siempre**. Y una caja
+de tutorial tiene tres salidas propias —la tecla 0, la pestaña y "Saltar"—, así
+que no necesita el ESC para no ser una trampa. **Esta caja se lo cede.**
+
+Lo general que sale: **una tecla es de un dueño.** El ESC es del menú de pausa,
+y punto.
+
+#### 3. La tecla 0 no abría el tutorial, y la caja no se podía cerrar
+
+`abrir_tutorial` estaba declarada en el Input Map y **nadie la escuchaba**. El
+mismo bug de siempre: un atajo declarado, un panel que lo espera, y el puente
+sin construir.
+
+Y la caja **no se cerraba**: cada señal del tutorial (`paso_cambiado`,
+`completado`, `saltado`) llama a `_abrir()`, así que se cerraba y se reabría en
+el mismo frame. El paso «el ESC cierra lo que hay abierto» se quedaba **9001
+frames (150 s de partida)** sin terminar, y el resumen atribuía el fallo al
+evento cuando el fallo era la señal.
+
+Con `_cerrado_por_el_jugador` la regla queda escrita: **cerrar a mano manda
+sobre la señal.** Una señal puede ABRIR la caja —el jugador no pidió un tutorial
+y le sirve saber qué hacer—, pero no reabrir lo que él acaba de cerrar.
+
+### Del arnés: cuatro cosas que no eran bugs del juego
+
+Un rojo en la partida completa **no es un test roto**: es el juego roto. Pero
+esta vez cuatro de los cinco no eran el juego, y dan falsos rojos si no se
+dichen:
+
+- **Las teclas nunca se soltaban.** `event.is_action_pressed()` es el **flanco
+  de bajada**: el primer `pressed=true` dispara la acción y cada `pressed=true`
+  posterior ya no es un flanco nuevo. Los pasos que **reintentan** la misma tecla
+  (la T cada 15 frames, la E cada 40) se quedaban **sin efecto para siempre**.
+- **El clic de ratón caía fuera de pantalla.** El NPC se proyecta a y=5678 en
+  un viewport de 1280. Un clic fuera de la pantalla es un clic en el suelo, y el
+  clic en el suelo es "orden de mover", que además llama `deseleccionar()`.
+  El juego estaba bien —a 0,5 u emite `hablar_con`—: lo que no puede es un
+  arnés headless, y usa la API que el repo reserva para eso (`_aplicar_clic`).
+- **Tres ESC en un mismo frame son un ESC.** Godot despacha
+  `_unhandled_input` una vez por frame, así que el primero se come con
+  `set_input_as_handled()` y los otros dos nunca llegan a nadie.
+- **`MenuPausa` y `PanelTutorial` no son paneles comunes.** La pausa es la BASE
+  de su propia pila y por diseño no se cierra con ESC. El tutorial tampoco se
+  apila y su tecla es la 0. Medirlos como los otros ocho daba rojos falsos.
+
+Y una fase que faltaba: **aceptar una misión no es completarla.** El paso iba
+derecho a preguntar si ya estaba en «lista» —con razón, porque nadie había
+cumplido los objetivos—. Ahora lee el objetivo del dato, va a por él y lo juega.
+
+### Lo que queda escrito para que no se repita
+
+1. **Una tecla, un dueño.** Antes de tocar `_unhandled_input`, preguntarse quién
+   la tiene ya.
+2. **Un panel que entra en `PilaUI` tiene que salir.** `abrir()` sin `cerrar()`
+   es la clase de bug más cara que hay, porque bloquea todos los demás.
+3. **Cerrar a mano manda sobre la señal.** Ninguna señal reabre lo que el
+   jugador acaba de cerrar.
+4. **Un rojo de la partida completa se investiga como bug del juego primero**, y
+   recién después como bug del arnés. El orden inverso produce falsos rojos que
+   se "arreglan" tocando el juego.
+
+### Verificación
+
+- `tools/run_tests.sh --smokes`: **124/124 verde**.
+- `tools/jugar.sh`: **60 verdes, 0 rojos**, en dos runs seguidos. Antes daba 4.
+- Los 5 `OMITIDO` son límites declarados del arnés headless, no fallos: el
+  raycast no llega al collider del mob, un material no lleva afijos, y la
+  partida corta no llega a talar un árbol ni a prestigiar.
+
+### Entrega (§7.10)
+
+| | |
+|---|---|
+| Commits | 4 en `main`, de `d184549` a `77bc61a` |
+| Tags | `v3.57` (72 integrada), `v3.58` (partida en verde), `fase-72-integrada` |
+| Releases | `v3.57` y `v3.58`, cada una con el bug y su evidencia |
+| Árbol | limpio |
+| SHA-256 | `3e731b3c0c926e46be74f5ea592f74ff1f34b364cb5bd0fdcf148df569c5e711` |
+
+El SHA es de los archivos versionados en el orden de `git ls-files`, así que
+dos clones del mismo commit dan el mismo hash.
+
+**Los 3 workers de Orca quedaron liberados** (`Terminals: released=3`), como
+pedía el handover. El 72C estaba en `ready` y no en `succeeded`: se verificó
+que su rama ya estaba integrada y que no tenía trabajo sin commitear, y se
+usó `worker-stop` (fence) más `worker-release`. **Los 27 worktrees quedan
+intactos** —el handover advertía que `w9-modelo` tiene 83 archivos sin
+commitear y no son míos—.
+
+### Sin playtest de Juan Diego todavía (§7.6 lo exige antes de avanzar).
