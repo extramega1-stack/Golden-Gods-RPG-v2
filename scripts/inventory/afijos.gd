@@ -20,8 +20,18 @@ extends RefCounted
 const RUTA: String = "res://data/afijos.json"
 ## Escala de rareza 1..5. El valor del afijo crece con ella.
 const RAREZAS: Array[String] = ["Común", "Poco común", "Rara", "Épica", "Legendaria"]
-## Cuántos afijos puede llevar un item por rareza (1..5).
-const AFIXOS_POR_RAREZA: Array[int] = [1, 1, 2, 3, 4]
+## Cuántos afijos puede llevar un item por rareza (1..5). Es el TECHO de lo que
+## la rareza puede dar; quién lo recorta en el loot es
+## `data/afijos_loot.json` (`tope_por_rareza`), no esta tabla.
+##
+## FASE 72: era [1, 1, 2, 3, 4], exactamente igual que `tope_por_rareza`, y por
+## eso el margen del NG+ (`afijos_extra`) no podía NUNCA agregar un afijo: el
+## tope del loot ya era igual al techo de la rareza, así que sumarle margen no
+## cambiaba nada. `afijos_extra` estaba declarado, se leía, se mostraba en el
+## panel del NG+ y no producía ningún efecto observable. Subir el TECHO deja
+## que el NG+ suba el tope de verdad, y 4 es el máximo posible igual: solo hay
+## 4 `STATS` y dos afijos del mismo stat en un item es ruido.
+const AFIXOS_POR_RAREZA: Array[int] = [1, 1, 3, 4, 4]
 ## Multiplicador de valor por rareza. Legendario ~5x un afijo común.
 const VALOR_POR_RAREZA: Array[float] = [1.0, 1.4, 2.0, 3.0, 5.0]
 ## Los stats que un afijo puede tocar. Deliberadamente NO toca vida/mana

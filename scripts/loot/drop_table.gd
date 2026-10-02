@@ -31,12 +31,27 @@ static func roll_drops(tabla: Dictionary, rng: RandomNumberGenerator) -> Array:
 		if oro > 0:
 			drops.append({"tipo": "oro", "cantidad": oro})
 	var items: Array = tabla.get("items", [])
-	# El afijo escala con el nivel del que cae y con el margen del NG+. Los dos
-	# son opcionales y salen de la TABLA, no del código: hoy ningún arquetipo los
-	# declara (van 0) y el afijo escala solo por rareza; el día que un arquetipo
-	# los traiga, el afijo sube solo, sin tocar esta función.
+	# FASE 72 — el escalado de afijos ya NO va a cero.
+	#
+	# Venía así: "los dos son opcionales y salen de la TABLA, no del código: hoy
+	# ningún arquetipo los declara (van 0)". O sea que el afijo escalaba solo por
+	# rareza, y TODOS los bots del mundo soltaban el mismo afijo para siempre:
+	# el +fuerza de un goblin de nivel 3 y el de un titán de nivel 70 pesaban
+	# exactamente lo mismo. El camino de datos ya estaba entero
+	# (`nivel` → valor, `afijos_extra` → cantidad); lo que faltaba era que
+	# alguien lo llenara.
+	#
+	# - `nivel` lo DECLARA el arquetipo en `data/enemies.json`, como la mediana
+	#   del nivel de sus spawns: es el nivel del mundo donde vive ese bicho.
+	# - `afijos_extra` es el margen PROPIO del arquetipo (0 en un mob normal, más
+	#   en un jefe) MÁS el del NG+ de ahora, leído del estado vivo.
+	#
+	# El margen del NG+ se lee de un estático en RAM (`EstadoNgPlus`), nunca del
+	# disco: `roll_drops` corre en cada muerte de mob y una lectura de archivo
+	# ahí es justo lo que §9.5 prohíbe.
 	var nivel: int = maxi(0, int(tabla.get("nivel", 0)))
-	var afijos_extra: int = maxi(0, int(tabla.get("afijos_extra", 0)))
+	var afijos_extra: int = maxi(0, int(tabla.get("afijos_extra", 0))) \
+			+ maxi(0, EstadoNgPlus.afijos_extra_en_juego())
 	for entrada in items:
 		var e: Dictionary = entrada
 		var prob: float = float(e.get("prob", 0.0))

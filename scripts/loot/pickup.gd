@@ -50,6 +50,16 @@ func _process(delta: float) -> void:
 
 
 ## ¿El jugador está encima? Emite y se destruye. Pública para tests.
+##
+## FASE 72: antes de emitir, la Recoleccion le da el XP de la habilidad
+## `recoleccion`. Este es EL punto donde el jugador junta cosas del mundo, y
+## estaba vacío: la habilidad no subía nunca y sus dos Hechos ("Sed ausente" y
+## "Hambre ausente") eran inalcanzables jugando. Va acá y no en la escena a
+## propósito —quien tira pickups (bots, cofres, vetas) no tiene que acordarse
+## de sumar nada—: por este nodo pasa todo lo que llega al inventario desde el
+## suelo, así que engancharlo acá es lo que hace imposible que algo llegue sin
+## sumar su XP. El `otorgar` es idempotente por construcción: el nodo se libera
+## en el mismo frame, así que un drop no se cuenta dos veces.
 func _revisar_recogida() -> void:
 	var arbol: SceneTree = get_tree()
 	if arbol == null:
@@ -60,5 +70,6 @@ func _revisar_recogida() -> void:
 	var d: Vector3 = j.global_position - global_position
 	d.y = 0.0
 	if d.length() <= RADIO_RECOGIDA:
+		Recoleccion.otorgar(j, drop)
 		recogido.emit(drop)
 		queue_free()

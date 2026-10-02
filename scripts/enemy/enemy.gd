@@ -402,6 +402,11 @@ func configurar(arquetipo: Dictionary) -> void:
 		"oro_min": int(arquetipo.get("oro_min", 0)),
 		"oro_max": int(arquetipo.get("oro_max", 0)),
 		"items": items,
+		# FASE 72: los dos números que hacen que el afijo escale. Sin ellos en
+		# la tabla, `DropTable.roll_drops` los leía a 0 y todos los bots del
+		# mundo soltaban el mismo afijo para siempre, sin importar el nivel.
+		"nivel": maxi(0, int(arquetipo.get("nivel", 0))),
+		"afijos_extra": maxi(0, int(arquetipo.get("afijos_extra", 0))),
 	}
 	# Fase 35: ajuste de balance data-driven (1.0 = sin cambio). Vía MOD
 	# (reversible, serializa en el save como el resto de mods).

@@ -197,7 +197,9 @@ func _al_cocinar(ingrediente: String) -> void:
 		return
 	var receta: Dictionary = RecetasCocinaDB.receta(ingrediente)
 	var inv: Dictionary = _inventario_plano()
-	var r: Dictionary = Cocina.cocinar(ingrediente, receta, inv)
+	# FASE 72: los `hechos` del jugador son lo que hace que "Cocina de lote"
+	# sirva 2 raciones. Sin pasarlos, el Hecho se guardaba y no se usaba.
+	var r: Dictionary = Cocina.cocinar(ingrediente, receta, inv, _jugador.hechos)
 	if not bool(r.get("ok", false)):
 		return
 	# El ingrediente sale del inventario REAL (el dict era una copia).

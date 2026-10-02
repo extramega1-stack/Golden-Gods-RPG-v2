@@ -45,6 +45,12 @@ func puede_minar(veta: Veta, jugador: Player) -> String:
 ## Intenta minar un golpe. Gasta un uso de la veta, mete el mineral en el
 ## inventario, da el XP y muestra el aviso flotante. Retorna el mismo motivo
 ## que `puede_minar` si no se puede, sin tocar nada.
+##
+## FASE 72: el Hecho "veta_persistente" (minería, tramo 2) se calculaba y se
+## guardaba, y NINGÚN sistema lo consultaba: era una recompensa que el jugador
+## no podía ganar. Acá es donde cobra efecto —después de gastar el uso, que es
+## el único punto donde una veta puede quedarse seca— y el número de usos que
+## deja sale de `data/hechos.json` (`parametros.usos_min`), no de acá.
 func minar(veta: Veta, jugador: Player) -> String:
 	var motivo: String = puede_minar(veta, jugador)
 	if motivo != "ok":
@@ -64,6 +70,7 @@ func minar(veta: Veta, jugador: Player) -> String:
 		# La veta se gasta ANTES de entregar: si el item no existiera en el
 		# catálogo el golpe se pierde, pero el mundo nunca queda con usos gratis.
 		veta.consumir_uso()
+	_sostener_veta(veta, jugador.hechos)
 	jugador.inventario.agregar(item_id, cantidad)
 	if xp > 0:
 		jugador.gain_xp(xp)
@@ -76,6 +83,30 @@ func minar(veta: Veta, jugador: Player) -> String:
 	veta.mostrar_aviso(texto_minado(item_id, cantidad, xp))
 	minado.emit(veta.veta_id, item_id, cantidad, xp)
 	return "ok"
+
+
+## FASE 72: "Veta persistente" deja la veta con al menos `usos_min` usos, así
+## que nunca se agota DEL TODO. Es el equivalente en vetas del Hecho de Tala
+## "tala_area": más por golpe, no usos infinitos.
+##
+## APLICA TAMBIÉN A LOS ÁRBOLES, y a propósito: un `Arbol` es una `Veta` (hereda
+## de ella) y el Hecho se llama "veta persistente", no "veta y árbol". Decirlo
+## acá es mejor que dejarlo como efecto colateral sin nombre: un jugador con
+## Minería en tramo 2 ve que los árboles tampoco se secan del todo, y si en
+## algún momento se quiere limitar a las vetas, el corte es una línea.
+##
+## Idempotente y barato: solo hace algo si la veta se secó en este golpe, y el
+## número sale del dato. Con la bandera apagada es una comparación y nada más.
+func _sostener_veta(veta: Veta, hechos: Hechos) -> void:
+	if veta == null or not is_instance_valid(veta) or hechos == null:
+		return
+	if not hechos.tiene(Hechos.FLAG_VETA_PERSISTENTE):
+		return
+	if veta.usos > 0:
+		return
+	var minimo: int = hechos.parametro_int(Hechos.ID_VETA_PERSISTENTE,
+		"usos_min", 1)
+	veta.reponer_usos(minimo)
 
 
 ## Texto del aviso flotante: "+2 Mineral de Cobre (+9 XP)".

@@ -43,8 +43,15 @@ static func puede_cocinar(item_id: String, receta: Dictionary,
 
 ## Cocina: gasta el ingrediente y la leña, devuelve el resultado.
 ## Quien llama es responsable de mover el item al inventario.
+##
+## FASE 72: `hechos` es lo que hace que el Hecho "Cocina de lote" (cocina,
+## tramo 2) exista. Antes se calculaba, se guardaba y no lo leía nadie: una
+## recompensa que el jugador no podía ganar. Multiplica la cantidad de
+## raciones, y el multiplicador sale de `data/hechos.json`
+## (`parametros.multiplicador_cantidad`), no de acá. Es opcional y con default
+## para que un test pueda cocinar sin montar Hechos.
 static func cocinar(item_id: String, receta: Dictionary,
-		inventario: Dictionary) -> Dictionary:
+		inventario: Dictionary, hechos: Hechos = null) -> Dictionary:
 	var motivo: String = puede_cocinar(item_id, receta, inventario, LENA_POR_TRONCO)
 	if motivo != MOTIVO_OK:
 		return {"ok": false, "motivo": motivo, "item_id": "", "cantidad": 0}
@@ -55,11 +62,24 @@ static func cocinar(item_id: String, receta: Dictionary,
 		"ok": true,
 		"motivo": MOTIVO_OK,
 		"item_id": str(receta.get("resultado", "")),
-		"cantidad": maxi(1, int(receta.get("cantidad", 1))),
+		"cantidad": maxi(1, int(receta.get("cantidad", 1))) * multiplicador(hechos),
 		"xp": maxi(0, int(receta.get("xp", 0))),
 		"lena": float(receta.get("lena", 1.0)),
 		"segundos": maxf(float(receta.get("segundos", TIEMPO_BASE)), 0.1),
 	}
+
+
+## FASE 72: por cuántas salen las raciones. 1 sin el Hecho.
+##
+## Se calcula sobre la ración BASE de la receta, no sobre el resultado de la
+## llamada anterior: `cocinar` es pura y se puede llamar dos veces con la misma
+## receta, y multiplicar un resultado ya multiplicado sacaría raciones
+## gratis sin haber cocinado el ingrediente nuevo.
+static func multiplicador(hechos: Hechos) -> int:
+	if hechos == null or not hechos.tiene(Hechos.FLAG_COCINA_LOTE):
+		return 1
+	return maxi(1, hechos.parametro_int(Hechos.ID_COCINA_LOTE,
+		"multiplicador_cantidad", 2))
 
 
 ## Texto legible del motivo.

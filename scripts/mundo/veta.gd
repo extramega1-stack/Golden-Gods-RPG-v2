@@ -65,6 +65,16 @@ var usos: int = 3
 var respawn_s: float = 180.0
 ## Segundos que le quedan de respawn. >0 = agotada y contando.
 var respawn_restante: float = 0.0
+## FASE 72: qué tan rápido corre la cuenta atrás del respawn. 1.0 = el dato
+## crudo de `data/vetas.json`; 2.0 = el doble de rápido. Es una VELOCIDAD: la
+## cuenta es `restante -= delta * factor`, así que menos de 1 va MÁS lento.
+##
+## Es un NÚMERO en la veta y no una bandera de `Hechos` a propósito: la veta es
+## un nodo sin idea de quién la está minando, y meterle una referencia al
+## jugador sería el acoplamiento justo que el diseño de la fase 45 esquivó
+## ("quién puede minar y qué entrega lo decide `Mineria`; aquí viven los usos").
+## Quien SÍ sabe de `Hechos` es `GestorVetas`, que lo escribe en cada barrido.
+var factor_respawn: float = 1.0
 ## Tinte del mineral (viene del JSON; el material se comparte por mineral).
 var tinte: Color = Color(0.7, 0.7, 0.7)
 
@@ -166,6 +176,24 @@ func consumir_uso() -> void:
 	agotada.emit(veta_id)
 
 
+## FASE 72: deja la veta con al menos `n` usos. Es lo que hace el Hecho "Veta
+## persistente": la veta nunca se agota DEL TODO, así que el mundo no obliga a
+## esperar el respawn para seguir minando.
+##
+## No puede pasar por encima de `usos_max` (el dato manda) y es idempotente:
+## llamarla con la veta ya sana no hace nada. También cancela la cuenta atrás y
+## vuelve a mostrar el cuerpo, porque una veta a la que se le devuelven usos
+## tiene que SER minable, no solo tenerlos en el número.
+func reponer_usos(n: int) -> void:
+	var objetivo: int = clampi(n, 1, usos_max)
+	if usos >= objetivo:
+		return
+	usos = objetivo
+	respawn_restante = 0.0
+	mostrar_cuerpo()
+	set_process(_aviso_restante > 0.0)
+
+
 ## Texto flotante sobre la veta (ej. "+2 Mineral de Cobre (+9 XP)"). Se
 ## reutiliza el mismo Label3D: nunca se crea ni se destruye en caliente.
 func mostrar_aviso(texto: String) -> void:
@@ -195,13 +223,21 @@ func tick(delta: float) -> void:
 		if _aviso_restante <= 0.0:
 			set_process(false)
 		return
-	respawn_restante = maxf(respawn_restante - delta, 0.0)
+	respawn_restante = maxf(respawn_restante - delta * _ritmo_respawn(), 0.0)
 	if respawn_restante <= 0.0:
 		respawn_restante = 0.0
 		usos = usos_max
 		mostrar_cuerpo()
 		set_process(_aviso_restante > 0.0)
 		reaparecida.emit(veta_id)
+
+
+## FASE 72: el ritmo de la cuenta atrás, con el piso en 0.05. El piso existe
+## porque un `factor_respawn` de 0 (o un bug en el dato) dejaría la veta
+## congelada para siempre: peor que un Hecho que no hace nada es un Hecho que
+## rompe el mundo. El techo lo pone `GestorVetas`, que es quien lee el dato.
+func _ritmo_respawn() -> float:
+	return maxf(0.05, factor_respawn)
 
 
 func _process(delta: float) -> void:

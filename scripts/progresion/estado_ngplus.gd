@@ -53,15 +53,43 @@ const PREFIJO_MOD: String = "ngplus:"
 ## Ponerlo en un tercer sitio sería ponerlo en el sitio equivocado.
 static var _ciclo_en_juego: int = 0
 
+## FASE 72: el prestigio en juego, por el mismo motivo que el ciclo. Sin esto
+## el margen de afijos del NG+ (`NuevoJuegoPlus.afijos_extra`) lo calculaba
+## `PanelNgPlus` para MOSTRARLO y nadie más lo usaba: el loot escalaba a 0 y la
+## bonificación se leía en una pantalla mientras el botín era idéntico en la
+## vuelta 1 y en la vuelta 9.
+static var _prestigio_en_juego: int = 0
+
 ## El ciclo de la vuelta en juego. 0 = la primera partida (sin NG+ todavía).
 static func ciclo_en_juego() -> int:
 	return _ciclo_en_juego
+
+
+## El prestigio de la vuelta en juego, y el margen de afijos que implica. Lo
+## lee `DropTable.roll_drops` en cada tirada: es un número en RAM, no una
+## lectura de disco, así que no cuesta nada (§9.5).
+static func prestigio_en_juego() -> int:
+	return _prestigio_en_juego
+
+
+## El margen de afijos extra que el NG+ le pone al loot AHORA. 0 sin NG+.
+static func afijos_extra_en_juego() -> int:
+	return NuevoJuegoPlus.afijos_extra(_prestigio_en_juego)
 
 
 ## Fija el ciclo en juego. Lo usan `desde_dict` y `prestigiar`; el test lo usa
 ## para simular una vuelta sin escribir una partida.
 static func fijar_ciclo_en_juego(ciclo: int) -> void:
 	_ciclo_en_juego = maxi(0, ciclo)
+	_prestigio_en_juego = 0
+
+
+## Fija el prestigio en juego SIN tocar el ciclo. Lo usan `desde_dict` (que
+## publica los dos a la vez) y los tests. `fijar_ciclo_en_juego` lo pone a cero
+## porque cambiar de vuelta reinicia el prestigio: son los dos números del NG+
+## y se mueven juntos.
+static func fijar_prestigio_en_juego(prestigio: int) -> void:
+	_prestigio_en_juego = maxi(0, prestigio)
 
 
 ## ¿Le toca prestigiar a este personaje? El tope del mundo y no un umbral
@@ -85,7 +113,10 @@ func prestigiar(nivel: int) -> int:
 	# para que quien escuche `cambiado` ya vea el catálogo de misiones con la
 	# vuelta nueva. Al revés, un panel que se repintara con la señal leería el
 	# contenido de la vuelta anterior.
+	# `fijar_ciclo_en_juego` publica el ciclo y deja el prestigio en 0 (es lo
+	# mismo que hace `desde_dict`): prestige y ciclo se mueven juntos.
 	fijar_ciclo_en_juego(ciclo)
+	fijar_prestigio_en_juego(prestigio)
 	cambiado.emit()
 	return ganado
 
@@ -163,7 +194,9 @@ static func desde_dict(d: Dictionary) -> EstadoNgPlus:
 	if e.ciclo == 0 and e.prestigio > 0:
 		e.ciclo = 1
 	# Publicar el ciclo: TODO el NG+ que entra al juego pasa por aquí, así que
-	# este es el punto donde `QuestDB` se entera de en qué vuelta está el
+	# este es el punto donde `QuestDB` se entera de qué vuelta está el
 	# jugador. Ver `ciclo_en_juego()`.
 	fijar_ciclo_en_juego(e.ciclo)
+	# Y el prestigio, que es lo que le da margen de afijos al loot.
+	fijar_prestigio_en_juego(e.prestigio)
 	return e
