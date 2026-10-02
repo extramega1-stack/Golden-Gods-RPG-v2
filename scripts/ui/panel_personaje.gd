@@ -149,6 +149,19 @@ func _al_repartir(atributo: String) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("abrir_personaje"):
 		visible = not visible
+		# ABRIR POR PILA, NO POR `visible` A PELO.
+		#
+		# Este panel antes flipeaba `visible` y solo llamaba `PilaUI.cerrar()`
+		# al cerrar. O sea que al abrir NO se apilaba, y el ESC de mas abajo
+		# comprueba `PilaUI.es_cima(self)`, que era falso: el ESC no cerraba la ficha.
+		# Medido por la partida completa (`tools/jugar.sh`, P11).
+		#
+		# La pila es la unica que sabe que esta arriba. Un panel que se abre sin
+		# apilarse es invisible para el sistema de cierre.
+		if visible:
+			PilaUI.abrir(self)
+		else:
+			PilaUI.cerrar(self)
 		if visible:
 			_reconstruir()
 		get_viewport().set_input_as_handled()

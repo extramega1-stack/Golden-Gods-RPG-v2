@@ -283,6 +283,31 @@ func _al_destacado(texto: String) -> void:
 ## Este panel NO entra en `PilaUI`: es HUD persistente, no una ventana
 ## modal. Si se apuntara, el ESC de la mochila lo cerraría a él en vez de a
 ## la mochila y los dos|· se pelearían.
+## ESTE PANEL NO ENTRA EN `PilaUI`, y es a proposito: es HUD persistente, no
+## una ventana modal. Si se apuntara, el ESC de la mochila lo cerraria a el en
+## vez de a la mochila, y los dos se pelearian.
+##
+## PERO ESO DEJABA UN AGUJERO REAL, y lo cazó la partida completa
+## (`tools/jugar.sh`, P11): el tutorial abre una CAJA visible y el ESC no la
+## cerraba. La unica salida era la pestana de 30 px. Un modal sin salida con ESC
+## no es un HUD persistente: es una trampa.
+##
+## Lo que se hace es cerrar la caja con ESC CUANDO NO HAY NADA APILADO encima,
+## que es justo el caso en el que el jugador espera que ESC la cierre. Si hay
+## otro panel abierto, el ESC es de ese panel y esta caja no lo toca: la
+## exclusion de `PilaUI` sigue valiendo.
+func _unhandled_input(evento: InputEvent) -> void:
+	if not _caja.visible:
+		return
+	if not evento.is_action_pressed("cancelar_seleccion"):
+		return
+	# `abierta()` devuelve un INT (cuantos paneles hay), no un bool.
+	if PilaUI.abierta() > 0:
+		return
+	get_viewport().set_input_as_handled()
+	_cerrar_caja()
+
+
 func _abrir() -> void:
 	_caja.visible = true
 

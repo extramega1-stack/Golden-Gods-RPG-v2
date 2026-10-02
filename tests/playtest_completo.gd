@@ -1755,6 +1755,19 @@ func _f_paneles() -> bool:
 			for b in bravos:
 				(b as Node).visible = false
 		PilaUI.limpiar()
+		# EL PANEL QUE SE VA A PROBAR SE CIERRA EXPRESAMENTE, y esto no es
+		# cosmético: el panel alterna con su tecla (`visible = not visible`), así
+		# que si llega visible la tecla lo CIERRA y el check de "se abre" falla
+		# sin que haya nada roto. Pasaba con PanelInventario, que no estaba en
+		# `bravos` porque la fase anterior lo había dejado abierto.
+		#
+		# Un test que no pone el estado inicial en el punto de partida no mide lo
+		# que dice medir: mide el estado previo. Por eso la fase empieza con el
+		# panel CERRADO, siempre, y el check compara contra ese punto de partida.
+		var nodo_prueba: Node = U.nodo(_demo, String(entrada["nodo"]))
+		if nodo_prueba != null:
+			_panel_abierta = false
+			(nodo_prueba as CanvasLayer).visible = false
 		if String(entrada["nota"]) != "":
 			print("[PLAYTEST] P11 · %s: %s" % [String(entrada["nodo"]), String(entrada["nota"])])
 		if String(entrada["boton"]) != "":
