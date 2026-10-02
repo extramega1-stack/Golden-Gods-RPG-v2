@@ -49,7 +49,24 @@ static func cargar() -> void:
 		_ids_de_archivo.append(quest_id)
 
 
+##
+## SIN `existe()` LA ROTACIÓN DIARIA NO EXISTE, y es un bug que llevaba tiempo.
+##
+## `obtener()` llama a `_sincronizar_rotacion()` antes de leer, y `obtener()` es
+## el camino normal. `existe()` NO la llamaba: miraba el `_cache` crudo. Las
+## misiones diarias son EFIMERAS — su id lleva la fecha (`dia_d020728_...`) y se
+## generan en runtime, no están en `data/quests.json`. Así que antes de la
+## sincronización `_cache` no las tiene y `existe()` decía `false` para una
+## misión que el juego estaba ofreciendo.
+##
+## El síntoma era `test_contenido_ngplus` en rojo con la cadena completa
+## (disponible → se acepta → llega a lista → se entrega → queda entregada), y el
+## detalle "bloqueada": el `QuestLog` no encontraba la misión que el propio
+## sistema de rotación le acababa de generar. Un test que depende de la fecha se
+## rompe solo al cambiar el día, y por eso el rojo aparecía sin que nadie
+## hubiera tocado nada.
 static func existe(quest_id: String) -> bool:
+	_sincronizar_rotacion()
 	return _cache.has(quest_id)
 
 

@@ -442,7 +442,28 @@ func _t_rotacion_registrada() -> void:
 	# Y son alcanzables por el camino de siempre: un NPC las ofrece.
 	var q: QuestLog = _log()
 	var p: Player = _player()
-	var m: Dictionary = RD.misiones_del_dia(RD.dia_de(RD.ahora()), 0)[0]
+	# La diaria que se prueba tiene que ser una JUGABLE EN EL CICLO QUE SE ESTÁ
+	# PROBANDO, no la primera que salga por el día.
+	#
+	# `misiones_del_dia` devuelve las 4 del día y el orden depende de la semilla.
+	# Una de ellas declara `ngplus_ciclo: 1` (la plantilla `dia_carnicoro_maris`),
+	# así que en el ciclo 0 — que es lo que prueba este bloque — su estado
+	# correcto es "bloqueada", y la cadena entera (disponible → se acepta →
+	# lista → se entrega) falla sin que haya un solo bug: la misión elegida no
+	# era jugable ahí.
+	#
+	# Con `dia_arena_karg` y `dia_hierro_durnan` (`ngplus_ciclo: 0`) el mismo
+	# camino se recorre entero.
+	var elegida: Dictionary = {}
+	for cand in RD.misiones_del_dia(RD.dia_de(RD.ahora()), 0):
+		if int(cand.get("ngplus_ciclo", 0)) <= 0:
+			elegida = cand
+			break
+	if elegida.is_empty():
+		_chk(false, "catálogo: hay una diaria de ciclo base hoy",
+			"ninguna de las del día es de ciclo 0; el catálogo no se puede probar")
+		return
+	var m: Dictionary = elegida
 	var qid: String = str(m.get("id", ""))
 	_chk(QD.existe(qid), "catálogo: la diaria de hoy está en el catálogo", qid)
 	_chk(q.estado(qid) == "disponible",
