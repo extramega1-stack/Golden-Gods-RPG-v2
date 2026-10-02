@@ -156,6 +156,15 @@ func usar(item_id: String, objetivo: Entity) -> bool:
 		# "tick-eat" de Dragonwilds: se consume al instante desde la barra.
 		"comida", "bebida":
 			objetivo.vitals.consumir(efecto)
+			# Fase 72: el sonido va AQUÍ y no en `Vitals` porque `Vitals` es una
+			# clase pura (sin nodos, sin reloj, testeable sola) y meterse un
+			# `AudioJuego` la rompe. Además esta es la única vía por la que se
+			# come o se bebe, así que es el punto sin duplicados. Son distintos
+			# porque el oído los distingue sin mirar nada.
+			if str(efecto.get("tipo", "")) == "comida":
+				AudioJuego.al_comer()
+			else:
+				AudioJuego.al_beber()
 		_:
 			return false
 	quitar(item_id, 1)

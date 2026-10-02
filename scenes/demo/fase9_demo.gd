@@ -438,10 +438,17 @@ func _al_mision_dialogo(npc: NPC) -> void:
 	var modo: String = str(oferta.get("modo", ""))
 	if modo == "disponible":
 		if _misiones.aceptar(qid) == "ok":
+			# Fase 72: el "misión aceptada". Va ACÁ y no en `QuestLog` porque
+			# `scripts/quests/**` no es de esta fase; y va acá, en el `if` del
+			# éxito, y no antes, porque un rechazo (ya aceptada, sin nivel) no
+			# es una misión nueva. `SonidoUI.exito()` existía desde el bloque
+			# 66 sin un solo call site.
+			SonidoUI.exito()
 			_panel_misiones.toast("Misión aceptada: %s" % str(oferta.get("nombre", "")))
 	elif modo == "entregar":
 		var res: Dictionary = _misiones.entregar(qid, _jugador)
 		if str(res.get("resultado", "")) == "ok":
+			SonidoUI.exito()
 			_panel_misiones.toast("Misión completada: +%d oro, +%d XP" % [
 				int(res.get("oro", 0)), int(res.get("xp", 0))])
 	_refrescar_boton_mision(npc)

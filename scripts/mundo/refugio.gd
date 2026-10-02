@@ -75,6 +75,10 @@ func reclamar(jugador_nivel: int) -> bool:
 		return false
 	_reclamado = true
 	_construir_marca()
+	# Fase 72: reclamar un refugio es MONTAR EL CAMPAMENTO, y eso suena. El
+	# `descansar` vivia en `data/sonidos.json` sin un solo call site desde el
+	# bloque 66; este es el momento del juego que significa exactamente eso.
+	AudioJuego.al_descansar()
 	reclamado.emit(refugio_id)
 	return true
 
@@ -114,6 +118,9 @@ func colocar(tipo: String, offset: Vector3, rot: float) -> bool:
 	if not puede_colocar():
 		return false
 	_piezas.append({"tipo": tipo, "x": offset.x, "z": offset.z, "rot": rot})
+	# Fase 72: colocar una pieza es la mecánica que mas suffería el silencio.
+	# Existía el sonido desde el bloque 66 y la pieza se ponía muda.
+	AudioJuego.al_construir()
 	pieza_colocada.emit(tipo, _piezas.size())
 	return true
 

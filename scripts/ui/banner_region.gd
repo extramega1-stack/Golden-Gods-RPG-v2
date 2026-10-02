@@ -71,6 +71,12 @@ func mostrar(nombre: String, subtitulo: String) -> void:
 	_restante = DURACION
 	visible = true
 	modulate.a = 0.0
+	# Fase 72: el sonido va con el BANNER y no con el vigía. El banner es lo
+	# que el jugador ve, así que es donde el oído espera el "descubriste
+	# algo"; además así el aviso suena aunque el descubrimiento venga de otro
+	# sitio que no pase por el vigía. Vivía en `data/sonidos.json` desde el
+	# bloque 66 sin un solo call site.
+	AudioJuego.al_descubrir()
 
 
 func _process(delta: float) -> void:

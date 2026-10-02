@@ -51,6 +51,24 @@ static func puede_continuar(ruta: String = SaveSystem.RUTA) -> bool:
 func _ready() -> void:
 	_construir_escena()
 	_construir_ui()
+	# Fase 72: el menú tenía CERO audio. `AudioJuego`, `Musica` y
+	# `DirectorMusica` se creaban en `fase9_demo.gd` (la escena de juego), así
+	# que el juego arrancaba en silencio: sin música, sin SFX de botón y con
+	# el volumen guardado sin aplicar (por eso la carga iba a.full).
+	#
+	# `montar` deja el título con música de pueblo, un fondo de viento y el
+	# volumen del jugador YA aplicado, y `_salir_del_menu` lo baja antes de
+	# cambiar de escena. `limpiar()` es lo único que hay que llamar al
+	# navegar: los nodos cuelgan de esta escena y morirían igual, pero con un
+	# corte en seco encima del fundido.
+	AudioMenu.montar(self)
+
+
+## Baja el audio del menú antes de ir a otra escena. Todas las salidas pasan
+## por acá: sin esto, volver de la partida al título (o entrar en ella) corta
+## la música en seco en medio del fundido a negro.
+func _salir_del_menu() -> void:
+	AudioMenu.limpiar(self)
 
 
 func _process(delta: float) -> void:
@@ -248,6 +266,10 @@ func _nuevo_boton(texto: String) -> Button:
 	b.add_theme_stylebox_override("hover", _estilo_boton(Color(0.16, 0.14, 0.12, 0.95), Color(0.95, 0.76, 0.32)))
 	b.add_theme_stylebox_override("pressed", _estilo_boton(Color(0.22, 0.17, 0.10, 0.97), Color(0.95, 0.76, 0.32)))
 	b.add_theme_stylebox_override("disabled", _estilo_boton(Color(0.07, 0.07, 0.09, 0.90), Color(0.30, 0.28, 0.26)))
+	# Fase 72: el clic. Este es EL lugar —los seis botones del título salen de
+	# acá— y es la razón de que `SonidoUI.boton()` exista: un panel no
+	# debería acordarse de enchufar el sonido.
+	SonidoUI.boton(b)
 	return b
 
 
@@ -265,10 +287,12 @@ func _estilo_boton(fondo: Color, borde: Color) -> StyleBoxFlat:
 ## Nueva partida: va a la creación SIN presuponer nada (la creación valida
 ## el nombre y escribe DatosSesion.nueva_partida).
 func _al_nueva_partida() -> void:
+	_salir_del_menu()
 	Transicion.ir_a(Escenas.CREACION)
 
 
 func _al_continuar() -> void:
+	_salir_del_menu()
 	DatosSesion.pedir_continuar()
 	Transicion.ir_a(Escenas.JUEGO)
 
@@ -287,6 +311,7 @@ func _al_nuevo_game_plus() -> void:
 	_boton_ngplus.text = TEXTO_NGPLUS
 	if not empezar_nuevo_game_plus():
 		return
+	_salir_del_menu()
 	Transicion.ir_a(Escenas.JUEGO)
 
 

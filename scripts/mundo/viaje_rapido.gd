@@ -190,6 +190,11 @@ func viajar(jugador: Player, origen_id: String, destino_id: String) -> Dictionar
 		ev["motivo"] = "sin_oro"
 		ev["oro_faltante"] = costo_viaje - jugador.oro
 		return ev
+	# Fase 72: el viaje suena AQUÍ, y no en el panel ni en la demo, porque
+	# esta es la única función por la que se viaja: ponerlo más arriba lo
+	# dejaría en silencio en cuanto hubiera un segundo camino (una npc de
+	# viaje, un portal). Existía desde el bloque 66 sin un solo call site.
+	AudioJuego.al_viajar()
 	return {
 		"ok": true,
 		"motivo": "",

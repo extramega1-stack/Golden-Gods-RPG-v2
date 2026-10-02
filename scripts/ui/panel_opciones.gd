@@ -73,11 +73,13 @@ func _construir() -> void:
 	b_defecto.text = "Restablecer"
 	b_defecto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b_defecto.pressed.connect(_al_restablecer)
+	SonidoUI.boton(b_defecto)
 	botones.add_child(b_defecto)
 	var b_cerrar := Button.new()
 	b_cerrar.text = "Guardar y volver"
 	b_cerrar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b_cerrar.pressed.connect(_al_cerrar)
+	SonidoUI.boton(b_cerrar)
 	botones.add_child(b_cerrar)
 
 

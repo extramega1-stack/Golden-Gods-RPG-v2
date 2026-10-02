@@ -98,6 +98,10 @@ func disparar(origen: Node3D, destino: Node3D, magia: bool = false) -> bool:
 	m3.global_position = pos0
 	m3.visible = true
 	_activos.append({"nodo": m3, "pos0": pos0, "dir": dir, "recorrido": 0.0})
+	# Fase 72: el SILBIDO del disparo. Va en el lanzador, no en el proyectil:
+	# el sonido es del brazo que dispara, y para cuando la flecha recorre sus
+	# 40 m ya no se oye. Posicional, como todo lo que pasa en el mundo.
+	AudioJuego.al_proyectil(origen)
 	return true
 
 
