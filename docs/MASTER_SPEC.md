@@ -2824,14 +2824,20 @@ cumplido los objetivos—. Ahora lee el objetivo del dato, va a por él y lo jue
 
 | | |
 |---|---|
-| Commits | 4 en `main`, de `d184549` a `77bc61a` |
+| Commits | 4 de código (`d184549` → `77bc61a`) + 3 de documentación |
 | Tags | `v3.57` (72 integrada), `v3.58` (partida en verde), `fase-72-integrada` |
 | Releases | `v3.57` y `v3.58`, cada una con el bug y su evidencia |
 | Árbol | limpio |
-| SHA-256 | `3e731b3c0c926e46be74f5ea592f74ff1f34b364cb5bd0fdcf148df569c5e711` |
+| SHA-256 | va en el release de `v3.58`, no acá |
 
-El SHA es de los archivos versionados en el orden de `git ls-files`, así que
-dos clones del mismo commit dan el mismo hash.
+El SHA-256 va en el release y **no en el spec**, a propósito: el spec está
+versionado, así que escribir el hash acá cambia el hash, y el documento
+miente en el commit siguiente. El hash que vale es el del commit, y se lee del
+release o se recalcula:
+
+```sh
+git ls-files -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1
+```
 
 **Los 3 workers de Orca quedaron liberados** (`Terminals: released=3`), como
 pedía el handover. El 72C estaba en `ready` y no en `succeeded`: se verificó

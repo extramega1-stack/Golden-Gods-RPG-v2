@@ -6,8 +6,10 @@
 
 ## 1. Estado
 
-Godot 4.7.2, RPG single-player. `main` en `77bc61a`, árbol limpio y sincronizado
-con `origin`.
+Godot 4.7.2, RPG single-player. `main` con el árbol limpio y sincronizado con
+`origin`. El SHA exacto se lee de `git log -1`; no está escrito acá a
+propósito, porque envejece con cada commit y un traspaso que miente sobre el
+commit es peor que uno que no lo dice.
 
 - **124/124 tests** verdes con `tools/run_tests.sh --smokes`.
 - **`tools/jugar.sh`: 60 verdes, 0 rojos**, en dos runs seguidos. Antes daba 4.
