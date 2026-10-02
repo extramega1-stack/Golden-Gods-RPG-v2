@@ -82,6 +82,17 @@ var mineria: GestorVetas = null
 ## escribiría un bloque vacío y el NG+ perdería el prestigio — el bug más
 ## probable y más caro de esta fase, por eso NO sigue el patrón de las demás.
 var ngplus: EstadoNgPlus = EstadoNgPlus.new()
+## Fase 72: el resultado de la partida (victoria o derrota). NO es opcional ni
+## lo asigna nadie desde fuera: se inicializa acá, con valor cero, que es
+## "partida en curso".
+##
+## POR QUÉ ES COMO `ngplus` Y NO COMO `arboles`/`tienda`/`arena`: el bloque
+## "resultado" dice si la partida TERMINÓ. Con una variable nullable, si nadie
+## la asignara, el primer guardado escribiría un bloque vacío y el jugador
+## perdería el final para siempre. Y volver a una partida ya ganada que se
+## juega como si no estuviera ganada es la peor clase de bug: no se ve hasta
+## que ya no tiene arreglo.
+var resultado: ResultadoPartida = ResultadoPartida.new()
 
 
 func hay_partida() -> bool:
@@ -131,6 +142,10 @@ func guardar() -> bool:
 		# ÚNICA progresión que sobrevive a un reinicio de personaje, y si solo
 		# viviera en memoria se perdería en el F10 de después de prestigiar.
 		"ngplus": ngplus.to_dict(),
+		# Fase 72: si esta partida terminó y en qué senda, más las muertes. Es
+		# la única forma de que "continuar" no pierda un final, y de que el
+		# número de muertes sobreviva al reinicio.
+		"resultado": resultado.to_dict(),
 	}
 	# Bloque 65: escritura ATÓMICA. Antes se escribía directamente sobre
 	# `partida.json`: un corte de luz (o un crash, o cerrar la laptop) a mitad
@@ -305,6 +320,10 @@ func cargar() -> bool:
 	_cargar_mineria(datos.get("mineria", {}))
 	_cargar_arboles(datos.get("arboles", {}))
 	_cargar_refugios(datos.get("refugios", {}))
+	# Fase 72: el resultado de la partida. Va acá y no al final porque no
+	# depende de nadie (ni del StatBlock ni del NG+), y `cargar_estado` es
+	# tolerante: un guardado sin el bloque es una partida en curso.
+	_cargar_resultado(datos.get("resultado", {}))
 	# BUG REAL (lo encontró el playtest de la ola 3): `cargar()` corre en el
 	# `_ready` de la demo, y los refugios se crean DESPUÉS, en `_al_mundo_listo`.
 	# O sea que `_cargar_arboles` y `_cargar_refugios` iteran listas vacías y no
@@ -332,6 +351,14 @@ func cargar() -> bool:
 func _cargar_ngplus(bloque: Dictionary) -> void:
 	ngplus = EstadoNgPlus.desde_dict(bloque)
 	ngplus.aplicar_a(jugador.stats)
+
+
+## Fase 72: lee el bloque "resultado" del guardado. Un save viejo (sin el
+## bloque) es una partida en curso, que es lo correcto: antes de la fase 72 no
+## había forma de ganar ni de perder, así que todos los guardados que existen
+## son partidas en curso.
+func _cargar_resultado(bloque: Dictionary) -> void:
+	resultado.cargar_estado(bloque)
 
 
 func _enemigos_a_datos() -> Array:

@@ -183,7 +183,13 @@ func _al_morir(_fuente: Entity) -> void:
 	# Hay partida de arena en curso: la arena resuelve su propia derrota. Si
 	# teletransportásemos, el jugador se iría del campo a media partida.
 	# Se mira la puesta explícita Y `activa()`, para que aguante aunque
-	# alguien cablee una cosa y no la otra.
+	# alguien cablee una cosa y la otra.
+	#
+	# FASE 72: la misma puesta a punto la usa la pantalla de DERROTA, que
+	# suspende el respawn para que el héroe no se teletransporte solo mientras
+	# el jugador elige si revive. Por eso la guarda no pregunta "¿es la arena?",
+	# sino "¿alguien me puso a punto?": las dos respuestas son la misma
+	# (no me toquen), y una pregunta por caso sería dos Flags.
 	if _suspendido:
 		return
 	if _arena != null and is_instance_valid(_arena) and _arena.activa():

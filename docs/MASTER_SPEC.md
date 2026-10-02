@@ -2491,3 +2491,92 @@ afijos y con la vegetación. La causa de fondo es la misma: **un test por sistem
 no dice nada sobre si el sistema está conectado a nada**. Por eso ahora existe
 `tests/smoke_fase_escena_completa.gd`, que carga la partida real y mira qué hay
 dentro, y ata cada acción `abrir_*` del Input Map con el panel que la atiende.
+
+---
+
+## Fase 72 — Condiciones de victoria y derrota (2026-10-01)
+
+### Por qué existe
+
+El juego no tenía forma de ganar ni de perder. Se podían jugar los cinco actos,
+entregar las dos misiones finales (`q_final_sello`, la canónica: 600 oro y 1500
+XP; `q_final_espada`: 1200 y 1800) y el juego seguía exactamente igual: cero
+pantallas de final, cero game over. `QuestLog.entregar()` marcaba `"entregada"`
+y pagaba, y NADA leía ese estado después. Y la muerte no mataba de verdad:
+`RespawnHeros` revivía al héroe en la plaza, sin penalidad. Un jugador que
+llegaba al Acto V no tenía ninguna señal de haber terminado nada. Eso no es un
+juego completo y jugable de principio a fin, es un mundo con contenido.
+
+### Lo que se implementó
+
+**Victoria.** `ResultadoPartida` (scripts/core/resultado_partida.gd) se
+suscribe a `QuestLog.cambiada` y, cuando una de las dos misiones finales pasa
+a `"entregada"`, termina la partida con esa senda y emite `victoria(senda)`. No
+se metió un `if quest_id == ...` dentro de `QuestLog.entregar()` a propósito:
+(a) `QuestLog` es lógica pura de misiones y no tiene por qué saber que existe un
+final; (b) si mañana otra cosa entrega esa misión, esta comprobación la ve igual;
+(c) el estado se lee de un solo lado, y por eso cargar una partida ya ganada
+vuelve a mostrar el final en vez de perderlo.
+
+`PanelFinal` (capa 92, rango de modales) dibuja el texto del final, que vive en
+`data/derrota.json`, y ofrece "Volver al título" (guardando antes) y "Continuar
+en NG+". El botón de NG+ sale deshabilitado con el motivo escrito debajo
+cuando todavía no está disponible (hace falta nivel 70): un botón muerto en la
+pantalla final es la peor forma de cerrar el juego.
+
+**Derrota.** Al morir con vida a 0 fuera de la arena, `ResultadoPartida` cobra
+el coste y pone a punto el respawn para que el héroe NO se teletransporte solo
+mientras el jugador elige. `PanelDerrota` (capa 93) muestra cuánto costó y a
+dónde vuelve, con "Revivir en el refugio" y "Volver al título".
+
+El orden de suscripción a `jugador.murio` es lo único que importa acá, y está
+escrito en el código: `ResultadoPartida.configurar()` corre ANTES que
+`RespawnHeros.configurar()`, porque el respawn revive dentro de la misma señal.
+Es la misma puesta a punto explícita que usa la Arena, y por el mismo motivo.
+
+El coste sale del DATO, no del código (§9.4): `data/derrota.json` →
+`derrota.porcentaje_oro` y `derrota.porcentaje_xp_nivel`. Morir NUNCA hace
+bajar de nivel: el piso del XP es `Formulas.xp_for_level(nivel)`, o sea que se
+pierde el progreso del nivel en el que se está, no el nivel.
+
+Las muertes de la arena NO son derrota de partida: la arena tiene su propia
+derrota por oleada y su propio trofeo, y cobrarle el XP y el oro de partida
+haría que cada muerte en la arena costara el doble.
+
+### Decisiones que conviene no perder
+
+- **El `SaveSystem.SAVE_VERSION` global NO se sube.** El bloque `"resultado"`
+  es opcional y su ausencia significa "partida en curso" — el mismo criterio
+  que `"mineria"` y `"refugios"` cuando no están—, así que un guardado viejo
+  carga sin tocar nada. Subirlo no cambiaría nada de lo que se guarda y pondría
+  en rojo los tres tests de otras fases que pinean 13.
+- **Una derrota a medio resolver se RESUELVE al cargar, no se reabre.** El
+  coste ya se cobró al morir y ya está en el guardado (el oro y el XP del
+  jugador); reabrir el panel sobre un héroe con la vida llena sería mentirle al
+  jugador sobre lo que ya pagó. Lo que sobrevive es el conteo de muertes y el
+  final, si lo había.
+- **El coste se cobra AL MORIR, no al revivir.** Así el HUD lo muestra en el
+  mismo frame en que muere (si se cobrara al revivir, la pantalla de derrota
+  mentiría) y cerrar el juego desde esa pantalla no esquiva el castigo.
+- **`ResultadoPartida` se toma del `SaveSystem`, no se crea en la demo.** El
+  `SaveSystem` lo crea al construirse (no nullable, por el mismo motivo que el
+  NG+) y `cargar()` ya lo restauró antes de que la demo arme el mundo. Crear
+  uno en la demo y asignarlo tiraría el resultado cargado: una partida ganada se
+  seguiría jugando como si no lo estuviera.
+- **`configurar()` hace una mirada inmediata al `QuestLog`.** En la partida, la
+  misión final puede YA estar entregada cuando el sistema se configura (es lo
+  que pasa al "Continuar"). Sin esa llamada, la señal `cambiada` de esa entrega
+  ya pasó y no vuelve a pasar.
+
+### La prueba de que está conectado
+
+`tests/test_fase72_victoria_derrota.gd` (107 checks) carga la ESCENA REAL y
+comprueba que el sistema y los dos paneles estén registrados, y que el
+`PanelFinal` de la partida se abra al declarar la victoria. Los otros ocho
+bloques del test pasanían igual, completos, si `_instalar_fase72()` no se
+llamara NUNCA, y `smoke_fase_escena_completa.gd` tiene ahora las tres entradas
+que lo atan. Verificado: quitar la llamada pone el test en 6 fallos, quitar el
+`vigilar()` del panel en 3, y hacer que la UI no lea el dato en 3.
+
+El NG+ reinicia el personaje con `_partida_para_ngplus()`, que no escribe el
+bloque `"resultado"`: la vuelta nueva arranca sin final, que es lo correcto.

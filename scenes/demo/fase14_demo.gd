@@ -53,6 +53,11 @@ var _opciones: PanelOpciones = null
 ## (el panel existe, sus tests pasan, y no estaba en la partida), asi que va
 ## conectado a mano y con una entrada en el smoke.
 var _tutorial_ui: PanelTutorial = null
+## Fase 72: victoria y derrota. El sistema (RefCounted) y los dos paneles.
+## CUARTO y QUINTO caso de lo mismo — ver el bloque de `_instalar_fase72()`.
+var _resultado: ResultadoPartida = null
+var _panel_final: PanelFinal = null
+var _panel_derrota: PanelDerrota = null
 ## Fase 55: gestor de arboles talables (streaming por histéresis).
 var _arboles: GestorArboles = null
 ## Fase 70: la vegetación del mundo abierto. Un anillo que sigue al jugador con
@@ -312,6 +317,57 @@ func _instalar_fase63_64_ui() -> void:
 		_tutorial_ui.conectar(_tutorial)
 
 
+## FASE 72: victoria y derrota, conectados a la partida.
+##
+## ESTA FUNCIÓN ES EL CUARTO CASO DE "ESCRITO Y NO CONECTADO", y por eso está
+## llamada a mano desde `_instalar_respawn()` en vez de agrupada con el resto de
+## la UI. El
+## `smoke_fase_escena_completa` mira que los dos paneles estén registrados en
+## `Systems`; sin esa entrada, esta función podía dejar de llamarse y nadie se
+## enteraría (es EXACTAMENTE lo que pasó con `_instalar_fase63_64_ui()`).
+##
+## EL ORDEN DE ESTA FUNCIÓN DENTRO DE LA PARTIDA ES LO ÚNICO IMPORTANTE:
+## `ResultadoPartida.configurar()` tiene que correr ANTES que
+## `RespawnHeros.configurar()` (que está en la línea de abajo de este bloque),
+## porque los dos se suscriben a `jugador.murio` y el que se suscribe primero
+## es el que se ejecuta primero. Si el respawn corriera antes, el héroe ya
+## estaría teletransportado y revivido cuando se cobrara la penalización, y la
+## pantalla de derrota se abriría sobre un héroe vivo.
+func _instalar_fase72() -> void:
+	# El sistema es un `RefCounted` (no vive en el árbol), como `SaveSystem` y
+	# `ViajeRapido`: se registra en `Systems` para que los paneles lo encuentren
+	# por id y no por una ruta de nodo.
+	#
+	# Y se TOMA el que ya está en el `SaveSystem` en vez de crear uno nuevo: el
+	# `SaveSystem` lo crea al construirse (no es nullable, por el mismo motivo
+	# que el NG+) y `cargar()` ya lo restauró ANTES de que esta función corra
+	# (super._ready() llama a cargar, y esta función se llama después). Crear
+	# uno acá y asignarlo tiraría el resultado cargado por el suelo: una
+	# partida ganada se seguiría jugando como si no estuviera ganada.
+	_resultado = _guardado.resultado
+	_sistemas_de().registrar(_resultado, &"resultado_partida")
+	_resultado.configurar(_jugador, _misiones, _respawn)
+
+	# Los dos paneles de final (capa 92) y de derrota (capa 93). Nacen
+	# CERRADOS (lección 11) y los abre una señal, no una tecla.
+	_panel_final = PanelFinal.new()
+	_panel_final.name = "PanelFinal"
+	add_child(_panel_final)
+	_sistemas_de().registrar(_panel_final, &"panel_final")
+	_panel_final.vigilar(_resultado)
+
+	_panel_derrota = PanelDerrota.new()
+	_panel_derrota.name = "PanelDerrota"
+	add_child(_panel_derrota)
+	_sistemas_de().registrar(_panel_derrota, &"panel_derrota")
+	_panel_derrota.vigilar(_resultado)
+
+	# Si el guardado ya traía una partida terminada, la señal `victoria` pasó
+	# antes de que existiera este sistema: se reemite para que el final se
+	# abra también al "Continuar" de una partida ya ganada.
+	_resultado.reanudar_tras_carga()
+
+
 func _al_desbloquear_hecho(hecho_id: String) -> void:
 	if _feed == null or _jugador.hechos == null:
 		return
@@ -347,6 +403,16 @@ func _instalar_respawn() -> void:
 		_respawn.registrar_ciudad(str(_SECUNDARIAS[i][0]),
 			c.punto_aparicion_jugador(), c.yaw_aparicion())
 
+	# FASE 72 Y POR QUÉ ESTÁ EN MEDIO DE ESTA FUNCIÓN, Y NO EN
+	# `_instalar_fase63_64_ui()`: el ORDEN de los suscriptores a `jugador.murio`
+	# es el orden de conexión, y acá importa. `RespawnHeros` teletransporta al
+	# héroe dentro de la señal `murio`; si el sistema de derrota se conectara
+	# después, la pantalla de derrota se abriría sobre un héroe ya revivido con
+	# la vida llena y el coste se aplicaría dos veces. Por eso
+	# `ResultadoPartida.configurar()` va ANTES que `RespawnHeros.configurar()`
+	# y no en `_al_mundo_listo()`: el respawn se configura en el `_ready` (línea
+	# 132), mucho antes de que el mundo esté listo.
+	_instalar_fase72()
 	_respawn.configurar(_jugador, _arena)
 	_instalar_barra_jefe()
 	_instalar_feed_avisos()

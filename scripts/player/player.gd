@@ -1421,3 +1421,47 @@ func gastar_oro(cantidad: int) -> bool:
 	oro -= cantidad
 	oro_cambiado.emit(oro)
 	return true
+
+
+## Fase 72: PERDER oro. La diferencia con `gastar_oro` es que esta NO falla si
+## no alcanza: se lleva lo que haya y dice cuánto se llevó. Es lo que necesita
+## la penalidad por muerte, que es una pérdida y no una compra: un jugador con
+## 30 de oro y una penalización del 10% (3 de oro) tiene que perder 3, no
+## quedarse sin penalización porque "no le daba".
+##
+## `ganar_oro(-n)` haría lo mismo, pero un nombre que dice "ganar" para una
+## pérdida es la clase de nombre que hace que un bug pase inadvertido. Retorna
+## lo que efectivamente se perdió.
+func perder_oro(cantidad: int) -> int:
+	if cantidad <= 0:
+		return 0
+	var perdido: int = mini(cantidad, oro)
+	if perdido <= 0:
+		return 0
+	oro -= perdido
+	oro_cambiado.emit(oro)
+	return perdido
+
+
+## Fase 72: PERDER XP. Devuelve lo que efectivamente se perdió.
+##
+## NO BAJA DE NIVEL NUNCA, y esa es toda la razón de que el piso sea
+## `Formulas.xp_for_level(nivel)`: el XP que ya costó el nivel no se toca. Morir
+## pierde el progreso del nivel en el que estabas (lo que subiste desde que
+## llegaste a él), nunca el nivel. Perder un nivel al morir sería la única forma
+## de que la muerte destruyera horas de juego, y además no hay forma de
+## recuperarlo: `Entity` no tiene `perder_nivel` y no se va a agregar.
+##
+## Razonamiento de la API: escribe `xp_actual` y emite `xp_cambiada` acá, y no
+## desde el sistema de derrota, porque `xp_actual` es de la entidad. Quien
+## quiera quitarle XP a alguien tiene que pasar por acá.
+func perder_xp(cantidad: int) -> int:
+	if cantidad <= 0:
+		return 0
+	var piso: int = Formulas.xp_for_level(nivel)
+	var perdido: int = mini(cantidad, maxi(0, xp_actual - piso))
+	if perdido <= 0:
+		return 0
+	xp_actual -= perdido
+	xp_cambiada.emit(xp_actual, Formulas.xp_for_level(nivel + 1))
+	return perdido
