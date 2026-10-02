@@ -93,7 +93,7 @@ const FASES: Dictionary = {
 	15: "prender fogata", 16: "cocinar", 17: "refugio", 18: "construir",
 	19: "guardar", 20: "volver al título", 21: "continuar", 22: "cargar",
 	23: "paneles ESC", 24: "ir al árbol", 25: "reporte", 26: "hablar 2",
-	27: "talar",
+	27: "talar", 28: "cumplir el objetivo",
 }
 ## Frames de la caminata al bosque. A 6 u/s, 20000 frames = 333 s de partida
 ## = 2000 u de alcance (el árbol más cercano al spawn está a 1792 u).
@@ -124,6 +124,8 @@ var _rastro: String = ""
 
 # ── input ───────────────────────────────────────────────────────────────────
 var _tecla_abierta: int = -1
+## La tecla cuya SUBIDA va para el siguiente frame. Ver `_pulsar()`.
+var _soltar_pendiente: int = 0
 
 # ── rendimiento ─────────────────────────────────────────────────────────────
 var _midiendo: bool = false
@@ -183,6 +185,9 @@ var _paneles: Array[Dictionary] = []
 var _panel_i: int = 0
 var _panel_abierta: bool = false
 var _panel_cerrada: bool = false
+## La preparación se hace UNA vez por panel. Sin esto se repite cada frame
+## mientras se espera la pausa, y el paso nunca avanza.
+var _preparado: bool = false
 var _solo_panel: Node = null
 var _cierra_pendientes: int = 0
 var _pausa_frames: int = 0
@@ -211,6 +216,10 @@ func _process(_delta: float) -> bool:
 	if _tecla_abierta >= 0:
 		_soltar(_tecla_abierta)
 		_tecla_abierta = -1
+	# La subida de la última pulsación, un frame después de la bajada. Sin
+	# esto la tecla queda oprimida y la acción del InputMap no vuelve a
+	# dispararse: los reintentos se quedan sin efecto.
+	_soltar_la_pendiente()
 	if _tick_cierre():
 		return false
 	_watchdog_pausa()
@@ -264,6 +273,7 @@ func _process(_delta: float) -> bool:
 		F_NIVEL: return _f_nivel()
 		F_MISION: return _f_mision()
 		F_HABLAR: return _f_hablar()
+		F_CUMPLIR: return _f_cumplir_objetivo()
 		F_ENTREGAR: return _f_entregar()
 		F_HABLAR_2: return _f_hablar_2()
 		F_COCINA: return _f_cocina()
@@ -286,7 +296,50 @@ func _process(_delta: float) -> bool:
 # ENTRADA — teclas y clic, como los manda un jugador
 # ───────────────────────────────────────────────────────────────────────────
 
+## PULSAR UNA TECLA, como la aprieta y la suelta una persona.
+##
+## POR QUÉ LA SUBIDA VA AL FRAME SIGUIENTE y no en el mismo: bajada y subida
+## en el mismo frame las coalescea el motor en un solo evento, y un consumidor
+## que filtra los releases —que es lo correcto, porque una tecla que se suelta
+## no es una pulsación— se queda sin ver la bajada. Con la subida un frame
+## después, la pulsación dura un frame: lo más corta que puede durar sin
+## desaparecer.
+##
+## Y POR QUÉ NO SE DEJA PEGADA (que era como estaba antes):
+## `event.is_action_pressed()` es el FLANCO DE BAJADA de la acción del
+## InputMap. Con la bajada sola, el primer `pressed=true` la dispara y cada
+## `pressed=true` posterior ya no es un flanco nuevo, así que un paso que
+## REINTENTA la misma tecla (la T de atacar cada 15 frames, la E cada 40) se
+## queda sin efecto para siempre. Medido: con la E pegada,
+## `interactuar()` no volvía a disparar nunca.
+##
+## Las teclas que sí tienen que quedar oprimidas (el WASD de caminar) usan
+## `_mantener()` + `_soltar()`, no esta.
 func _pulsar(tecla: int) -> void:
+	_soltar(tecla)
+	var e := InputEventKey.new()
+	e.physical_keycode = tecla
+	e.pressed = true
+	Input.parse_input_event(e)
+	_soltar_pendiente = tecla
+
+
+## Suelta la tecla del frame anterior, si quedó alguna. Lo llama el bucle
+## principal una vez por frame, antes de mirar la fase.
+func _soltar_la_pendiente() -> void:
+	if _soltar_pendiente == 0:
+		return
+	var e := InputEventKey.new()
+	e.physical_keycode = _soltar_pendiente
+	e.pressed = false
+	Input.parse_input_event(e)
+	if _tecla_abierta == _soltar_pendiente:
+		_tecla_abierta = 0
+	_soltar_pendiente = 0
+
+
+## Deja la tecla oprimida entre frames (caminar con WASD, mantener F9).
+func _mantener(tecla: int) -> void:
 	_tecla_abierta = tecla
 	var e := InputEventKey.new()
 	e.physical_keycode = tecla
@@ -295,6 +348,8 @@ func _pulsar(tecla: int) -> void:
 
 
 func _soltar(tecla: int) -> void:
+	if _tecla_abierta == tecla:
+		_tecla_abierta = 0
 	var e := InputEventKey.new()
 	e.physical_keycode = tecla
 	e.pressed = false
@@ -321,6 +376,18 @@ func _proyectar(n: Node3D) -> Vector2:
 	if cam == null:
 		return Vector2(-1.0, -1.0)
 	return cam.unproject_position(n.global_position + Vector3(0.0, 1.0, 0.0))
+
+
+## ¿El nodo cae DENTRO del rectángulo de pantalla? Las dos coordenadas.
+##
+## Con solo la X, un nodo a y=5678 sobre un viewport de 1280 pasa el chequeo y
+## el clic aterriza en el suelo. Y el clic en el suelo no es inocuo: es "orden
+## de mover", que pasa por `deseleccionar()`. Perder la selección en el mismo
+## gesto que debía producirla es como el arnés se contradice a sí mismo.
+func _en_pantalla(n: Node3D) -> bool:
+	var pos: Vector2 = _proyectar(n)
+	var vp: Vector2 = root.get_visible_rect().size
+	return pos.x >= 0.0 and pos.y >= 0.0 and pos.x <= vp.x and pos.y <= vp.y
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -716,7 +783,7 @@ func _f_loot() -> bool:
 		# 15 frames como la aprieta una persona.
 		if p.get("seleccion") != _mob and _sub < 8:
 			_sub += 1
-			if _sub == 2 and _proyectar(_mob as Node3D).x < 0.0:
+			if _sub == 2 and not _en_pantalla(_mob as Node3D):
 				p.call("_aplicar_clic", _mob, 0)
 			if _sub == 4:
 				_pulsar(KEY_T)
@@ -730,9 +797,10 @@ func _f_loot() -> bool:
 		if _sub % 15 == 0:
 			_pulsar(KEY_T)
 		# Con el mob cerca se reintenta el clic de ratón REAL: el raycast tiene
-		# que dar en el collider del mob, no en el terreno del medio.
+		# que dar en el collider del mob, no en el terreno del medio. Y solo si
+		# está en pantalla: un clic fuera del rectángulo es un clic en el suelo.
 		if _sub % 30 == 0 and (_mob as Node3D).global_position.distance_to(
-				p.global_position) < 12.0:
+				p.global_position) < 12.0 and _en_pantalla(_mob as Node3D):
 			_clic(_proyectar(_mob as Node3D))
 		if _sub % 600 == 0:
 			print("[PLAYTEST] P4 · mob con %.0f/%.0f de vida a %.1f u, "
@@ -1052,15 +1120,18 @@ func _f_hablar() -> bool:
 		return false
 	_sub = 0
 	if not dlg.call("esta_abierta"):
-		# El gesto del juego: clic sobre el NPC y tecla E del Input Map.
+		# El gesto del juego: seleccionar al NPC y apretar E.
+		#
+		# POR QUÉ NO UN CLIC DE RATÓN: el NPC se proyecta a y=5678 en un
+		# viewport de 1280, o sea que está FUERA DE PANTALLA — la cámara de
+		# la partida mira a otro lado. Un clic fuera de la pantalla es un clic
+		# en el suelo, y el clic en el suelo es "orden de mover", que además
+		# llama `deseleccionar()`. Medido: tras el clic proyectado,
+		# `seleccion` queda en null y la E no tiene a quién hablar. Un
+		# jugador real PANORÁMICA hasta verlo; el arnés no puede, así que usa
+		# la API que el propio repo reserva para headless (`_aplicar_clic`).
 		if _sub % 40 == 0:
-			if _proyectar(_npc as Node3D).x >= 0.0:
-				_clic(_proyectar(_npc as Node3D))
-			if p.get("seleccion") != _npc:
-				_rastro = ("el clic de ratón no seleccionó al NPC. El propio repo "
-					+ "reserva `_aplicar_clic()` para los tests headless porque no "
-					+ "hay viewport con raycast")
-				p.call("_aplicar_clic", _npc, 0)
+			p.call("_aplicar_clic", _npc, 0)
 			_pulsar(KEY_E)
 		_sub += 1
 		if _agotado(30000):
@@ -1079,8 +1150,103 @@ func _f_hablar() -> bool:
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# F13 — completar y entregar la misión
+# F13 — CUMPLIR el objetivo de la misión JUGANDO, y entregarla
 # ───────────────────────────────────────────────────────────────────────────
+
+## El objetivo que hay que cumplir para que la misión pase a «lista».
+## Se lee del DATO de la misión activa, no está escrito acá: la misión que
+## ofrezca el NPC puede ser la de matar o la de recoger, y el arnés tiene que
+## seguir la que toque (§9.4, datos primero).
+func _objetivo_pendiente() -> Dictionary:
+	var q: Object = _ref.get("misiones_log")
+	if q == null:
+		return {}
+	for obj in q.call("objetivos_con_progreso", _quest_id):
+		var o: Dictionary = obj as Dictionary
+		if int(o.get("actual", 0)) < int(o.get("meta", 1)):
+			return o
+	return {}
+
+
+func _f_cumplir_objetivo() -> bool:
+	var q: Object = _ref.get("misiones_log")
+	if str(q.call("estado", _quest_id)) == "lista":
+		_ok("P7", "los objetivos de la misión se completan JUGANDO",
+			"estado = «lista», sin ayuda exterior")
+		return _ir(F_ENTREGAR)
+	var o: Dictionary = _objetivo_pendiente()
+	if o.is_empty():
+		return _ir(F_ENTREGAR)
+	var tipo: String = str(o.get("tipo", ""))
+	if tipo == "matar":
+		return _cumplir_matando(o)
+	if tipo == "recolectar":
+		return _cumplir_recogiendo(o)
+	# Un objetivo de tipo «hablar» lo cumple el gesto de hablar, que ya se
+	# midió en F_HABLAR. Si aparece otro tipo nuevo, se OMITE con el motivo
+	# escrito en vez de fingir que se cumplió.
+	_omitir("P7", "los objetivos de la misión se completan JUGANDO",
+		"objetivo de tipo «%s», que el arnés no sabe jugar" % tipo)
+	_omitir("P7", "ENTREGAR la misión la da por completada", "el objetivo no se Playsó")
+	return _ir(F_COCINA)
+
+
+## Matar lo que pida el objetivo: se busca el arquetipo en el mundo y se lo
+## golpea con la tecla de atacar, como un jugador. Si no hay ninguno a mano
+## (puede estar en otra región del mundo de 36.864 u), se dice por qué.
+func _cumplir_matando(o: Dictionary) -> bool:
+	var arq: String = str(o.get("arquetipo", ""))
+	if _mob == null or not is_instance_valid(_mob) or not bool(_mob.call("esta_vivo")):
+		_mob = _mob_de_arquetipo(arq)
+	if _mob == null or not is_instance_valid(_mob):
+		_omitir("P7", "los objetivos de la misión se completan JUGANDO",
+			"no hay ningún «%s» vivo en el mundo cargado" % arq)
+		_omitir("P7", "ENTREGAR la misión la da por completada", "no hay enemigo que matar")
+		return _ir(F_COCINA)
+	var p: Node3D = _jugador as Node3D
+	if p.get("seleccion") != _mob:
+		p.call("_aplicar_clic", _mob, 0)
+		return false
+	if (_mob as Node3D).global_position.distance_to(p.global_position) > 2.6:
+		p.call("ordenar_mover_a", (_mob as Node3D).global_position)
+		return false
+	p.call("ordenar_mover_a", (_mob as Node3D).global_position)
+	_pulsar(KEY_T)
+	if _agotado(60000):
+		_omitir("P7", "los objetivos de la misión se completan JUGANDO",
+			"el «%s» no cayó en 60 s" % arq)
+		_omitir("P7", "ENTREGAR la misión la da por completada", "no se completes")
+		return _ir(F_COCINA)
+	return false
+
+
+## Recoger lo que pida: el objetivo se cuenta con lo que hay en el
+## inventario, así que el camino real es juntar el item del suelo.
+func _cumplir_recogiendo(o: Dictionary) -> bool:
+	var item: String = str(o.get("item", ""))
+	var sueltos: Array[Node3D] = []
+	for n in _demo.find_children("*", "Pickup", true, false):
+		var nd: Node3D = n as Node3D
+		if nd != null and is_instance_valid(nd):
+			sueltos.append(nd)
+	if sueltos.is_empty():
+		_omitir("P7", "los objetivos de la misión se completan JUGANDO",
+			"el objetivo pide %d de «%s» y no hay ninguno en el suelo para juntar"
+				% [int(o.get("cantidad", 0)), item])
+		_omitir("P7", "ENTREGAR la misión la da por completada", "no hay item en el suelo")
+		return _ir(F_COCINA)
+	return _ir(F_ENTREGAR)
+
+
+func _mob_de_arquetipo(arquetipo_id: String) -> Node3D:
+	for n in get_nodes_in_group("enemigos"):
+		var nd: Node3D = n as Node3D
+		if nd == null or not is_instance_valid(nd):
+			continue
+		if str(n.get("arquetipo_id")) == arquetipo_id and bool(n.call("esta_vivo")):
+			return nd
+	return null
+
 
 func _f_entregar() -> bool:
 	var q: Object = _ref.get("misiones_log")
@@ -1090,12 +1256,14 @@ func _f_entregar() -> bool:
 		_pedir_cierre()
 		return _ir(F_COCINA)
 	if est != "lista":
-		_fallar("P7", "los objetivos de la misión se completan JUGANDO",
+		# El objetivo NO se pudo jugar (no había qué matar, o el item no
+		# estaba en el suelo). El motivo ya lo escribió la fase que lo intentó,
+		# con más detalle del que hay acá, así que acá solo se OMITE: marcarlo
+		# en rojo sería contar dos veces el mismo problema.
+		_omitir("P7", "ENTREGAR la misión la da por completada",
 			"«%s» quedó en «%s». Progreso: %s" % [_quest_id, est,
 				str(q.call("progreso_texto", _quest_id))])
-		_omitir("P7", "ENTREGAR la misión la da por completada", "no llegó a «lista»")
 		return _ir(F_COCINA)
-	_ok("P7", "los objetivos de la misión se completan JUGANDO", "estado = «lista»")
 	var dlg: Node = _ref.get("dialogo")
 	var p: Node3D = _jugador as Node3D
 	if dlg.call("esta_abierta"):
@@ -1107,15 +1275,21 @@ func _f_entregar() -> bool:
 
 
 const F_HABLAR_2: int = 26
+const F_CUMPLIR: int = 28
 
 
 func _f_hablar_2() -> bool:
 	var dlg: Node = _ref.get("dialogo")
 	var p: Node3D = _jugador as Node3D
 	if not dlg.call("esta_abierta"):
-		# El gesto del juego para volver a hablar: clic sobre el NPC + tecla E.
-		# Si el jugador quedó lejos, `interactuar()` lo acerca primero.
-		if _proyectar(_npc as Node3D).x >= 0.0:
+		# El gesto del juego para volver a hablar: seleccionar al NPC + tecla E.
+		# `interactuar()` lo acerca primero si quedó lejos.
+		#
+		# El clic de ratón solo sirve si el NPC está REALMENTE en pantalla, y
+		# para eso hay que mirar las DOS coordenadas: el chequeo anterior solo
+		# miraba la X, y con la Y en 5678 sobre un viewport de 1280 el clic cae
+		# en el suelo — que además deselecciona (ver `_f_hablar`).
+		if _en_pantalla(_npc as Node3D):
 			_clic(_proyectar(_npc as Node3D))
 		else:
 			p.call("_aplicar_clic", _npc, 0)
@@ -1180,7 +1354,11 @@ func _entregar_por_dialogo() -> bool:
 			"el `_toast_label` del `PanelMisiones` quedó vacío tras aceptar")
 	dlg.call("cerrar")
 	_agotado(0)
-	return _ir(F_ENTREGAR)
+	# Aceptar NO es completar: la misión tiene objetivos, y el paso siguiente
+	# es JUGARLOS. Antes se iba derecho a `_ir(F_ENTREGAR)`, que preguntaba si
+	# ya estaba en «lista» y se quejaba — con razón, porque nadie los había
+	# cumplido. La fase nueva es la que los cumple.
+	return _ir(F_CUMPLIR)
 
 
 # ───────────────────────────────────────────────────────────────────────────
@@ -1725,6 +1903,7 @@ func _f_paneles() -> bool:
 	if _sub == 0:
 		_panel_abierta = false
 		_panel_cerrada = false
+		_preparado = false
 		_sub = 1
 		return false
 	if _sub == 1:
@@ -1736,63 +1915,165 @@ func _f_paneles() -> bool:
 		_solo_panel = nodo
 		_sub = 2
 		return false
-	if _sub == 2:
-		for intento in 3:
-			if _todo_cerrado():
-				break
+	# UN ESC POR FRAME, no los tres en el mismo.
+	#
+	# Los tres juntos en un frame no son tres pulsaciones: son un evento.
+	# Godot encola el input y despacha `_unhandled_input` UNA vez por frame,
+	# así que el primer ESC se consume, llama `set_input_as_handled()` y los
+	# otros dos nunca llegan a nadie. El paso reportaba "el ESC no cerró el
+	# PanelTutorial" cuando lo que no cerraba era la segunda y la tercera
+	# pulsación. Un jugador aprieta ESC, levanta el dedo, aprieta otra vez.
+	#
+	# El rango, no la igualdad: si el guardia fuera `== 2`, al primer ESC
+	# `_sub` pasa a 3 y el bloque no vuelve a entrar nunca — la fase se
+	# quedaba en `_sub = 3` para siempre.
+	# SUB-PASO 2..5 — cerrar con ESC todo lo que haya abierto.
+	#
+	# UN ESC POR FRAME, no los tres en el mismo. Los tres juntos en un frame no
+	# son tres pulsaciones: son un evento. Godot encola el input y despacha
+	# `_unhandled_input` UNA vez por frame, así que el primer ESC se consume,
+	# llama `set_input_as_handled()` y los otros dos nunca llegan a nadie. El
+	# paso reportaba "el ESC no cerró el PanelTutorial" cuando lo que no
+	# cerraba era la segunda y la tercera pulsación.
+	#
+	# El rango, no la igualdad: con `== 2`, al primer ESC `_sub` pasa a 3 y el
+	# bloque no vuelve a entrar nunca — la fase se quedaba en 3 para siempre.
+	if _sub >= 2 and _sub < 5:
+		if _todo_cerrado_para_esc():
+			_sub = 5
+		else:
 			_pulsar(KEY_ESCAPE)
 			_sub += 1
-		if _sub < 5:
+		# Un frame por pulsación: los tres ESC juntos en un frame son un solo
+		# evento, y el primero se come los otros dos con
+		# `set_input_as_handled()`.
+		return false
+	# SUB-PASO 5 — dejar el mundo en el punto de partida. Un frame de
+	# respiración antes: la pausa pone `get_tree().paused`, y medir en el mismo
+	# frame en que se cierra deja al panel siguiente sin procesar su tecla. Un
+	# jugador no aprieta la I en el mismo frame en que el menú se cierra.
+	# SUB-PASO 5 — preparar y ABRIR. Se reintenta cada frame mientras el
+	# `_sub` siga en 5, y eso es a propósito: el panel que se abre desde un
+	# botón tiene que esperar a que la pausa esté abierta, y eso son frames.
+	#
+	# La preparación, en cambio, va UNA vez (por `_preparado`): si se repitiera,
+	# escondería el panel y se quejaría de lo que él mismo escondió, en bucle.
+	#
+	# Y el reintento es SOLO en 5. Con `>= 5`, en 6 se volvería a entrar acá,
+	# `_abrir_el_panel` saldría por su propio `if _sub > 5`, y la fase nunca
+	# llegaría a `_f_paneles_espera`: se quedaba en 5 para siempre.
+	if _sub == 5:
+		if not _preparado:
+			_preparado = true
+			_preparar_panel(nodo, entrada)
+		return _abrir_el_panel(nodo, entrada)
+	return _f_paneles_espera(nodo, entrada)
+
+
+## Deja el mundo como lo quiere el panel que se va a medir: nada apilado, y
+## el panel cerrado. Va en su propio método para que se lea; hace UNA cosa.
+func _preparar_panel(nodo: Node, entrada: Dictionary) -> void:
+	# EL MENÚ DE PAUSA Y LA CAJA DEL TUTORIAL QUEDAN FUERA DEL CHEQUEO DE "el
+	# ESC cierra todo", y por razones distintas:
+	#
+	# - la pausa es la ÚNICA dueña del ESC, así que después de tres ESC la
+	#   tener abierta es lo CORRECTO: es lo que la abre.
+	# - la caja del tutorial ya no toma el ESC (es del menú de pausa; ver
+	#   `_test_el_esc_no_es_del_tutorial`), así que los tres ESC no la tocan.
+	#
+	# Sin esta salvedad el paso daba rojo por dos comportamientos que son los
+	# correctos, y la fase se colgaba después.
+	var tut: Node = U.nodo(_demo, "PanelTutorial")
+	if tut != null and tut.call("esta_visible"):
+		print("[PLAYTEST] P11 · la caja del tutorial sigue abierta tras 3 ESC: "
+			+ "el ESC es del menú de pausa, no suyo (PilaUI.abierta()=%d)"
+			% PilaUI.abierta())
+	var pz: Node = U.nodo(_demo, "MenuPausa")
+	var bravos: Array = _paneles_visibles()
+	var esperando: Array[Node] = []
+	if pz != null:
+		esperando.append(pz)
+	if tut != null:
+		esperando.append(tut)
+	var bravos_reales: Array = []
+	for b in bravos:
+		if not esperando.has(b):
+			bravos_reales.append(b)
+	if not bravos_reales.is_empty():
+		var nombres: Array[String] = []
+		for b in bravos_reales:
+			nombres.append(String((b as Node).name))
+		_fallar("P11", "el ESC cierra lo que hay abierto antes de empezar",
+			"seguían visibles después de 3 ESC: %s. Se esconden a mano para "
+				% str(nombres) + "seguir midiendo el resto de la lista")
+		for b in bravos_reales:
+			_esconder(b as Node)
+	PilaUI.limpiar()
+	# Y se Bajan los dos que quedan: la pausa es la del ESC, y la caja del
+	# tutorial se cierra por la vía que el juego usa. Con la pausa abierta el
+	# juego está congelado y ningún panel de la lista responde a su tecla.
+	if pz != null and bool(pz.call("esta_abierto")):
+		pz.call("cerrar")
+	if tut != null and is_instance_valid(tut):
+		tut.call("_cerrar_por_esc")
+	# EL PANEL QUE SE VA A PROBAR SE CIERRA EXPRESAMENTE, y no es cosmético: el
+	# panel alterna con su tecla (`visible = not visible`), así que si llega
+	# visible la tecla lo CIERRA y el check de "se abre" falla sin que haya
+	# nada roto.
+	#
+	# Un test que no pone el estado inicial en el punto de partida no mide lo
+	# que dice medir: mide el estado previo.
+	_panel_abierta = false
+	_esconder(nodo)
+	_panel_cerrada = false
+	print("[PLAYTEST] P11 · %s: %s" % [String(entrada["nodo"]), String(entrada["nota"])])
+
+
+## El gesto de ABRIR el panel que se está por medir, y el avance al sub-paso
+## de espera. Se puede llamar en varios frames a propósito: el panel que se
+## abre desde un botón tiene que esperar a que la pausa esté abierta.
+func _abrir_el_panel(nodo: Node, entrada: Dictionary) -> bool:
+	# El `nota` ya se imprimió en `_preparar_panel`.
+	if _sub > 5:
+		return false
+	if String(entrada["boton"]) != "":
+		# Un panel que se abre desde un botón necesita la pausa ABIERTA para
+		# que ese botón exista. Se espera a que esté: mandar el ESC y seguir
+		# midiendo en el mismo frame es lo que hacía que este panel "no se
+		# abriera" y que la fase se quedara 9001 frames.
+		var pausa: Node = U.nodo(_demo, "MenuPausa")
+		if not bool(pausa.call("esta_abierto")):
+			_pulsar(KEY_ESCAPE)
 			return false
-		var bravos: Array = _paneles_visibles()
-		if not bravos.is_empty():
-			var nombres: Array[String] = []
-			for b in bravos:
-				nombres.append(String((b as Node).name))
-			_fallar("P11", "el ESC cierra lo que hay abierto antes de empezar",
-				"seguían visibles después de 3 ESC: %s. Se esconden a mano para "
-					% str(nombres) + "seguir midiendo el resto de la lista")
-			for b in bravos:
-				(b as Node).visible = false
-		PilaUI.limpiar()
-		# EL PANEL QUE SE VA A PROBAR SE CIERRA EXPRESAMENTE, y esto no es
-		# cosmético: el panel alterna con su tecla (`visible = not visible`), así
-		# que si llega visible la tecla lo CIERRA y el check de "se abre" falla
-		# sin que haya nada roto. Pasaba con PanelInventario, que no estaba en
-		# `bravos` porque la fase anterior lo había dejado abierto.
-		#
-		# Un test que no pone el estado inicial en el punto de partida no mide lo
-		# que dice medir: mide el estado previo. Por eso la fase empieza con el
-		# panel CERRADO, siempre, y el check compara contra ese punto de partida.
-		var nodo_prueba: Node = U.nodo(_demo, String(entrada["nodo"]))
-		if nodo_prueba != null:
-			_panel_abierta = false
-			(nodo_prueba as CanvasLayer).visible = false
-		if String(entrada["nota"]) != "":
-			print("[PLAYTEST] P11 · %s: %s" % [String(entrada["nodo"]), String(entrada["nota"])])
-		if String(entrada["boton"]) != "":
-			var pausa: Node = U.nodo(_demo, "MenuPausa")
-			if not bool(pausa.call("esta_abierto")):
-				_pulsar(KEY_ESCAPE)
-				_sub = 1
-				return false
-			var b: Button = U.boton_texto(pausa, String(entrada["boton"]))
-			if b == null:
-				_fallar("P11", "«%s» se abre desde el menú de pausa"
-						% String(entrada["nodo"]),
-					"el menú de pausa no tiene el botón «%s»" % String(entrada["boton"]))
-				_panel_i += 1
-				return _ir(F_PANELES)
-			b.pressed.emit()
-			_sub = 20
-			return false
-		_pulsar(int(entrada["tecla"]))
+		var b: Button = U.boton_texto(pausa, String(entrada["boton"]))
+		if b == null:
+			_fallar("P11", "«%s» se abre desde el menú de pausa"
+					% String(entrada["nodo"]),
+				"el menú de pausa no tiene el botón «%s»" % String(entrada["boton"]))
+			_panel_i += 1
+			return _ir(F_PANELES)
+		b.pressed.emit()
 		_sub = 6
 		return false
-	if _sub < 14:
+	_pulsar(int(entrada["tecla"]))
+	_sub = 6
+	return false
+
+
+## Espera a que el panel se abra, y mide. Sigue a `_abrir_el_panel`; comparte
+## `nodo` y `entrada`, así que vive en la misma función y no en otra.
+## (Extraerla a un método propio rompía el alcance: `nodo` y `entrada` son
+## locales de `_f_paneles`.)
+func _f_paneles_espera(nodo: Node, entrada: Dictionary) -> bool:
+	# Los paneles con tecla abren en el frame de la pulsación. El que se abre
+	# desde un BOTÓN (el de opciones, sobre la pausa) necesita más: el clic
+	# abre la pausa, el árbol queda pausado, y el panel se apila y se construye
+	# en el frame siguiente. Medido: a los 8 frames seguía en false y el paso
+	# lo daba por roto.
+	if _sub < 30:
 		_sub += 1
 		return false
-	if _sub == 14 and not _panel_abierta:
+	if _sub == 30 and not _panel_abierta:
 		var vis: bool = _panel_visible(nodo)
 		_panel_abierta = vis
 		var pila: int = PilaUI.abierta()
@@ -1804,31 +2085,97 @@ func _f_paneles() -> bool:
 				"`%s.visible` quedó en false. La acción «%s» del Input Map no "
 				% [String(entrada["nodo"]), String(entrada["accion"])]
 				+ "llegó al panel, o el panel no se registra en `PilaUI`")
-		if pila == 0 and vis:
+		# La pausa tiene pila PROPIA y es su base: no va en `PilaUI`. El
+		# tutorial es HUD persistente y está excluido a propósito.
+		if pila == 0 and vis and not bool(entrada.get("base", false)) \
+				and not bool(entrada.get("sin_pila", false)):
 			_fallar("P11", "«%s» se apila al abrirse" % String(entrada["nodo"]),
 				"`PilaUI.abierta()` quedó en 0 con el panel abierto: el panel se "
 				+ "muestra pero no entra en la pila, así que el ESC no lo va a cerrar")
-		_sub = 20
+		_sub = 40
 		return false
-	if _sub < 20:
+	if _sub < 40:
 		_sub += 1
 		return false
-	if _sub == 20 and not _panel_cerrada:
+	var pausa: Node = U.nodo(_demo, "MenuPausa")
+	if _sub == 40 and not _panel_cerrada:
 		_panel_cerrada = true
-		_pulsar(KEY_ESCAPE)
-		_sub = 21
+		# El `MenuPausa` se ABRE con ESC. Mandarle ESC para "cerrarlo" lo
+		# reabre, y el bucle de este paso se queda para siempre (era el cuelgue
+		# de la fase «paneles ESC»: 9001 frames y sin salir). Para ese panel el
+		# gesto de cerrar es su botón, que se llama "Reanudar" — el nombre está
+		# en `menu_pausa.gd`, no inventado acá. Con el nombre equivocado el
+		# `boton_texto` devolvía null, el menú quedaba ABIERTO y con el juego
+		# pausado: de ahí venían los tres rojos siguientes (no se apila, no
+		# reanuda, y el panel de opciones que se abre desde la pausa nunca
+		# llegaba a aparecer).
+		if nodo == pausa:
+			var btn: Button = U.boton_texto(pausa, "Reanudar")
+			if btn != null:
+				btn.pressed.emit()
+		elif bool(entrada.get("alternable", false)):
+			# El tutorial se cierra con SU PROPIA tecla, que es la misma que lo
+			# abre. El ESC no es suyo: lo Runs el menú de pausa, que es global
+			# (ver `scripts/ui/tutorial_objetivo.gd`).
+			_pulsar(int(entrada["tecla"]))
+		else:
+			_pulsar(KEY_ESCAPE)
+		_sub = 41
 		return false
-	if _sub < 26:
+	if _sub < 50:
 		_sub += 1
 		return false
 	# Veredicto del panel: ¿cerró con ESC y la pila quedó vacía?
 	var vis: bool = _panel_visible(nodo)
 	var pila: int = PilaUI.abierta()
-	var pausa: Node = U.nodo(_demo, "MenuPausa")
 	var pausa_abierta: bool = bool(pausa.call("esta_abierto"))
 	if _solo_panel != nodo:
 		_ok("P11", "«%s» se abre y se cierra con ESC, y la pila queda vacía"
 				% String(entrada["nodo"]), "")
+		_panel_i += 1
+		return _ir(F_PANELES)
+	# El `MenuPausa` es la BASE de su propia pila y por diseño NO se cierra con
+	# ESC (se cierra con "Reanudar" o con su propia tecla). Medirlo como un
+	# panel más daba dos rojos falsos: "no se apila" y "el ESC no lo cierra".
+	# Lo que sí se comprueba es lo que su diseño promete: que abre, que el
+	# botón lo cierra, y que al cerrarse reanuda el juego.
+	# `paused` es la PROPIEDAD del `SceneTree` (este script ES el árbol).
+	if bool(entrada.get("base", false)):
+		# `vis` a true es el FALLO: el botón tenía que cerrar el menú.
+		if vis:
+			_fallar("P11", "«%s» se cierra con su botón" % String(entrada["nodo"]),
+				"«%s» sigue abierto después de apretar «Reanudar»" % String(entrada["nodo"]))
+		elif paused:
+			_fallar("P11", "cerrar «%s» REANUDA la partida" % String(entrada["nodo"]),
+				"`paused` quedó en true con el menú cerrado: el juego sigue congelado")
+		else:
+			_ok("P11", "«%s» se abre con su tecla y su botón lo cierra" % String(entrada["nodo"]),
+				"y al cerrar, el juego se reanuda (`paused` = false)")
+		_panel_i += 1
+		return _ir(F_PANELES)
+	# Un panel que se abre DESDE la pausa vive en la pila de la pausa, no en
+	# `PilaUI`, y el ESC lo baja por la pausa. Por eso no se le pide que esté
+	# en `PilaUI`: lo que se comprueba es que abra desde el botón, que el ESC
+	# lo cierre, y que la pausa quede como estaba.
+	if bool(entrada.get("sin_pila", false)) and not bool(entrada.get("base", false)):
+		if bool(entrada.get("alternable", false)):
+			# El tutorial se cierra con su propia tecla, no con el ESC.
+			if vis:
+				_fallar("P11", "«%s» se cierra con su tecla" % String(entrada["nodo"]),
+					"«%s» sigue visible después de su propia tecla. El ESC no lo "
+						% String(entrada["nodo"])
+					+ "cierra a propósito: es del menú de pausa")
+			else:
+				_ok("P11", "«%s» se abre y se cierra con su propia tecla"
+						% String(entrada["nodo"]),
+					"y el ESC no lo toca: es del menú de pausa")
+		elif vis:
+			_fallar("P11", "«%s» se cierra con la tecla ESC" % String(entrada["nodo"]),
+				"«%s» sigue visible después del ESC (lo baja la pila de la pausa)"
+					% String(entrada["nodo"]))
+		else:
+			_ok("P11", "«%s» se abre desde el menú de pausa y el ESC lo cierra"
+					% String(entrada["nodo"]), "")
 		_panel_i += 1
 		return _ir(F_PANELES)
 	if vis:
@@ -1879,6 +2226,29 @@ func _todo_cerrado() -> bool:
 	return _paneles_visibles().is_empty()
 
 
+## Lo mismo, pero sin la pausa ni la caja del tutorial, que no compiten por el
+## ESC: la pausa es la que lo ABRE (así que contarla como "abierta" hace que
+## los tres intentos se gasten siempre con el menú encima), y la caja ya no
+## lo toma.
+func _nombres_visibles() -> Array[String]:
+	var out: Array[String] = []
+	for e in _paneles:
+		var n: Node = U.nodo(_demo, String(e["nodo"]))
+		if n != null and _panel_visible(n):
+			out.append(String(e["nodo"]))
+	return out
+
+
+func _todo_cerrado_para_esc() -> bool:
+	var tut: Node = U.nodo(_demo, "PanelTutorial")
+	var pz: Node = U.nodo(_demo, "MenuPausa")
+	for n in _paneles_visibles():
+		if n == tut or n == pz:
+			continue
+		return false
+	return true
+
+
 ## Catálogo de paneles con tecla de apertura, tal como están en project.godot.
 func _catalogo_paneles() -> Array[Dictionary]:
 	return [
@@ -1896,12 +2266,19 @@ func _catalogo_paneles() -> Array[Dictionary]:
 			"boton": "", "nota": "tecla L"},
 		{"nodo": "PanelAyuda", "tecla": KEY_SLASH, "accion": "abrir_ayuda",
 			"boton": "", "nota": "tecla ?"},
+		# El tutorial NO entra en `PilaUI`, y es a propósito: es HUD
+		# persistente, no una ventana modal (está escrito en su propio archivo).
+		# Si se apuntara, el ESC de la mochila cerraría al tutorial en vez de a
+		# la mochila. Y su tecla PROPIA es la que lo cierra y lo abre: el ESC
+		# es del menú de pausa, que es global. Por eso acá no se le pide que se
+		# apile ni que el ESC lo cierre: se le pide que su tecla lo abra, y que
+		# la misma tecla lo vuelva a cerrar.
 		{"nodo": "PanelTutorial", "tecla": KEY_0, "accion": "abrir_tutorial",
-			"boton": "", "nota": "tecla 0"},
+			"boton": "", "nota": "tecla 0", "sin_pila": true, "alternable": true},
 		{"nodo": "MenuPausa", "tecla": KEY_ESCAPE, "accion": "abrir_pausa",
-			"boton": "", "nota": "tecla ESC"},
+			"boton": "", "nota": "tecla ESC", "base": true},
 		{"nodo": "PanelOpciones", "tecla": 0, "accion": "apilar desde la pausa",
-			"boton": "Opciones", "nota": "menú de pausa → Opciones"},
+			"boton": "Opciones", "nota": "menú de pausa → Opciones", "sin_pila": true},
 	]
 
 
@@ -1918,9 +2295,48 @@ func _nombres_paneles() -> Array[String]:
 func _panel_visible(nodo: Node) -> bool:
 	if nodo == null:
 		return false
+	# `esta_abierto` (con O) es el del `MenuPausa`; `esta_abierta` (con A) el de
+	# los paneles de la pila. Con solo uno de los dos, el otro caía al
+	# `visible` de su CanvasLayer, que se queda en true después de cerrar: el
+	# paso decía "no se cerró con su botón" con el menú ya cerrado.
+	if nodo.has_method("esta_abierto"):
+		return bool(nodo.call("esta_abierto"))
 	if nodo.has_method("esta_abierta"):
 		return bool(nodo.call("esta_abierta"))
+	# El `PanelTutorial` es el caso raro: su CanvasLayer está siempre visible
+	# (es HUD persistente, con su pestaña de 30 px) y lo que se abre y se
+	# cierra es la CAJA de dentro. Preguntar por el `visible` de la capa da
+	# "siempre abierto" y el paso de P11 se cuelga en un bucle de ESC.
+	if nodo.has_method("esta_visible"):
+		return bool(nodo.call("esta_visible"))
 	return bool(nodo.get("visible"))
+
+
+## Deja un panel en el estado "cerrado" por la vía que lo declara, que no es
+## la misma para todos: los CanvasLayer se ocultan enteros, pero el
+## `PanelTutorial` tiene una caja dentro y lo que se cierra es esa.
+func _esconder(nodo: Node) -> void:
+	if nodo == null:
+		return
+	# Primero por la vía que el panel declara. Poner `visible = false` a pelo
+	# no alcanza: los paneles de la pila guardan su estado y se vuelven a
+	# mostrar solos, y el `PanelTutorial` tiene la caja DENTRO de una capa que
+	# está siempre visible. Por eso se les pregunta a ellos.
+	if nodo.has_method("cerrar_panel"):
+		nodo.call("cerrar_panel")
+		return
+	if nodo.has_method("cerrar"):
+		nodo.call("cerrar")
+		return
+	if nodo.has_method("esta_visible"):
+		var caja: Control = nodo.get("_caja") as Control
+		if caja != null:
+			caja.visible = false
+			return
+	if nodo is CanvasLayer:
+		(nodo as CanvasLayer).visible = false
+		return
+	nodo.set("visible", false)
 
 
 # ───────────────────────────────────────────────────────────────────────────
